@@ -1,0 +1,232 @@
+<title>GoKart Admin Build Plan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a single reading column for the brief, with wide tables that scroll on their own; GoKart navy and gold carried over from the product. */
+:root{
+  --bg:#f6f8fb; --surface:#ffffff; --fg:#0f172a; --muted:#5b6b82; --line:#e2e8f0;
+  --navy:#08224b; --gold:#cb9015; --gold-soft:#fff7e3; --gold-ink:#8a5a06;
+  --d1:#2563eb; --d1-soft:#e8f0ff; --d2:#0f8a5f; --d2-soft:#e3f6ee; --d3:#b4540a; --d3-soft:#fdf0e3;
+  --code-bg:#eef2f8;
+  --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0a1324; --surface:#111d33; --fg:#e6ecf5; --muted:#9aa9c0; --line:#22314d;
+  --navy:#a9c3ef; --gold:#e3b04a; --gold-soft:#2a2210; --gold-ink:#f0c870;
+  --d1:#7aa7ff; --d1-soft:#16264a; --d2:#4cc99a; --d2-soft:#0f2e25; --d3:#f0a060; --d3-soft:#33210f;
+  --code-bg:#1a2742; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0a1324; --surface:#111d33; --fg:#e6ecf5; --muted:#9aa9c0; --line:#22314d;
+  --navy:#a9c3ef; --gold:#e3b04a; --gold-soft:#2a2210; --gold-ink:#f0c870;
+  --d1:#7aa7ff; --d1-soft:#16264a; --d2:#4cc99a; --d2-soft:#0f2e25; --d3:#f0a060; --d3-soft:#33210f;
+  --code-bg:#1a2742; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 80px}
+main{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:44px}
+header{display:flex;flex-direction:column;gap:10px;padding-bottom:28px;border-bottom:2px solid var(--navy)}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-ink)}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.15;margin:0;color:var(--navy);font-weight:800;text-wrap:balance}
+h2{font-size:22px;margin:0;color:var(--navy);font-weight:750;text-wrap:balance}
+h3{font-size:16px;margin:0;font-weight:700}
+p{margin:0;max-width:68ch}
+.lede{font-size:17px;color:var(--muted)}
+section{display:flex;flex-direction:column;gap:16px}
+code{font-family:var(--mono);font-size:.86em;background:var(--code-bg);padding:1px 5px;border-radius:4px}
+ul,ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:72ch}
+.callout{background:var(--gold-soft);border:1px solid var(--gold);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.callout strong{color:var(--gold-ink)}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:720px;font-size:13.5px}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600;white-space:nowrap}
+.tag{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.t1{background:var(--d1-soft);color:var(--d1)} .t2{background:var(--d2-soft);color:var(--d2)} .t3{background:var(--d3-soft);color:var(--d3)}
+.devs{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.dev{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--c);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.dev h3{color:var(--c)}
+.dev .why{font-size:13.5px;color:var(--muted)}
+.dev ul{font-size:14px}
+.weeks{display:flex;flex-direction:column;gap:0;border-left:2px solid var(--line);margin-left:6px}
+.week{position:relative;padding:0 0 22px 22px;display:flex;flex-direction:column;gap:6px}
+.week::before{content:"";position:absolute;left:-7px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--gold);border:2px solid var(--bg)}
+.week h3{color:var(--navy)}
+.week .row{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;font-size:14px}
+.check li{list-style:none;position:relative}
+.check{padding-left:22px}
+.check li::before{content:"";position:absolute;left:-20px;top:6px;width:11px;height:11px;border:2px solid var(--gold);border-radius:3px}
+.flow{font-family:var(--mono);font-size:13px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;white-space:pre;line-height:1.7}
+.note{font-size:13px;color:var(--muted)}
+</style>
+
+<main>
+  <header>
+    <span class="eyebrow">GloAro Pvt Ltd · ZOAURO / GLOARO Admin</span>
+    <h1>GoKart Admin: from Figma prototype to a working product</h1>
+    <p class="lede">What has to be built behind the new Super Admin and Admin design, how it fits the company stack, and how three developers can split the work without stepping on each other.</p>
+  </header>
+
+  <section>
+    <h2>Where things stand</h2>
+    <p>The Figma Make file is a complete, clickable <b>front-end prototype</b>: about 9,300 lines of React across four large files (<code>SuperAdmin.tsx</code>, <code>AdminApp.tsx</code>, <code>FinancePayouts.tsx</code>, <code>financeEngine.ts</code>). Every number, row and status on screen is hard-coded or generated in the browser. Nothing is saved to a server.</p>
+    <ul>
+      <li><b>Super Admin portal</b>, 16 screens: Command Center, Business overview, Food revenue, Mart revenue, Vendors, Delivery partners, Orders, Products &amp; inventory, Complaints &amp; exceptions, Live tracking, Transaction ledger, Finance &amp; payouts (8 tabs), Reports, Admin &amp; permissions, Areas &amp; fees, Audit logs.</li>
+      <li><b>Admin portal</b>, 12 screens scoped to one business: Dashboard, Overview, Orders, Tracking, Partners, Vendors, Inventory, Complaints, Finance, Reports, Notifications, Profile.</li>
+      <li><b>Sign-in</b>: email + password, then a 6-digit code, then a workspace picker (ZOAURO FOOD or GLOARO MART). The code is always <code>123456</code> and the role is kept in browser session storage.</li>
+    </ul>
+    <div class="callout">
+      <strong>First question for the team: does <code>apps/api</code> already exist?</strong>
+      <p>Your stack document lists PostgreSQL, Redis, Socket.IO and the <code>/api/v1/intake/*</code> endpoints as <i>in use</i> and <i>built</i>. If that repository exists, this project is mostly <b>bringing the new design into <code>apps/web</code></b> and adding the API modules the new screens need. If it does not, the same plan applies but Week 1 also has to create the monorepo, Docker Compose and CI, which adds roughly two weeks.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>What has to change in the prototype</h2>
+    <p>The prototype was built in Vite with its own components. Every item below maps onto a library you already approved, so <b>no new dependencies are needed</b> and decision D16 stays intact.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Area</th><th>Prototype today</th><th>Company standard</th></tr></thead>
+      <tbody>
+        <tr><td>App framework</td><td>Vite SPA; screens switch with <code>useState</code>, so there are no URLs</td><td>Next.js 16 App Router in <code>apps/web</code>: one route per screen, e.g. <code>/super/finance</code>, <code>/admin/food/orders</code></td></tr>
+        <tr><td>Components</td><td>Hand-written Button, Modal, Tabs, Badge, Drawer, duplicated between the two portals</td><td>One shadcn/ui set on Radix (Dialog, Tabs, Tooltip), styled with GoKart navy <code>#08224b</code> and gold <code>#cb9015</code></td></tr>
+        <tr><td>Styling</td><td>~140 KB of CSS in <code>super.css</code> and <code>admin.css</code>, same class names scoped by <code>.super-ui</code> / <code>.admin-ui</code></td><td>Tailwind 4 with the colours, radii and shadows as <code>@theme</code> tokens</td></tr>
+        <tr><td>Icons</td><td>Super portal uses lucide; Admin portal draws its own SVG paths</td><td>lucide-react everywhere</td></tr>
+        <tr><td>Charts</td><td>Hand-drawn SVG line chart</td><td>Recharts</td></tr>
+        <tr><td>Forms</td><td>Vendor and partner onboarding wizards, create-order modal, fee settings, pay-plan edits with manual checks</td><td>React Hook Form + Zod schemas from <code>packages/shared</code></td></tr>
+        <tr><td>Data</td><td>Arrays like <code>vendorRows</code>, <code>orderRows</code>, randomly generated tracking zones</td><td>TanStack Query hooks calling <code>@zoauro/api-client</code></td></tr>
+        <tr><td>Money</td><td><code>financeEngine.ts</code> rounds to whole rupees</td><td>Integer <b>paise</b> end to end; format to ₹ only in the UI</td></tr>
+        <tr><td>Sign-in</td><td>Fixed code <code>123456</code>; role in <code>sessionStorage</code></td><td>Argon2 password, emailed code via Nodemailer (Mailpit locally), optional TOTP with QR set-up, Redis session in an httpOnly cookie</td></tr>
+        <tr><td>Finance</td><td>Whole payout ledger computed and stored in <code>localStorage</code></td><td>Computed on the server from daily accruals; approvals checked server-side and audited</td></tr>
+        <tr><td>Live tracking</td><td>Partner pins generated at random per zone</td><td>Partner location from intake, pushed over Socket.IO; OpenStreetMap view until the map provider is chosen</td></tr>
+        <tr><td>Exports</td><td>CSV built in the browser</td><td>BullMQ job writes the file to S3 (MinIO locally) and returns a presigned link</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Backend modules to build</h2>
+    <p>Each module follows your existing layering: route → controller → service → repository → Prisma, with zone scoping and an audit entry on every write. The <span class="tag t1">Dev 1</span> <span class="tag t2">Dev 2</span> <span class="tag t3">Dev 3</span> tags show the proposed owner.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Module</th><th>Screens it serves</th><th>Main tables</th><th>Key behaviour</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag t1">Dev 1</span> Auth</td><td>Login, verification code, workspace picker</td><td>Member, LoginChallenge, TotpSecret</td><td>Code expiry and attempt limits in Redis; session lists the businesses and zones a member may open</td></tr>
+        <tr><td><span class="tag t1">Dev 1</span> Members &amp; permissions</td><td>Admin &amp; permissions, Profile</td><td>Role, Permission, MemberBusiness, MemberZone</td><td>Super Admin sees everything; Admin is limited to one business and assigned zones; finance approver is a separate permission</td></tr>
+        <tr><td><span class="tag t1">Dev 1</span> Areas &amp; fees</td><td>Areas &amp; fees, tracking filters</td><td>Zone (district → city → location), FeeRule</td><td>Fee rules versioned by effective date so old orders keep their fee</td></tr>
+        <tr><td><span class="tag t1">Dev 1</span> Audit</td><td>Audit logs</td><td>AuditLog</td><td>Written by a shared helper inside each write transaction; read-only, filterable</td></tr>
+        <tr><td><span class="tag t1">Dev 1</span> Notifications</td><td>Bell panel, Notifications page</td><td>Notification</td><td>Socket.IO push to member rooms; unread counts; email for important ones</td></tr>
+        <tr><td><span class="tag t2">Dev 2</span> Vendors</td><td>Vendors, onboarding wizard</td><td>Vendor, VendorDocument</td><td>Pending review → Approved / Rejected → Active / Suspended; documents uploaded to S3 via presigned URLs</td></tr>
+        <tr><td><span class="tag t2">Dev 2</span> Delivery partners</td><td>Delivery partners, partner wizard, approval drawer</td><td>Partner, PartnerDocument, BankAccount</td><td>KYC and bank verification steps; availability (Available / On delivery / Offline)</td></tr>
+        <tr><td><span class="tag t2">Dev 2</span> Orders</td><td>Orders (food and mart), order drawer, create order</td><td>Order, OrderItem, OrderEvent</td><td>State machine with a <code>version</code> check on every transition (flow below); emits outbox events</td></tr>
+        <tr><td><span class="tag t2">Dev 2</span> Inventory</td><td>Products &amp; inventory</td><td>Product, StockLevel, StockMovement</td><td>Low-stock threshold raises a notification</td></tr>
+        <tr><td><span class="tag t2">Dev 2</span> Complaints</td><td>Complaints &amp; exceptions</td><td>Case, CaseEvent, CaseEvidence</td><td>Assign, escalate to Tier 2, resolve; refund requests hand off to the ledger</td></tr>
+        <tr><td><span class="tag t2">Dev 2</span> Live tracking</td><td>Live tracking (both portals)</td><td>PartnerLocation (latest in Redis, history in Postgres)</td><td>Socket.IO room per zone; pings arrive through intake</td></tr>
+        <tr><td><span class="tag t3">Dev 3</span> Ledger</td><td>Transaction ledger</td><td>LedgerEntry</td><td>Append-only, double-entry, paise; every money event (collection, fee, refund, payout) writes here</td></tr>
+        <tr><td><span class="tag t3">Dev 3</span> Finance &amp; payouts</td><td>All 8 finance tabs, Admin finance</td><td>PayPlanVersion, DailyAccrual, Adjustment, Remittance, Payout, PayoutLine, PayChangeRequest</td><td>Nightly accrual job; monthly payout generation; Pending approval → Approved → Paid → Settled (or Rejected); overdue after the 5th of the next month</td></tr>
+        <tr><td><span class="tag t3">Dev 3</span> Reports &amp; dashboards</td><td>Command Center, Business overview, Food/Mart revenue, Reports, Admin dashboard</td><td>DailyRollup per business and zone</td><td>Rollups rebuilt by BullMQ jobs so dashboards stay fast; exports to S3</td></tr>
+      </tbody>
+    </table></div>
+    <h3>Order status flow, taken from the prototype's labels</h3>
+    <div class="flow">Placed → Accepted → Preparing → Ready for pickup (food) / Ready to dispatch (mart)
+       → Assigned → Picked up → Out for delivery → Delivered
+Any step before Picked up → Cancelled        Delivered → Refunded (through a complaint)</div>
+    <p class="note">Confirm this with operations before Dev 2 builds the state machine; the prototype only shows labels, not the rules.</p>
+  </section>
+
+  <section>
+    <h2>Splitting the work between three developers</h2>
+    <p>Split by <b>business area</b>, not by front end vs back end. Each developer owns their modules all the way through: Zod schema, Prisma model, API, generated client and the screens. That keeps each person mostly in their own files, and each feature is finished by one person instead of waiting on a hand-off.</p>
+    <div class="devs">
+      <div class="dev" style="--c:var(--d1)">
+        <h3>Dev 1 · Platform &amp; access</h3>
+        <p class="why">Front-loaded: the others build on the app shell and sign-in, so this person starts first.</p>
+        <ul>
+          <li>Design tokens and the shared shadcn component set</li>
+          <li>App shell for both portals: sidebar, top bar, business switcher, routing</li>
+          <li>Sign-in, verification code, TOTP, sessions</li>
+          <li>Members, roles, permissions, zone scoping</li>
+          <li>Areas &amp; fees, Audit logs, Notifications</li>
+          <li>Socket.IO and export-job plumbing used by the others</li>
+        </ul>
+      </div>
+      <div class="dev" style="--c:var(--d2)">
+        <h3>Dev 2 · Operations</h3>
+        <p class="why">The busiest screens day to day, and the source of the data the money side depends on.</p>
+        <ul>
+          <li>Vendors and the vendor onboarding wizard</li>
+          <li>Delivery partners, partner wizard, approval drawer, KYC documents</li>
+          <li>Orders and the order state machine</li>
+          <li>Products &amp; inventory</li>
+          <li>Complaints &amp; exceptions</li>
+          <li>Live tracking; wiring intake events and the simulators</li>
+        </ul>
+      </div>
+      <div class="dev" style="--c:var(--d3)">
+        <h3>Dev 3 · Money &amp; insight</h3>
+        <p class="why">The most rule-heavy area; <code>financeEngine.ts</code> is already a working spec to port.</p>
+        <ul>
+          <li>Transaction ledger</li>
+          <li>Finance &amp; payouts: port the engine to the server in paise</li>
+          <li>Pay-plan change requests and approvals</li>
+          <li>Command Center, Business overview, revenue pages, Admin dashboard</li>
+          <li>Reports and exports</li>
+          <li>Nightly accrual and rollup jobs</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Rules that keep three people from colliding</h3>
+    <ul>
+      <li><b>One Prisma file per module.</b> Use Prisma's multi-file schema (<code>prisma/schema/orders.prisma</code>, <code>finance.prisma</code>, …). Each developer edits only their own files. Migrations stay additive; rebase on <code>main</code> before generating one.</li>
+      <li><b>One folder per module in <code>packages/shared</code></b>, e.g. <code>shared/src/orders/</code>. Cross-module enums (businesses, roles, order status) live in <code>shared/src/common/</code> and need a review from all three.</li>
+      <li><b>Never hand-edit <code>packages/api-client</code>.</b> Regenerate it from OpenAPI; if two PRs conflict there, regenerate after merging.</li>
+      <li><b>Shared UI belongs to Dev 1.</b> Others open a small PR against it rather than copying a component.</li>
+      <li><b>Agree the cross-module contracts in Week 1</b>: the Order, Partner and Vendor shapes Dev 3 reads, and the ledger events Dev 2 emits. Dev 3 builds against seed data and the simulators until real orders flow.</li>
+      <li>Add a <code>CODEOWNERS</code> file matching the split, branch as <code>feat/&lt;module&gt;-&lt;change&gt;</code>, and require one review from another developer on every PR.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Suggested timeline</h2>
+    <p class="note">Rough estimate for three developers, assuming the monorepo, Docker setup and intake already exist. Re-plan after Week 1.</p>
+    <div class="weeks">
+      <div class="week"><h3>Week 1 · Foundations and contracts</h3>
+        <div class="row"><span class="tag t1">Dev 1</span>Tokens, shared components, app shell and routes for both portals; sign-in end to end</div>
+        <div class="row"><span class="tag t2">Dev 2</span>Zod schemas, Prisma models and seed data for vendors, partners, orders; order state machine agreed with operations</div>
+        <div class="row"><span class="tag t3">Dev 3</span>Ledger and payout schemas in paise; port <code>financeEngine.ts</code> rules into service-level tests first</div></div>
+      <div class="week"><h3>Weeks 2–4 · Build each area</h3>
+        <div class="row"><span class="tag t1">Dev 1</span>Permissions and zone scoping, Areas &amp; fees, audit, notifications, export jobs</div>
+        <div class="row"><span class="tag t2">Dev 2</span>Vendors → partners → orders → inventory → complaints → tracking</div>
+        <div class="row"><span class="tag t3">Dev 3</span>Ledger → payouts and approvals → dashboards → reports</div></div>
+      <div class="week"><h3>Week 5 · Integration</h3>
+        <div class="row">Run the simulators so one order flows all the way through: intake → order states → ledger → partner accrual → payout → dashboards and reports. Fix the gaps it exposes.</div></div>
+      <div class="week"><h3>Week 6 · Hardening</h3>
+        <div class="row">Playwright and axe runs for both portals, permission tests for every route, load test on intake, security pass, Docker images through CI.</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Definition of done for every module</h2>
+    <ul class="check">
+      <li>Zod schemas in <code>packages/shared</code>, used by both the form and the API</li>
+      <li>Prisma model and an additive migration, plus seed data</li>
+      <li>Route → controller → service → repository, with permission and zone checks on the server</li>
+      <li>Every write audited; money in paise; order changes through the state machine</li>
+      <li>OpenAPI updated and <code>api-client</code> regenerated</li>
+      <li>Screen wired with TanStack Query, with loading, empty and error states</li>
+      <li>Vitest + Supertest for the API, one Playwright happy path for the screen</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Decisions needed from the owner</h2>
+    <ul>
+      <li><b>Pay rules.</b> The prototype's partner pay (salary, fixed amount, per-delivery rate, % of delivery fees) and admin pay (salary, % commission, on-time target and incentive) are assumptions. Confirm them before Dev 3 builds payouts.</li>
+      <li><b>Order states.</b> Confirm the flow above, including who may cancel at each step.</li>
+      <li><b>Paying out.</b> Until Razorpay payouts are live, "Mark as paid" records a bank reference (UTR) by hand. Confirm that is acceptable.</li>
+      <li><b>Sign-in codes.</b> Email now, SMS after DLT registration, as planned.</li>
+      <li><b>Map provider.</b> Live tracking stays on OpenStreetMap until the Phase 2 choice.</li>
+    </ul>
+  </section>
+</main>
