@@ -1,0 +1,8 @@
+pnpm-lock.yaml
+design/
+docs/
+apps/api/src/generated/
+apps/api/openapi/openapi.json
+packages/api-client/src/schema.d.ts
+apps/web/src/styles/design/
+apps/web/next-env.d.ts

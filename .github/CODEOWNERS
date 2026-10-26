@@ -1,0 +1,36 @@
+# Replace @dev1 / @dev2 / @dev3 with your GitHub usernames.
+# Split follows docs/build-plan.html.
+
+# Dev 1 · Platform & access
+*                                         @dev1
+/apps/web/src/components/                 @dev1
+/apps/web/src/styles/                     @dev1
+/apps/api/src/lib/                        @dev1
+/apps/api/src/middleware/                 @dev1
+/apps/api/src/modules/auth/               @dev1
+/apps/api/src/modules/zones/              @dev1
+/apps/api/prisma/schema/base.prisma       @dev1
+/apps/api/prisma/schema/access.prisma     @dev1
+/apps/api/prisma/schema/zones.prisma      @dev1
+/apps/api/prisma/schema/audit.prisma      @dev1
+/packages/shared/src/auth/                @dev1
+
+# Dev 2 · Operations
+/apps/api/src/modules/orders/             @dev2
+/apps/api/prisma/schema/vendors.prisma    @dev2
+/apps/api/prisma/schema/partners.prisma   @dev2
+/apps/api/prisma/schema/orders.prisma     @dev2
+/packages/shared/src/orders/              @dev2
+/packages/shared/src/vendors/             @dev2
+/packages/shared/src/partners/            @dev2
+/apps/web/src/components/super/orders.tsx @dev2
+/apps/web/src/components/admin/orders.tsx @dev2
+
+# Dev 3 · Money & insight
+/apps/api/src/modules/finance/            @dev3
+/apps/api/prisma/schema/ledger.prisma     @dev3
+/apps/api/prisma/schema/finance.prisma    @dev3
+/packages/shared/src/finance/             @dev3
+
+# Shared by all three
+/packages/shared/src/common/              @dev1 @dev2 @dev3

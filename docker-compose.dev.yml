@@ -1,0 +1,43 @@
+# Local services for development. Start with `pnpm services:up`.
+name: gokart
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: gokart
+      POSTGRES_PASSWORD: gokart
+      POSTGRES_DB: gokart
+    ports: ["5433:5432"] # 5433 on the host: a Windows PostgreSQL may already use 5432
+    volumes: [postgres:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gokart"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    volumes: [redis:/data]
+
+  # File storage isn't used yet. MinIO no longer publishes public images on Docker Hub
+  # or quay.io, so this stays off until the team picks an image (needs owner approval).
+  # Start it with: docker compose -f docker-compose.dev.yml --profile storage up -d
+  minio:
+    profiles: ["storage"]
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: gokart
+      MINIO_ROOT_PASSWORD: gokart-minio
+    ports: ["9000:9000", "9001:9001"]
+    volumes: [minio:/data]
+
+  mailpit:
+    image: axllent/mailpit:v1.21
+    ports: ["1025:1025", "8025:8025"]
+
+volumes:
+  postgres:
+  redis:
+  minio:

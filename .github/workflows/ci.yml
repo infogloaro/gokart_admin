@@ -1,0 +1,47 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: gokart
+          POSTGRES_PASSWORD: gokart
+          POSTGRES_DB: gokart
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U gokart" --health-interval 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+    env:
+      DATABASE_URL: postgresql://gokart:gokart@localhost:5432/gokart
+      REDIS_URL: redis://localhost:6379
+      SESSION_SECRET: ci-only-session-secret-not-for-production
+      WEB_ORIGIN: http://localhost:3000
+      SMTP_HOST: localhost
+      SMTP_PORT: "1025"
+      MAIL_FROM: GoKart CI <ci@gokart.local>
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @zoauro/api db:generate
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm --filter @zoauro/api exec prisma migrate deploy
+      - run: pnpm --filter @zoauro/api exec tsx prisma/seed.ts
+      - run: pnpm test
+      - run: pnpm build

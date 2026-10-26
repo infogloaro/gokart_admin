@@ -1,0 +1,11 @@
+packages:
+  - apps/*
+  - packages/*
+  - tools/*
+
+onlyBuiltDependencies:
+  - "@prisma/engines"
+  - "@node-rs/argon2"
+  - esbuild
+  - prisma
+  - sharp
