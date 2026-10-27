@@ -1,7 +1,7 @@
 "use client"
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { api } from "@zoauro/api-client"
+import { api, ApiError } from "@zoauro/api-client"
 import {
   availabilityLabel,
   CreatePartnerRequest,
@@ -268,7 +268,19 @@ export function usePartnerWizard(defaultService: PartnerForm["service"], default
       if (first >= 0) setStep(first)
       return
     }
-    create.mutate(parsed.data)
+    create.mutate(parsed.data, {
+      // Server-side field errors (e.g. a mobile number already registered) go on the
+      // field itself, and the wizard jumps back to that step.
+      onError: (e) => {
+        if (!(e instanceof ApiError) || !e.fields) return
+        const server = Object.fromEntries(
+          Object.entries(e.fields).map(([k, v]) => [k, v[0] ?? "Check this field"]),
+        )
+        setErrors(server)
+        const at = stepFields.findIndex((fields) => fields.some((f) => f in server))
+        if (at >= 0) setStep(at)
+      },
+    })
   }
 
   return { step, form, set, errors, next, back, goTo, submit, create }

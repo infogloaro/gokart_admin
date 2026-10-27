@@ -42,6 +42,7 @@ import {
   UtensilsCrossed,
   X,
 } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useEffect, useState, type ReactNode } from "react"
 import { createPortal } from "react-dom"
 import { download, useCountUp, useSince } from "@/lib/motion"
@@ -64,6 +65,7 @@ import {
 } from "@/lib/partners"
 import { useMe, useZones } from "@/lib/session"
 import { activityLabel, dateLabel, dateTimeLabel, documentLabel, fieldErrors } from "@/lib/vendors"
+import { AvailabilityButton } from "./availability"
 import { DecisionDialog, type Decision } from "./decision"
 import { useBusinessFilter } from "./shell"
 import {
@@ -483,6 +485,7 @@ export function PartnerDrawer({
   const [toast, setToast] = useState<string | null>(null)
   const p = partner.data
   const canDecide = Boolean(me.data?.permissions.includes("partners.approve"))
+  const router = useRouter()
 
   useEffect(() => {
     if (!toast) return
@@ -640,10 +643,16 @@ export function PartnerDrawer({
             {p.status === "active" && (
               <Button
                 icon={LocateFixed}
-                onClick={() => setToast("Live tracking arrives with the tracking module.")}
+                onClick={() => router.push(`/super/tracking?partner=${encodeURIComponent(p.id)}`)}
               >
                 View live tracking
               </Button>
+            )}
+            {p.status === "active" && me.data?.permissions.includes("partners.manage") && (
+              <AvailabilityButton
+                partner={p}
+                onDone={(m) => (setToast(m), onChanged?.(p.id), void partner.refetch())}
+              />
             )}
             {!canDecide && <span>Only a Super Admin can change partners.</span>}
             {canDecide &&

@@ -28,6 +28,7 @@ const pick = <T>(a: readonly T[]) => a[Math.floor(rand() * a.length)]!
 async function clear() {
   // Children first. Audit and ledger tables are append-only in the app; the seed may clear them.
   await prisma.$transaction([
+    prisma.partnerLocation.deleteMany(),
     prisma.payoutLine.deleteMany(),
     prisma.payout.deleteMany(),
     prisma.payChangeRequest.deleteMany(),
@@ -65,6 +66,23 @@ const zoneSeed: [district: string, city: string, locations: string[]][] = [
   ["Tiruchirappalli", "Tiruchirappalli", ["Central Bus Stand", "Srirangam"]],
 ]
 
+/** Approximate centres for live tracking maps. */
+const zoneCentre: Record<string, [lat: number, lng: number]> = {
+  "Chennai/T. Nagar": [13.0418, 80.2341],
+  "Chennai/Velachery": [12.9791, 80.2209],
+  "Chennai/Anna Nagar": [13.085, 80.2101],
+  "Chennai/Adyar": [13.0012, 80.2565],
+  "Chennai/Egmore": [13.0732, 80.2609],
+  "Coimbatore/Gandhipuram": [11.0168, 76.9658],
+  "Coimbatore/RS Puram": [11.0089, 76.95],
+  "Coimbatore/Peelamedu": [11.03, 77.027],
+  "Madurai/Periyar Bus Stand": [9.9177, 78.1148],
+  "Madurai/Anna Nagar": [9.929, 78.146],
+  "Madurai/KK Nagar": [9.9369, 78.1428],
+  "Tiruchirappalli/Central Bus Stand": [10.7996, 78.6826],
+  "Tiruchirappalli/Srirangam": [10.8628, 78.6926],
+}
+
 async function main() {
   await clear()
 
@@ -72,7 +90,8 @@ async function main() {
   const zones: Record<string, string> = {}
   for (const [district, city, locations] of zoneSeed)
     for (const location of locations) {
-      const z = await prisma.zone.create({ data: { district, city, location } })
+      const [lat, lng] = zoneCentre[`${city}/${location}`] ?? [null, null]
+      const z = await prisma.zone.create({ data: { district, city, location, lat, lng } })
       zones[`${city}/${location}`] = z.id
     }
   const chennai = Object.entries(zones)

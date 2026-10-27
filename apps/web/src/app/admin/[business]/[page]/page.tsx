@@ -2,6 +2,7 @@ import { Business } from "@zoauro/shared"
 import { notFound } from "next/navigation"
 import { AdminOrders } from "@/components/admin/orders"
 import { AdminPartners } from "@/components/admin/partners"
+import { AdminTracking } from "@/components/admin/tracking"
 import { AdminVendors } from "@/components/admin/vendors"
 import { PageHeader } from "@/components/admin/ui"
 import { ScreenPlaceholder } from "@/components/placeholder"
@@ -20,6 +21,7 @@ export default async function AdminPage({
   if (page === "orders") return <AdminOrders business={b} />
   if (page === "vendors") return <AdminVendors business={b} />
   if (page === "partners") return <AdminPartners business={b} />
+  if (page === "tracking") return <AdminTracking business={b} />
   if (page === "profile")
     return (
       <>

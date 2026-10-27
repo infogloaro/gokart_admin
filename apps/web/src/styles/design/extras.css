@@ -151,3 +151,63 @@
   .super-ui .skeleton-row td i, .super-ui .drawer-skeleton i { animation: none; }
   .super-ui .chip:hover { transform: none; }
 }
+
+/* Partner application submitted: one centered column, the tick in a soft circle.
+   (The SVG is display:block from the base styles, so text-align alone left it at the edge.) */
+.super-ui .partner-success { display: flex; flex-direction: column; align-items: center; gap: .75rem; }
+.super-ui .partner-success > svg { box-sizing: content-box; padding: .9rem; border-radius: 50%; background: #ecfdf3; box-shadow: 0 0 0 .5rem #f5fef8; animation: gk-tick .45s cubic-bezier(.2,.9,.3,1.3) both; }
+.super-ui .partner-success > strong { margin-top: .5rem; }
+.super-ui .partner-success > p { max-width: 26rem; margin: 0; }
+.super-ui .partner-success > .badge, .super-ui .partner-success > .btn { margin: 0; }
+.super-ui .partner-success > .btn { margin-top: .25rem; }
+@keyframes gk-tick { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .super-ui .partner-success > svg { animation: none; } }
+
+/* ---- Live tracking (Super Admin) ---- */
+.super-ui .map.live-map { background: #e9efed; }
+.super-ui .map.live-map .gk-map { position: absolute; inset: 0; height: 100% !important; }
+.super-ui .map.live-map > .track-card { z-index: 500; width: 17.5rem; }
+.super-ui .track-card > .badge { position: absolute; right: .9rem; top: .9rem; }
+.super-ui .track-card > div:not(.tracked-person):not(.track-actions) small,
+.super-ui .track-card > div:not(.tracked-person):not(.track-actions) b,
+.super-ui .track-card > div:not(.tracked-person):not(.track-actions) span { display: block; }
+.super-ui .track-card > div small { font-size: .6875rem; color: var(--muted); letter-spacing: .06em; }
+.super-ui .track-card > div b { font-size: 1rem; margin: .2rem 0; }
+.super-ui .track-card > div span { font-size: .75rem; color: var(--muted); }
+.super-ui .track-facts { list-style: none; margin: .75rem 0; padding: 0; display: grid; gap: .45rem; font-size: .75rem; color: var(--text); }
+.super-ui .track-facts li { display: flex; align-items: center; gap: .45rem; }
+.super-ui .track-facts svg { color: var(--muted); flex: none; }
+.super-ui .track-card > .track-actions { display: flex; gap: .4rem; padding: 0; background: none; }
+.super-ui .track-card > .track-actions .btn { flex: 1; justify-content: center; }
+.super-ui .map-empty { position: absolute; left: 50%; bottom: 1.25rem; z-index: 500; transform: translateX(-50%); display: flex; align-items: center; gap: .6rem; max-width: min(28rem, 90%); padding: .75rem 1rem; background: #fffffff2; border: 1px solid var(--border); border-radius: .8rem; box-shadow: var(--shadow); font-size: .75rem; color: var(--muted); }
+.super-ui .map-empty b { display: block; color: var(--text); font-size: .8125rem; }
+.super-ui .map-toast { bottom: 1.25rem; z-index: 600; }
+.super-ui .track-empty { padding: 1rem; font-size: .8125rem; color: var(--muted); }
+.super-ui .live-badge { display: inline-flex; align-items: center; gap: .4rem; height: 2.25rem; padding: 0 .8rem; margin-left: auto; border-radius: 99px; background: #ecfdf3; color: #15803d; font-size: .75rem; font-weight: 700; white-space: nowrap; }
+.super-ui .live-badge i { width: .5rem; height: .5rem; border-radius: 50%; background: currentColor; animation: gk-pulse 1.8s ease-out infinite; }
+.super-ui .live-badge.connecting, .super-ui .live-badge.offline { background: #fff7e6; color: #a86806; }
+.super-ui .live-badge.offline i, .super-ui .live-badge.connecting i { animation: none; }
+
+/* ---- Live tracking (Admin) ---- */
+.admin-ui .live-map-wrap { position: relative; }
+.admin-ui .live-map-wrap .map-empty { position: absolute; left: 50%; bottom: 16px; z-index: 500; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; max-width: 90%; padding: 10px 14px; background: #fffffff2; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 30px rgba(6,26,56,.12); font-size: 12px; color: var(--muted); }
+.admin-ui .live-map-wrap .map-empty b { display: block; color: var(--ink); }
+.admin-ui .partner-strip { display: flex; gap: 8px; padding: 12px 14px; overflow-x: auto; border-top: 1px solid var(--line); }
+.admin-ui .partner-strip button { flex: none; display: grid; grid-template-columns: auto 1fr; column-gap: 7px; align-items: center; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; text-align: left; cursor: pointer; transition: border-color .18s ease, background-color .18s ease; }
+.admin-ui .partner-strip button:hover { border-color: var(--navy); }
+.admin-ui .partner-strip button.active { border-color: var(--gold); background: #fffbf0; }
+.admin-ui .partner-strip strong { font-size: 12px; }
+.admin-ui .partner-strip small { grid-column: 2; color: var(--muted); font-size: 11px; }
+.admin-ui .partner-strip .dot { grid-row: 1 / 3; width: 9px; height: 9px; border-radius: 50%; background: #94a3b8; }
+.admin-ui .partner-strip .dot.available { background: #16a34a; }
+.admin-ui .partner-strip .dot.on_delivery { background: #2563eb; }
+.admin-ui .availability-box { margin: 0 0 17px; }
+.admin-ui .availability-form { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: #fbfcfe; animation: gk-admin-rise .2s ease both; }
+.admin-ui .availability-form > strong { font-size: 13px; }
+.admin-ui .availability-form > div { display: flex; justify-content: flex-end; gap: 8px; }
+.admin-ui .availability-note { display: flex; gap: 7px; align-items: flex-start; margin: 0; padding: 10px; border-radius: 8px; background: #eef4ff; color: #2b4a7a; font-size: 12px; line-height: 1.5; }
+.admin-ui .availability-error { margin: 0; color: #b42318; font-size: 12px; }
+.admin-ui .availability-toast { display: flex; align-items: center; gap: 6px; margin: 12px 0 0; padding: 8px 12px; border-radius: 99px; background: var(--navy); color: #fff; font-size: 12px; width: max-content; animation: gk-admin-rise .25s ease both; }
+.admin-ui .live-note.pending { color: #a86806; }
+@keyframes gk-admin-rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .admin-ui .availability-form, .admin-ui .availability-toast, .super-ui .live-badge i { animation: none; } }

@@ -1,0 +1,40 @@
+// Owner: Dev 1 (platform). Service areas and delivery fee rules.
+
+/// A serviceable location: district → city → location (e.g. Chennai › T. Nagar › Bus Stand).
+model Zone {
+  id        String   @id @default(cuid())
+  district  String
+  city      String
+  location  String
+  /// Map centre for live tracking; null until someone sets it.
+  lat       Float?
+  lng       Float?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  members  MemberZone[]
+  vendors  Vendor[]
+  partners Partner[]
+  orders   Order[]
+  feeRules FeeRule[]
+
+  @@unique([district, city, location])
+  @@map("zones")
+}
+
+/// Versioned by `effectiveFrom` so past orders keep the fee they were charged.
+model FeeRule {
+  id             String   @id @default(cuid())
+  business       Business
+  zoneId         String?
+  baseFeePaise   Int
+  perKmPaise     Int
+  freeAbovePaise Int?
+  effectiveFrom  DateTime
+  createdById    String
+  createdAt      DateTime @default(now())
+  zone           Zone?    @relation(fields: [zoneId], references: [id])
+
+  @@index([business, zoneId, effectiveFrom])
+  @@map("fee_rules")
+}

@@ -1,0 +1,16 @@
+// Owner: Dev 2 (operations). Partner GPS history. The latest position of each
+// partner lives in Redis (lib/tracking); this table keeps the trail.
+
+model PartnerLocation {
+  id        String   @id @default(cuid())
+  partnerId String
+  lat       Float
+  lng       Float
+  speedKmh  Float?
+  /// Degrees clockwise from north.
+  heading   Float?
+  at        DateTime
+
+  @@index([partnerId, at])
+  @@map("partner_locations")
+}

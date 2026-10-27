@@ -153,6 +153,7 @@ export const superNav: { group: string; items: Screen[] }[] = [
         owner: "Dev 2",
         module: "Live tracking",
         permission: "tracking.view",
+        live: true,
       },
     ],
   },
@@ -271,6 +272,7 @@ export const adminNav: Screen[] = [
     owner: "Dev 2",
     module: "Live tracking",
     permission: "tracking.view",
+    live: true,
   },
   {
     key: "partners",

@@ -1,0 +1,111 @@
+/* Live map, shared by both portals. Class names are prefixed so they can't collide
+   with either portal's design CSS. */
+.gk-map {
+  width: 100%;
+  min-height: 24rem;
+  background: #e9efed;
+  z-index: 0;
+}
+.gk-map .leaflet-control-attribution {
+  font-size: 10px;
+}
+
+/* Pins glide between pings, except while Leaflet animates a zoom. */
+.gk-map .leaflet-marker-icon.gk-pin-wrap {
+  transition: transform 1s linear;
+}
+.gk-map.leaflet-zoom-anim .leaflet-marker-icon.gk-pin-wrap {
+  transition: none;
+}
+.gk-pin-wrap {
+  background: none;
+  border: 0;
+}
+.gk-pin {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 6px 16px rgba(6, 26, 56, 0.28);
+  background: #64748b;
+  color: #fff;
+  font:
+    700 11px/1 Inter,
+    system-ui,
+    sans-serif;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.gk-pin b {
+  position: relative;
+  z-index: 1;
+}
+.gk-pin.available {
+  background: #16a34a;
+}
+.gk-pin.on_delivery {
+  background: #2563eb;
+}
+.gk-pin.offline {
+  background: #94a3b8;
+}
+.gk-pin.selected {
+  transform: scale(1.18);
+  box-shadow:
+    0 0 0 4px #cb9002,
+    0 8px 20px rgba(6, 26, 56, 0.35);
+}
+.gk-pin-pulse {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid #16a34a;
+  animation: gk-map-pulse 1.8s ease-out infinite;
+}
+
+.gk-zone {
+  fill: #cb9002;
+  fill-opacity: 0.06;
+  stroke: #cb9002;
+  stroke-opacity: 0.45;
+  stroke-width: 1.5;
+  stroke-dasharray: 6 6;
+}
+.gk-zone-label {
+  font:
+    600 11px/1.2 Inter,
+    system-ui,
+    sans-serif;
+}
+.gk-trail {
+  stroke: #061a38;
+  stroke-opacity: 0.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 2 8;
+  fill: none;
+}
+
+@keyframes gk-map-pulse {
+  from {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gk-map .leaflet-marker-icon.gk-pin-wrap {
+    transition: none;
+  }
+  .gk-pin-pulse {
+    animation: none;
+  }
+}

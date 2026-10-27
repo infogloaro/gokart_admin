@@ -205,8 +205,26 @@ describe("orders", () => {
   it("moves an order through the state machine with a version check and an audit entry", async (ctx) => {
     if (!ready) ctx.skip()
     const { agent } = await signIn("superadmin@gokart.in", "Gokart@12345")
-    const order = await prisma.order.findFirstOrThrow({
-      where: { business: "food", status: "placed" },
+    // Its own order, so repeated runs don't use up the seeded "placed" ones.
+    const vendor = await prisma.vendor.findFirstOrThrow({ where: { name: "Saffron Table" } })
+    const order = await prisma.order.create({
+      data: {
+        code: "ZOF-TEST-1",
+        business: "food",
+        customerName: "Test Customer",
+        customerPhone: "+919800000002",
+        vendorId: vendor.id,
+        zoneId: vendor.zoneId,
+        paymentMethod: "upi",
+        itemsTotalPaise: 20000,
+        deliveryFeePaise: 3800,
+        totalPaise: 23800,
+      },
+    })
+    ctx.onTestFinished(async () => {
+      await prisma.orderEvent.deleteMany({ where: { orderId: order.id } })
+      await prisma.auditLog.deleteMany({ where: { entityId: order.id } })
+      await prisma.order.delete({ where: { id: order.id } })
     })
 
     const bad = await agent
@@ -424,6 +442,114 @@ describe("partner profile", () => {
         data: { vehicleModel: before.vehicleModel },
       })
       await prisma.auditLog.deleteMany({ where: { entityId: p.id, action: "partner.updated" } })
+    }
+  })
+})
+
+describe("live tracking", () => {
+  const key = { "x-intake-key": "dev-intake-key-not-for-production" }
+
+  it("rejects intake calls without the shared key", async (ctx) => {
+    if (!ready) ctx.skip()
+    await request(app)
+      .post("/api/v1/intake/partners/DP-2379/shift")
+      .send({ action: "start" })
+      .expect(401)
+  })
+
+  it("follows shift, location, order progress and an Admin override", async (ctx) => {
+    if (!ready) ctx.skip()
+    const p = await prisma.partner.findFirstOrThrow({ where: { code: "DP-2379" } })
+    const vendor = await prisma.vendor.findFirstOrThrow({ where: { name: "Meenakshi Mart" } })
+    const order = await prisma.order.create({
+      data: {
+        code: "GLM-TEST-1",
+        business: "mart",
+        status: "ready",
+        customerName: "Test Customer",
+        customerPhone: "+919800000001",
+        vendorId: vendor.id,
+        zoneId: p.zoneId,
+        paymentMethod: "upi",
+        paymentStatus: "paid",
+        itemsTotalPaise: 10000,
+        deliveryFeePaise: 4900,
+        totalPaise: 14900,
+      },
+    })
+    const intake = (path: string, body: object) =>
+      request(app).post(`/api/v1/intake${path}`).set(key).send(body)
+    try {
+      await intake("/partners/DP-2379/shift", { action: "end" }).expect(200)
+      await intake("/partners/DP-2379/location", { lat: 9.92, lng: 78.11 }).expect(400)
+      const on = await intake("/partners/DP-2379/shift", { action: "start" }).expect(200)
+      expect(on.body.availability).toBe("available")
+      await intake("/partners/DP-2379/location", {
+        lat: 9.9181,
+        lng: 78.1152,
+        speedKmh: 22,
+      }).expect(202)
+
+      const { agent } = await signIn("ravi.chandran@gokart.in", "Admin@123")
+      const map = await agent.get("/api/v1/tracking/partners").expect(200)
+      const me = map.body.find((x: { code: string }) => x.code === "DP-2379")
+      expect(me).toMatchObject({
+        availability: "available",
+        location: { lat: 9.9181, lng: 78.1152 },
+      })
+      expect(map.body.every((x: { zoneName: string }) => x.zoneName.endsWith("Madurai"))).toBe(true)
+      const zones = await agent.get("/api/v1/tracking/zones").expect(200)
+      expect(zones.body.every((z: { lat: number }) => typeof z.lat === "number")).toBe(true)
+
+      await intake("/orders/GLM-TEST-1/status", { partnerCode: "DP-2379", to: "assigned" }).expect(
+        200,
+      )
+      let row = await prisma.partner.findUniqueOrThrow({ where: { id: p.id } })
+      expect(row.availability).toBe("on_delivery")
+      // Mart goes assigned → picked up → in transit → delivered.
+      for (const to of ["picked_up", "out_for_delivery", "delivered"])
+        await intake("/orders/GLM-TEST-1/status", { partnerCode: "DP-2379", to }).expect(200)
+      // Back to available, unless the seed gives her other orders she's still carrying.
+      const stillCarrying = await prisma.order.count({
+        where: { partnerId: p.id, status: { in: ["assigned", "picked_up", "out_for_delivery"] } },
+      })
+      row = await prisma.partner.findUniqueOrThrow({ where: { id: p.id } })
+      expect(row.availability).toBe(stillCarrying ? "on_delivery" : "available")
+
+      const trail = await agent.get(`/api/v1/tracking/partners/${p.id}/trail`).expect(200)
+      expect(trail.body.length).toBeGreaterThan(0)
+
+      const noReason = await agent
+        .post(`/api/v1/tracking/partners/${p.id}/availability`)
+        .send({ availability: "offline" })
+      expect(noReason.status).toBe(400)
+      const off = await agent
+        .post(`/api/v1/tracking/partners/${p.id}/availability`)
+        .send({ availability: "offline", reason: "Phone switched off mid-shift" })
+      expect(off.status).toBe(200)
+      expect(off.body.availability).toBe("offline")
+      const logged = await prisma.auditLog.findFirst({
+        where: { entityId: p.id, action: "partner.availability_changed" },
+        orderBy: { at: "desc" },
+      })
+      expect(logged?.actorName).toBe("Ravi Chandran")
+
+      // Outside her zones, a Chennai admin can't see or change this partner.
+      const chennai = (await signIn("priya.shankar@gokart.in", "Admin@123")).agent
+      await chennai
+        .post(`/api/v1/tracking/partners/${p.id}/availability`)
+        .send({ availability: "available", reason: "Testing scope" })
+        .expect(404)
+    } finally {
+      await prisma.orderEvent.deleteMany({ where: { orderId: order.id } })
+      await prisma.auditLog.deleteMany({
+        where: { entityId: { in: [order.id, p.id] }, at: { gte: new Date(Date.now() - 60_000) } },
+      })
+      await prisma.order.delete({ where: { id: order.id } })
+      await prisma.partnerLocation.deleteMany({ where: { partnerId: p.id } })
+      await prisma.partner.update({ where: { id: p.id }, data: { availability: p.availability } })
+      await redis.del(`track:loc:${p.id}`)
+      await redis.zrem("track:seen", p.id)
     }
   })
 })

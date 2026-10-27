@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"
 import { ScreenPlaceholder } from "@/components/placeholder"
 import { SuperOrders } from "@/components/super/orders"
 import { SuperPartners } from "@/components/super/partners"
+import { SuperTracking } from "@/components/super/tracking"
 import { SuperVendors } from "@/components/super/vendors"
 import { superScreens } from "@/lib/navigation"
 
@@ -16,5 +17,6 @@ export default async function SuperPage({ params }: { params: Promise<{ page: st
   if (page === "orders") return <SuperOrders />
   if (page === "vendors") return <SuperVendors />
   if (page === "partners") return <SuperPartners />
+  if (page === "tracking") return <SuperTracking />
   return <ScreenPlaceholder screen={screen} />
 }

@@ -44,6 +44,7 @@ import {
 } from "@/lib/partners"
 import { useMe, useZones } from "@/lib/session"
 import { activityLabel, dateLabel, dateTimeLabel } from "@/lib/vendors"
+import { AvailabilityControl } from "./availability"
 import { AdminBadge, AdminBrand, AdminButton, PageHeader } from "./ui"
 
 type Filter = "" | PartnerAvailability | "pending_approval"
@@ -224,7 +225,7 @@ export function AdminPartners({ business }: { business: Business }) {
 }
 
 function PartnerProfile({ id, close }: { id: string; close: () => void }) {
-  const { data: p, isError } = usePartner(id)
+  const { data: p, isError, refetch } = usePartner(id)
   return (
     <Dialog.Root open onOpenChange={(open) => !open && close()}>
       <Dialog.Overlay className="drawer-backdrop">
@@ -261,6 +262,12 @@ function PartnerProfile({ id, close }: { id: string; close: () => void }) {
                 <p style={{ fontSize: 13, color: "#b42318" }}>
                   {partnerStatusLabel[p.status]}: {p.decisionReason}
                 </p>
+              )}
+              {p.status === "active" && (
+                <section className="drawer-section availability-box">
+                  <h3>Availability · {availabilityLabel[p.availability]}</h3>
+                  <AvailabilityControl partner={p} onDone={() => void refetch()} />
+                </section>
               )}
               <section className="drawer-section split-info">
                 <div>

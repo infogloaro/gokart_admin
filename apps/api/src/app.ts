@@ -7,12 +7,14 @@ import { redis } from "./lib/redis"
 import { authRoutes } from "./modules/auth/auth.routes"
 import { orderRoutes } from "./modules/orders/orders.routes"
 import { partnerRoutes } from "./modules/partners/partners.routes"
+import { intakeRoutes, trackingRoutes } from "./modules/tracking/tracking.routes"
 import { vendorRoutes } from "./modules/vendors/vendors.routes"
 import { zoneRoutes } from "./modules/zones/zones"
 // OpenAPI path registrations, one per module.
 import "./modules/auth/auth.openapi"
 import "./modules/orders/orders.openapi"
 import "./modules/partners/partners.openapi"
+import "./modules/tracking/tracking.openapi"
 import "./modules/vendors/vendors.openapi"
 
 export function createApp() {
@@ -33,6 +35,8 @@ export function createApp() {
   v1.use("/auth", authRoutes)
   v1.use("/orders", orderRoutes)
   v1.use("/partners", partnerRoutes)
+  v1.use("/intake", intakeRoutes)
+  v1.use("/tracking", trackingRoutes)
   v1.use("/vendors", vendorRoutes)
   v1.use("/zones", zoneRoutes)
   v1.use(() => {
