@@ -1,6 +1,8 @@
 import { z } from "zod"
 import { Business } from "../common/enums"
+import { Paise } from "../common/money"
 import { IndianPhone } from "../common/phone"
+import { PartnerPlan } from "../finance/schemas"
 import { ActivityEntry, StoredDocument } from "../vendors/schemas"
 
 export const PARTNER_STATUSES = ["pending_approval", "active", "rejected", "suspended"] as const
@@ -85,14 +87,26 @@ export const PartnerDetail = Partner.extend({
   decidedAt: z.iso.datetime().nullable(),
   documents: z.array(StoredDocument),
   activity: z.array(ActivityEntry),
+  /** Delivered orders carried by the partner and their total value. */
+  deliveredOrders: z.number().int(),
+  orderValuePaise: Paise,
+  /** The pay plan in force today, if one is set. */
+  payPlan: PartnerPlan.nullable(),
+  payPlanFrom: z.iso.datetime().nullable(),
+  /** Sent back on edits; a mismatch means someone else changed the partner (409). */
+  updatedAt: z.iso.datetime(),
 })
 export type PartnerDetail = z.infer<typeof PartnerDetail>
+
+export const PARTNER_SORTS = ["newest", "performance"] as const
 
 export const PartnerListQuery = z.object({
   business: Business.optional(),
   status: PartnerStatus.optional(),
   availability: PartnerAvailability.optional(),
   search: z.string().trim().optional(),
+  /** "performance": most deliveries, then highest rating. */
+  sort: z.enum(PARTNER_SORTS).default("newest"),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 })
@@ -148,6 +162,12 @@ export const CreatePartnerRequest = z.object({
     .optional(),
 })
 export type CreatePartnerRequest = z.infer<typeof CreatePartnerRequest>
+
+/** Super Admin edits from the profile drawer. Everything is optional; send what changed. */
+export const UpdatePartnerRequest = CreatePartnerRequest.omit({ bank: true })
+  .partial()
+  .extend({ updatedAt: z.iso.datetime() })
+export type UpdatePartnerRequest = z.infer<typeof UpdatePartnerRequest>
 
 export const PARTNER_DECISIONS = ["approve", "reject", "suspend", "reactivate"] as const
 export const PartnerDecisionRequest = z.object({

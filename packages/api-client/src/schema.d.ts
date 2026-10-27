@@ -633,6 +633,7 @@ export interface paths {
                     business?: "food" | "mart";
                     status?: "placed" | "accepted" | "preparing" | "packed" | "ready" | "assigned" | "picked_up" | "out_for_delivery" | "delivered" | "cancelled" | "refund_requested" | "refunded";
                     search?: string;
+                    partnerId?: string;
                     page?: number;
                     pageSize?: number;
                 };
@@ -924,6 +925,7 @@ export interface paths {
                     status?: "pending_approval" | "active" | "rejected" | "suspended";
                     availability?: "available" | "on_delivery" | "offline";
                     search?: string;
+                    sort?: "newest" | "performance";
                     page?: number;
                     pageSize?: number;
                 };
@@ -1187,7 +1189,101 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Edit a partner profile (Super Admin) */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        name?: string;
+                        phone?: string;
+                        /** Format: email */
+                        email?: string;
+                        /** Format: date */
+                        dateOfBirth?: string;
+                        /** @enum {string} */
+                        gender?: "Female" | "Male" | "Non-binary" | "Prefer not to say";
+                        address?: string;
+                        pinCode?: string;
+                        businesses?: ("food" | "mart")[];
+                        zoneId?: string;
+                        /** @enum {string} */
+                        vehicleType?: "motorcycle" | "scooter" | "e_bike" | "bicycle";
+                        vehicleNumber?: string;
+                        vehicleModel?: string;
+                        drivingLicence?: string;
+                        /** Format: date */
+                        licenceValidUntil?: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Updated partner */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PartnerDetail"];
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Changed by someone else; reload and retry */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
         trace?: never;
     };
     "/partners/{id}/decision": {
@@ -1806,6 +1902,18 @@ export interface components {
                 at: string;
                 reason: string | null;
             }[];
+            deliveredOrders: number;
+            orderValuePaise: number;
+            payPlan: {
+                salaryPaise: number;
+                fixedPaise: number;
+                perDeliveryPaise: number;
+                commissionPct: number;
+            } | null;
+            /** Format: date-time */
+            payPlanFrom: string | null;
+            /** Format: date-time */
+            updatedAt: string;
         };
         Vendor: {
             id: string;

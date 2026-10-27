@@ -1,4 +1,9 @@
-import { CreatePartnerRequest, PartnerDecisionRequest, PartnerListQuery } from "@zoauro/shared"
+import {
+  CreatePartnerRequest,
+  PartnerDecisionRequest,
+  PartnerListQuery,
+  UpdatePartnerRequest,
+} from "@zoauro/shared"
 import type { Request, Response } from "express"
 import { parse } from "../../lib/errors"
 import { actorOf, scope } from "../../middleware/auth"
@@ -12,6 +17,7 @@ export async function list(req: Request, res: Response) {
       { ...s, status: q.status, availability: q.availability, search: q.search },
       q.page,
       q.pageSize,
+      q.sort,
     ),
   )
 }
@@ -33,4 +39,9 @@ export async function create(req: Request, res: Response) {
 export async function decide(req: Request<{ id: string }>, res: Response) {
   const body = parse(PartnerDecisionRequest, req.body)
   res.json(await service.decide(req.params.id, scope(req), body, actorOf(req)))
+}
+
+export async function update(req: Request<{ id: string }>, res: Response) {
+  const body = parse(UpdatePartnerRequest, req.body)
+  res.json(await service.update(req.params.id, scope(req), body, actorOf(req)))
 }

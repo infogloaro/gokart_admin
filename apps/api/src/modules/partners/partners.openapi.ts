@@ -6,6 +6,7 @@ import {
   PartnerDetail,
   PartnerListQuery,
   PartnerSummary,
+  UpdatePartnerRequest,
 } from "@zoauro/shared"
 import { z } from "zod"
 import { errors, json, registry } from "../../openapi/registry"
@@ -53,6 +54,17 @@ registry.registerPath({
   tags,
   summary: "Approve, reject, suspend or reactivate a partner",
   request: { params: id, body: json(PartnerDecisionRequest) },
+  responses: {
+    200: json(PartnerDetailRef, "Updated partner"),
+    ...errors(400, 401, 403, 404, 409),
+  },
+})
+registry.registerPath({
+  method: "patch",
+  path: "/partners/{id}",
+  tags,
+  summary: "Edit a partner profile (Super Admin)",
+  request: { params: id, body: json(UpdatePartnerRequest) },
   responses: {
     200: json(PartnerDetailRef, "Updated partner"),
     ...errors(400, 401, 403, 404, 409),

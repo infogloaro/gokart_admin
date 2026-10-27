@@ -1,4 +1,10 @@
-import type { Business, OrderStatus, PartnerAvailability, PartnerStatus } from "@zoauro/shared"
+import type {
+  Business,
+  OrderStatus,
+  PARTNER_SORTS,
+  PartnerAvailability,
+  PartnerStatus,
+} from "@zoauro/shared"
 import type { Prisma } from "../../generated/prisma/client"
 import { audit, type Actor } from "../../lib/audit"
 import { prisma } from "../../lib/prisma"
@@ -16,6 +22,8 @@ const withDetail = {
 
 export type PartnerRow = Prisma.PartnerGetPayload<{ include: typeof withZone }>
 export type PartnerDetailRow = Prisma.PartnerGetPayload<{ include: typeof withDetail }>
+
+export type PartnerSort = (typeof PARTNER_SORTS)[number]
 
 export type PartnerFilter = {
   businesses: Business[]
@@ -42,13 +50,27 @@ function where(f: PartnerFilter): Prisma.PartnerWhereInput {
   }
 }
 
-export async function list(f: PartnerFilter, page: number, pageSize: number) {
+const orderBy = {
+  // Applications waiting for a decision first, then newest.
+  newest: [{ status: "asc" }, { code: "desc" }],
+  performance: [
+    { deliveriesCompleted: "desc" },
+    { ratingTenths: { sort: "desc", nulls: "last" } },
+    { code: "asc" },
+  ],
+} satisfies Record<PartnerSort, Prisma.PartnerOrderByWithRelationInput[]>
+
+export async function list(
+  f: PartnerFilter,
+  page: number,
+  pageSize: number,
+  sort: PartnerSort = "newest",
+) {
   const [items, total] = await prisma.$transaction([
     prisma.partner.findMany({
       where: where(f),
       include: withZone,
-      // Applications waiting for a decision first, then newest.
-      orderBy: [{ status: "asc" }, { code: "desc" }],
+      orderBy: orderBy[sort],
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
@@ -93,6 +115,55 @@ export const findById = (id: string) =>
 
 export const findByPhone = (phone: string) =>
   prisma.partner.findUnique({ where: { phone }, select: { id: true } })
+
+/** Delivered orders the partner carried, and their total value. */
+export async function deliveredStats(partnerId: string) {
+  const r = await prisma.order.aggregate({
+    where: { partnerId, status: "delivered" },
+    _count: { _all: true },
+    _sum: { totalPaise: true },
+  })
+  return { deliveredOrders: r._count._all, orderValuePaise: r._sum.totalPaise ?? 0 }
+}
+
+/** The pay plan version in force today. */
+export const currentPayPlan = (partnerId: string) =>
+  prisma.payPlanVersion.findFirst({
+    where: { accountType: "partner", accountId: partnerId, effectiveFrom: { lte: new Date() } },
+    orderBy: { effectiveFrom: "desc" },
+  })
+
+/**
+ * Saves profile edits only if the partner hasn't changed since `updatedAt`, replacing
+ * the business list when one is given. Audited with the names of the changed fields.
+ */
+export function update(
+  partner: { id: string; code: string },
+  updatedAt: Date,
+  data: Prisma.PartnerUncheckedUpdateManyInput,
+  businesses: Business[] | undefined,
+  fields: string[],
+  actor: Actor,
+) {
+  return prisma.$transaction(async (tx) => {
+    const { count } = await tx.partner.updateMany({ where: { id: partner.id, updatedAt }, data })
+    if (count === 0) return null
+    if (businesses) {
+      await tx.partnerBusiness.deleteMany({ where: { partnerId: partner.id } })
+      await tx.partnerBusiness.createMany({
+        data: businesses.map((business) => ({ partnerId: partner.id, business })),
+      })
+    }
+    await audit(
+      tx,
+      actor,
+      "partner.updated",
+      { type: "partner", id: partner.id },
+      { code: partner.code, fields },
+    )
+    return tx.partner.findUniqueOrThrow({ where: { id: partner.id }, include: withDetail })
+  })
+}
 
 export const bankAccount = (partnerId: string) =>
   prisma.bankAccount.findUnique({

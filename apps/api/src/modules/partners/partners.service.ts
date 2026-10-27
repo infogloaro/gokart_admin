@@ -8,7 +8,9 @@ import {
   type PartnerDecision,
   type PartnerDetail,
   type PartnerStatus,
+  type UpdatePartnerRequest,
 } from "@zoauro/shared"
+import { PartnerPlan } from "@zoauro/shared"
 import { activityFor, type Actor } from "../../lib/audit"
 import { badRequest, conflict, forbidden, notFound } from "../../lib/errors"
 import { prisma } from "../../lib/prisma"
@@ -42,12 +44,15 @@ export function toDto(p: repo.PartnerRow, currentOrderCode: string | null = null
 }
 
 async function toDetail(p: repo.PartnerDetailRow): Promise<PartnerDetail> {
-  const [current, bank, names, activity] = await Promise.all([
+  const [current, bank, names, activity, delivered, plan] = await Promise.all([
     repo.currentOrders([p.id]),
     repo.bankAccount(p.id),
     repo.memberNames([p.submittedById, p.decidedById]),
     activityFor(prisma, { type: "partner", id: p.id }),
+    repo.deliveredStats(p.id),
+    repo.currentPayPlan(p.id),
   ])
+  const payPlan = plan ? PartnerPlan.safeParse(plan.plan) : null
   return {
     ...toDto(p, current.get(p.id) ?? null),
     email: p.email,
@@ -78,11 +83,20 @@ async function toDetail(p: repo.PartnerDetailRow): Promise<PartnerDetail> {
       verified: Boolean(d.verifiedAt),
     })),
     activity,
+    ...delivered,
+    payPlan: payPlan?.success ? payPlan.data : null,
+    payPlanFrom: plan?.effectiveFrom.toISOString() ?? null,
+    updatedAt: p.updatedAt.toISOString(),
   }
 }
 
-export async function list(filter: repo.PartnerFilter, page: number, pageSize: number) {
-  const { items, total } = await repo.list(filter, page, pageSize)
+export async function list(
+  filter: repo.PartnerFilter,
+  page: number,
+  pageSize: number,
+  sort?: repo.PartnerSort,
+) {
+  const { items, total } = await repo.list(filter, page, pageSize, sort)
   const current = await repo.currentOrders(items.map((p) => p.id))
   return { items: items.map((p) => toDto(p, current.get(p.id) ?? null)), total, page }
 }
@@ -147,6 +161,77 @@ export async function create(input: CreatePartnerRequest, scope: Scope, actor: A
     actor,
   )
   return toDetail(p)
+}
+
+const EDITABLE = [
+  "name",
+  "phone",
+  "email",
+  "dateOfBirth",
+  "gender",
+  "address",
+  "pinCode",
+  "zoneId",
+  "vehicleType",
+  "vehicleNumber",
+  "vehicleModel",
+  "drivingLicence",
+  "licenceValidUntil",
+] as const
+
+/** Super Admin edits from the profile drawer, with an updatedAt check (409 if stale). */
+export async function update(id: string, scope: Scope, input: UpdatePartnerRequest, actor: Actor) {
+  const p = await loadInScope(id, scope)
+  const current: Record<(typeof EDITABLE)[number], string | null> = {
+    name: p.name,
+    phone: p.phone,
+    email: p.email,
+    dateOfBirth: isoDate(p.dateOfBirth),
+    gender: p.gender,
+    address: p.address,
+    pinCode: p.pinCode,
+    zoneId: p.zoneId,
+    vehicleType: p.vehicleType,
+    vehicleNumber: p.vehicleNumber,
+    vehicleModel: p.vehicleModel,
+    drivingLicence: p.drivingLicence,
+    licenceValidUntil: isoDate(p.licenceValidUntil),
+  }
+  const changed = EDITABLE.filter((k) => input[k] !== undefined && input[k] !== current[k])
+  const was = p.businesses.map((b) => b.business).sort()
+  const businesses =
+    input.businesses && [...new Set(input.businesses)].sort().join() !== was.join()
+      ? [...new Set(input.businesses)]
+      : undefined
+  if (!changed.length && !businesses) return toDetail(p)
+
+  if (businesses?.some((b) => !scope.businesses.includes(b)))
+    throw forbidden("You can only assign businesses you have access to.")
+  if (changed.includes("zoneId")) {
+    if (scope.zoneIds && !scope.zoneIds.includes(input.zoneId!))
+      throw forbidden("That service area isn't one of yours.")
+    const zone = await prisma.zone.findUnique({ where: { id: input.zoneId! } })
+    if (!zone?.active) throw badRequest("Choose an active service area.", { zoneId: ["Unknown"] })
+  }
+  if (changed.includes("phone") && (await repo.findByPhone(input.phone!)))
+    throw badRequest("A partner with this mobile number already exists.", {
+      phone: ["Already registered"],
+    })
+
+  const data: Record<string, unknown> = {}
+  for (const k of changed)
+    data[k] = k === "dateOfBirth" || k === "licenceValidUntil" ? day(input[k]) : input[k]
+  const updated = await repo.update(
+    p,
+    new Date(input.updatedAt),
+    data,
+    businesses,
+    [...changed, ...(businesses ? ["businesses"] : [])],
+    actor,
+  )
+  if (!updated)
+    throw conflict("This partner was updated by someone else. Reload to see the latest.")
+  return toDetail(updated)
 }
 
 const outcome: Record<

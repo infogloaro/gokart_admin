@@ -3,12 +3,16 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@zoauro/api-client"
 import {
+  availabilityLabel,
   CreatePartnerRequest,
+  partnerStatusLabel,
+  vehicleLabel,
   type Business,
   type Partner,
   type PartnerAvailability,
   type PartnerDecision,
   type PartnerStatus,
+  type UpdatePartnerRequest,
   type VehicleType,
 } from "@zoauro/shared"
 import { useState } from "react"
@@ -19,22 +23,78 @@ export type PartnerQuery = {
   status?: PartnerStatus | undefined
   availability?: PartnerAvailability | undefined
   search?: string | undefined
+  sort?: "newest" | "performance" | undefined
   page: number
   pageSize: number
 }
 
-export const usePartners = (q: PartnerQuery) =>
+/** Pass `refetchInterval` (ms) to keep a dashboard current. */
+export const usePartners = (q: PartnerQuery, refetchInterval?: number) =>
   useQuery({
     queryKey: ["partners", "list", q],
     queryFn: () => api("get", "/partners", { query: q }),
     placeholderData: keepPreviousData,
+    refetchInterval,
   })
 
-export const usePartnerSummary = (business?: Business) =>
+export const usePartnerSummary = (business?: Business, refetchInterval?: number) =>
   useQuery({
     queryKey: ["partners", "summary", business ?? "all"],
     queryFn: () => api("get", "/partners/summary", { query: business ? { business } : {} }),
+    refetchInterval,
   })
+
+export function useUpdatePartner() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (v: { id: string; body: UpdatePartnerRequest }) =>
+      api("patch", "/partners/{id}", { params: { id: v.id }, body: v.body }),
+    onSuccess: (p) => {
+      client.setQueryData(["partners", "detail", p.id], p)
+      void client.invalidateQueries({ queryKey: ["partners", "list"] })
+    },
+  })
+}
+
+/** Every partner matching the filters, page by page, as CSV rows. */
+export async function partnersCsv(q: Omit<PartnerQuery, "page" | "pageSize">) {
+  const rows: Partner[] = []
+  for (let page = 1; ; page++) {
+    const r = await api("get", "/partners", { query: { ...q, page, pageSize: 100 } })
+    rows.push(...r.items)
+    if (rows.length >= r.total || r.items.length === 0) break
+  }
+  const head = [
+    "Code",
+    "Name",
+    "Mobile",
+    "Services",
+    "Service area",
+    "Vehicle",
+    "Registration",
+    "Verification",
+    "Status",
+    "Availability",
+    "Deliveries",
+    "Rating",
+  ]
+  const cell = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`
+  const body = rows.map((p) => [
+    p.code,
+    p.name,
+    p.phone,
+    servicesLabel(p.businesses),
+    p.zoneName,
+    vehicleLabel[p.vehicleType],
+    p.vehicleNumber,
+    verificationOf(p),
+    partnerStatusLabel[p.status],
+    availabilityLabel[p.availability],
+    p.deliveriesCompleted,
+    p.rating ?? "",
+  ])
+  return [head, ...body].map((r) => r.map(cell).join(",")).join("\r\n")
+}
 
 export const usePartner = (id: string | null) =>
   useQuery({

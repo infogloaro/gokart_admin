@@ -377,3 +377,53 @@ describe("partners", () => {
     }
   })
 })
+
+describe("partner profile", () => {
+  it("sorts by performance and returns earnings data in the detail", async (ctx) => {
+    if (!ready) ctx.skip()
+    const { agent } = await signIn("superadmin@gokart.in", "Gokart@12345")
+    const sorted = await agent.get("/api/v1/partners?sort=performance&pageSize=100").expect(200)
+    const counts = sorted.body.items.map(
+      (p: { deliveriesCompleted: number }) => p.deliveriesCompleted,
+    )
+    expect(counts).toEqual([...counts].sort((a: number, b: number) => b - a))
+    const top = sorted.body.items[0]
+    const detail = await agent.get(`/api/v1/partners/${top.id}`).expect(200)
+    expect(detail.body.payPlan).toMatchObject({ perDeliveryPaise: expect.any(Number) })
+    expect(detail.body.updatedAt).toEqual(expect.any(String))
+    const carried = await agent.get(`/api/v1/orders?partnerId=${top.id}&pageSize=100`).expect(200)
+    expect(carried.body.items.every((o: { partnerId: string }) => o.partnerId === top.id)).toBe(
+      true,
+    )
+  })
+
+  it("lets a Super Admin edit a profile with a stale-write check", async (ctx) => {
+    if (!ready) ctx.skip()
+    const { agent } = await signIn("superadmin@gokart.in", "Gokart@12345")
+    const p = await prisma.partner.findFirstOrThrow({ where: { code: "DP-2386" } })
+    const before = { vehicleModel: p.vehicleModel, updatedAt: p.updatedAt }
+    try {
+      const ok = await agent
+        .patch(`/api/v1/partners/${p.id}`)
+        .send({ vehicleModel: "TVS Jupiter", updatedAt: p.updatedAt.toISOString() })
+      expect(ok.status).toBe(200)
+      expect(ok.body.vehicleModel).toBe("TVS Jupiter")
+      expect(ok.body.activity[0]).toMatchObject({ action: "partner.updated" })
+      const stale = await agent
+        .patch(`/api/v1/partners/${p.id}`)
+        .send({ vehicleModel: "Honda Activa", updatedAt: p.updatedAt.toISOString() })
+      expect(stale.status).toBe(409)
+      const admin = (await signIn("ravi.chandran@gokart.in", "Admin@123")).agent
+      await admin
+        .patch(`/api/v1/partners/${p.id}`)
+        .send({ vehicleModel: "Honda Activa", updatedAt: ok.body.updatedAt })
+        .expect(403)
+    } finally {
+      await prisma.partner.update({
+        where: { id: p.id },
+        data: { vehicleModel: before.vehicleModel },
+      })
+      await prisma.auditLog.deleteMany({ where: { entityId: p.id, action: "partner.updated" } })
+    }
+  })
+})

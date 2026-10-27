@@ -761,6 +761,54 @@
                 "reason"
               ]
             }
+          },
+          "deliveredOrders": {
+            "type": "integer"
+          },
+          "orderValuePaise": {
+            "type": "integer"
+          },
+          "payPlan": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "salaryPaise": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "fixedPaise": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "perDeliveryPaise": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "commissionPct": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              }
+            },
+            "required": [
+              "salaryPaise",
+              "fixedPaise",
+              "perDeliveryPaise",
+              "commissionPct"
+            ]
+          },
+          "payPlanFrom": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "required": [
@@ -798,7 +846,12 @@
           "decidedByName",
           "decidedAt",
           "documents",
-          "activity"
+          "activity",
+          "deliveredOrders",
+          "orderValuePaise",
+          "payPlan",
+          "payPlanFrom",
+          "updatedAt"
         ]
       },
       "Vendor": {
@@ -1703,6 +1756,14 @@
           },
           {
             "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "partnerId",
+            "in": "query"
+          },
+          {
+            "schema": {
               "type": "integer",
               "minimum": 1,
               "default": 1
@@ -2081,6 +2142,19 @@
             },
             "required": false,
             "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "newest",
+                "performance"
+              ],
+              "default": "newest"
+            },
+            "required": false,
+            "name": "sort",
             "in": "query"
           },
           {
@@ -2471,6 +2545,175 @@
           },
           "404": {
             "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Delivery partners"
+        ],
+        "summary": "Edit a partner profile (Super Admin)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "dateOfBirth": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "gender": {
+                    "type": "string",
+                    "enum": [
+                      "Female",
+                      "Male",
+                      "Non-binary",
+                      "Prefer not to say"
+                    ]
+                  },
+                  "address": {
+                    "type": "string",
+                    "minLength": 5
+                  },
+                  "pinCode": {
+                    "type": "string",
+                    "pattern": "^[1-9]\\d{5}$"
+                  },
+                  "businesses": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "food",
+                        "mart"
+                      ]
+                    },
+                    "minItems": 1
+                  },
+                  "zoneId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "vehicleType": {
+                    "type": "string",
+                    "enum": [
+                      "motorcycle",
+                      "scooter",
+                      "e_bike",
+                      "bicycle"
+                    ]
+                  },
+                  "vehicleNumber": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{2}\\s?\\d{1,2}\\s?[A-Z]{0,3}\\s?\\d{4}$"
+                  },
+                  "vehicleModel": {
+                    "type": "string",
+                    "minLength": 2
+                  },
+                  "drivingLicence": {
+                    "type": "string",
+                    "minLength": 8
+                  },
+                  "licenceValidUntil": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "updatedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "updatedAt"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated partner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Changed by someone else; reload and retry",
             "content": {
               "application/json": {
                 "schema": {
