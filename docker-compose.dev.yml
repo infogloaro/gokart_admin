@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: gokart
       POSTGRES_PASSWORD: gokart
       POSTGRES_DB: gokart
-    ports: ["5433:5432"] # 5433 on the host: a Windows PostgreSQL may already use 5432
+    ports: ["5434:5432"] # 5434 on the host: 5432 and 5433 are used by other local projects
     volumes: [postgres:/var/lib/postgresql/data]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U gokart"]
@@ -17,7 +17,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports: ["6379:6379"]
+    ports: ["6380:6379"]
     volumes: [redis:/data]
 
   # File storage isn't used yet. MinIO no longer publishes public images on Docker Hub

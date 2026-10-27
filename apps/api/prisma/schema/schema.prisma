@@ -1,0 +1,13 @@
+// Multi-file schema: each module adds its own file here (e.g. members.prisma,
+// orders.prisma, finance.prisma). This file only holds the shared generator
+// and datasource blocks.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../src/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}

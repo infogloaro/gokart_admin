@@ -1,0 +1,22 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "GoKart Admin API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Service health check",
+        "responses": {
+          "200": {
+            "description": "Postgres and Redis are both reachable"
+          },
+          "503": {
+            "description": "Postgres or Redis is unreachable"
+          }
+        }
+      }
+    }
+  }
+}

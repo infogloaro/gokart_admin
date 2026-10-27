@@ -14,7 +14,7 @@ TypeScript, Next.js, Express, PostgreSQL (Prisma), Redis, in a pnpm monorepo.
 ```bash
 pnpm install
 cp .env.example apps/api/.env
-pnpm services:up      # PostgreSQL (host port 5433), Redis and Mailpit in Docker
+pnpm services:up      # PostgreSQL (host port 5434), Redis (host port 6380) and Mailpit in Docker
 pnpm db:migrate
 pnpm db:seed
 pnpm dev              # API on :4000, web app on :3000

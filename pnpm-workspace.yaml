@@ -4,6 +4,7 @@ packages:
   - tools/*
 
 onlyBuiltDependencies:
+  - "@prisma/client"
   - "@prisma/engines"
   - "@node-rs/argon2"
   - esbuild
