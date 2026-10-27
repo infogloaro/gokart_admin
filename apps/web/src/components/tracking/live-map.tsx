@@ -82,7 +82,7 @@ export function LiveMap({
     }
   }, [])
 
-  // Zones: soft circles, and fit the view to them (or to the focused one).
+  // Zones: soft circles.
   useEffect(() => {
     void ready.current?.then(() => {
       const mod = L.current
@@ -94,13 +94,55 @@ export function LiveMap({
           .circle([z.lat, z.lng], { radius: 1800, className: "gk-zone" })
           .bindTooltip(z.name, { direction: "top", className: "gk-zone-label" })
           .addTo(zoneLayer.current)
-      if (shown.length === 1) map.current.setView([shown[0]!.lat, shown[0]!.lng], 14)
-      else if (shown.length)
-        map.current.fitBounds(mod.latLngBounds(shown.map((z) => [z.lat, z.lng])), {
-          padding: [40, 40],
-        })
     })
   }, [zones, focusZoneId])
+
+  // What the map frames: a newly chosen service area, else the selected partner (their
+  // pin at street level, or their area until they report a location), else every zone.
+  // It reframes only when that target changes, never on routine location updates.
+  const framed = useRef<string | null>(null)
+  const lastFocus = useRef(focusZoneId)
+  useEffect(() => {
+    void ready.current?.then(() => {
+      const mod = L.current
+      const m = map.current
+      if (!mod || !m || !zones.length) return
+      const focusChanged = lastFocus.current !== focusZoneId
+      lastFocus.current = focusZoneId
+      const p = selectedId ? partners.find((x) => x.id === selectedId) : undefined
+      const zoneOf = (id: string | undefined) => zones.find((z) => z.id === id)
+
+      let key: string
+      let frame: () => void
+      const frameZone = (id: string) => {
+        const z = zoneOf(id)
+        key = `zone:${id}`
+        frame = () => z && m.setView([z.lat, z.lng], 14)
+      }
+      if (focusChanged && focusZoneId) frameZone(focusZoneId)
+      else if (p?.location) {
+        const { lat, lng } = p.location
+        key = `partner:${p.id}`
+        frame = () => {
+          // Keep the pin clear of the side card.
+          const zoom = Math.max(m.getZoom(), 15)
+          const shift = Math.min(cardOffset, m.getSize().x / 4)
+          m.setView(m.unproject(m.project([lat, lng], zoom).add([shift, 0]), zoom), zoom)
+        }
+      } else if (p && zoneOf(p.zoneId)) {
+        frameZone(p.zoneId)
+        key = `partner-area:${p.id}`
+      } else if (focusZoneId) frameZone(focusZoneId)
+      else {
+        key = `all:${zones.length}`
+        frame = () =>
+          m.fitBounds(mod.latLngBounds(zones.map((z) => [z.lat, z.lng])), { padding: [40, 40] })
+      }
+      if (key! === framed.current) return
+      framed.current = key!
+      frame!()
+    })
+  }, [zones, focusZoneId, selectedId, partners, cardOffset])
 
   // Partners: add, move or remove markers.
   useEffect(() => {
@@ -137,18 +179,6 @@ export function LiveMap({
         }
     })
   }, [partners, selectedId])
-
-  // Selected partner: pan to them.
-  useEffect(() => {
-    const p = partners.find((x) => x.id === selectedId)
-    const m = map.current
-    if (!p?.location || !m || !L.current) return
-    // Centre the pin in the part of the map the side card doesn't cover.
-    const shift = Math.min(cardOffset, m.getSize().x / 4)
-    const point = m.project([p.location.lat, p.location.lng], m.getZoom()).add([shift, 0])
-    m.panTo(m.unproject(point, m.getZoom()), { animate: true })
-    // Only when the selection changes, not on every location update.
-  }, [selectedId])
 
   // Trail of the selected partner.
   useEffect(() => {

@@ -79,6 +79,24 @@ export async function latest(partnerIds: string[]): Promise<Map<string, TrackedL
   const raw = await redis.mget(...partnerIds.map(locKey))
   const out = new Map<string, TrackedLocation>()
   raw.forEach((r, i) => r && out.set(partnerIds[i]!, JSON.parse(r) as TrackedLocation))
+
+  // Redis is a cache: after a flush or restart, fall back to the last saved fix.
+  const missing = partnerIds.filter((id) => !out.has(id))
+  if (missing.length) {
+    const rows = await prisma.partnerLocation.findMany({
+      where: { partnerId: { in: missing } },
+      orderBy: [{ partnerId: "asc" }, { at: "desc" }],
+      distinct: ["partnerId"],
+    })
+    for (const r of rows)
+      out.set(r.partnerId, {
+        lat: r.lat,
+        lng: r.lng,
+        speedKmh: r.speedKmh,
+        heading: r.heading,
+        at: r.at.toISOString(),
+      })
+  }
   return out
 }
 

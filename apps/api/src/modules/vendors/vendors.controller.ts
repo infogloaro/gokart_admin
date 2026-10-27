@@ -1,4 +1,9 @@
-import { CreateVendorRequest, VendorDecisionRequest, VendorListQuery } from "@zoauro/shared"
+import {
+  CreateVendorRequest,
+  UpdateVendorRequest,
+  VendorDecisionRequest,
+  VendorListQuery,
+} from "@zoauro/shared"
 import type { Request, Response } from "express"
 import { parse } from "../../lib/errors"
 import { actorOf, scope } from "../../middleware/auth"
@@ -7,7 +12,9 @@ import * as service from "./vendors.service"
 export async function list(req: Request, res: Response) {
   const q = parse(VendorListQuery, req.query)
   const s = scope(req, q.business)
-  res.json(await service.list({ ...s, status: q.status, search: q.search }, q.page, q.pageSize))
+  res.json(
+    await service.list({ ...s, status: q.status, search: q.search }, q.page, q.pageSize, q.sort),
+  )
 }
 
 export async function summary(req: Request, res: Response) {
@@ -26,4 +33,9 @@ export async function create(req: Request, res: Response) {
 export async function decide(req: Request<{ id: string }>, res: Response) {
   const body = parse(VendorDecisionRequest, req.body)
   res.json(await service.decide(req.params.id, scope(req), body, actorOf(req)))
+}
+
+export async function update(req: Request<{ id: string }>, res: Response) {
+  const body = parse(UpdateVendorRequest, req.body)
+  res.json(await service.update(req.params.id, scope(req), body, actorOf(req)))
 }

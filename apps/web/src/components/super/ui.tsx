@@ -1,7 +1,15 @@
 "use client"
 // Super Admin design components, using the prototype's class names (super.css).
 import * as Dialog from "@radix-ui/react-dialog"
-import { ChevronDown, X, type LucideIcon } from "lucide-react"
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronDown,
+  Loader2,
+  X,
+  XCircle,
+  type LucideIcon,
+} from "lucide-react"
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from "react"
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -256,5 +264,30 @@ export function Section({ title, children }: { title: string; children: ReactNod
       <strong>{title}</strong>
       <div>{children}</div>
     </section>
+  )
+}
+
+export type ToastTone = "success" | "progress" | "warning" | "error"
+export type ToastMessage = { tone: ToastTone; title: string; message: string }
+
+const toastIcon: Record<ToastTone, LucideIcon> = {
+  success: CheckCircle2,
+  progress: Loader2,
+  warning: AlertTriangle,
+  error: XCircle,
+}
+
+/** The prototype's bottom-right notification ("Done · Your CSV export is being prepared."). */
+export function Toast({ toast, close }: { toast: ToastMessage; close: () => void }) {
+  const Icon = toastIcon[toast.tone]
+  return (
+    <div className={`toast ${toast.tone}`} role={toast.tone === "error" ? "alert" : "status"}>
+      <Icon size={22} />
+      <span>
+        <b>{toast.title}</b>
+        {toast.message}
+      </span>
+      <IconButton icon={X} label="Dismiss" onClick={close} />
+    </div>
   )
 }

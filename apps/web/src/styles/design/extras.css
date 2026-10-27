@@ -211,3 +211,33 @@
 .admin-ui .live-note.pending { color: #a86806; }
 @keyframes gk-admin-rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .admin-ui .availability-form, .admin-ui .availability-toast, .super-ui .live-badge i { animation: none; } }
+
+/* The partner list must not stretch the grid row (the map would grow past the visible
+   box and its centre, where the selected pin sits, would be clipped). The list panel scrolls. */
+.super-ui .tracking { grid-template-rows: minmax(0, 1fr); }
+.super-ui .tracking > aside.partner-track-list { min-height: 0; }
+.super-ui .tracking > aside.partner-track-list > .panel { overflow-y: auto; padding-bottom: .5rem; }
+.super-ui .tracking > .map.live-map { min-height: 0; }
+
+/* Notifications (prototype .toast): slide in, coloured icon per tone. */
+.super-ui .toast { animation: gk-toast-in .3s cubic-bezier(.2,.7,.2,1) both; max-width: min(26rem, calc(100vw - 2rem)); z-index: 200; }
+.super-ui .toast span { line-height: 1.45; opacity: .92; }
+.super-ui .toast span b { opacity: 1; margin-bottom: .1rem; }
+.super-ui .toast.progress > svg { color: #fbbf24; animation: gk-spin .9s linear infinite; }
+.super-ui .toast.warning > svg { color: #fbbf24; }
+.super-ui .toast.error > svg { color: #f87171; }
+@keyframes gk-toast-in { from { opacity: 0; transform: translateY(.75rem); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .super-ui .toast, .super-ui .toast.progress > svg { animation: none; } }
+
+/* Vendor drawer: tabs for modules not built yet. */
+.super-ui .coming-soon { display: flex; align-items: center; gap: .8rem; padding: 1rem; color: var(--muted); }
+.super-ui .coming-soon svg { flex: none; color: #a86806; }
+.super-ui .coming-soon p { margin: 0; font-size: .8125rem; line-height: 1.5; }
+.super-ui .drawer > .tabs { overflow-x: auto; scrollbar-width: thin; }
+
+/* Add vendor wizard: document cards (uploads switch on with file storage) and notes. */
+.super-ui .uploads .upload-card { min-height: 10rem; padding: 1rem; border: 1px dashed #cbd5e1; border-radius: var(--r); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .4rem; text-align: center; color: var(--muted); }
+.super-ui .uploads .upload-card b { font-size: .8125rem; color: var(--text); }
+.super-ui .uploads .upload-card small { font-size: .6875rem; }
+.super-ui .wizard-body .wizard-note { display: flex; align-items: center; gap: .4rem; margin: .8rem 0; padding: .6rem .8rem; border-radius: .6rem; background: #f8fafc; font-size: .75rem; color: var(--muted); }
+.super-ui .wizard-body .uploads + .wizard-note { margin-top: .9rem; }

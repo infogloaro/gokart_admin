@@ -1,0 +1,66 @@
+// Owner: Dev 2 (operations). Restaurants (food) and sellers (mart).
+
+enum VendorStatus {
+  pending_review
+  active
+  rejected
+  suspended
+}
+
+enum VerificationStatus {
+  under_review
+  verified
+  rejected
+}
+
+model Vendor {
+  id               String             @id @default(cuid())
+  code             String             @unique
+  business         Business
+  name             String
+  ownerName        String
+  phone            String
+  email            String
+  address          String
+  zoneId           String
+  gstin            String?
+  fssai            String?
+  /// Cuisine or product range, e.g. "South Indian" or "Groceries".
+  category         String?
+  /// "on_approval" | "paused": whether to go live as soon as the vendor is approved.
+  launchPreference String?
+  ownerPhone       String?
+  pan              String?
+  pinCode          String?
+  /// "weekly" | "biweekly" | "monthly"
+  settlementCycle  String?
+  status           VendorStatus       @default(pending_review)
+  verification     VerificationStatus @default(under_review)
+  /// Platform commission in basis points (1850 = 18.5%).
+  commissionBps    Int
+  decisionReason   String?
+  decidedById      String?
+  decidedAt        DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  zone      Zone             @relation(fields: [zoneId], references: [id])
+  documents VendorDocument[]
+  orders    Order[]
+
+  @@index([business, status])
+  @@map("vendors")
+}
+
+model VendorDocument {
+  id         String    @id @default(cuid())
+  vendorId   String
+  kind       String // gst_certificate, fssai_licence, pan, bank_proof, storefront_photo
+  s3Key      String
+  fileName   String
+  uploadedAt DateTime  @default(now())
+  verifiedAt DateTime?
+  vendor     Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("vendor_documents")
+}

@@ -43,6 +43,8 @@ export const OrderListQuery = z.object({
   search: z.string().trim().optional(),
   /** Orders carried by one delivery partner. */
   partnerId: z.string().optional(),
+  /** Orders from one restaurant or seller. */
+  vendorId: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 })

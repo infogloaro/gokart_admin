@@ -37,12 +37,24 @@ function where(f: VendorFilter): Prisma.VendorWhereInput {
   }
 }
 
-export async function list(f: VendorFilter, page: number, pageSize: number) {
+export type VendorSort = "newest" | "orders"
+
+const orderBy = {
+  newest: [{ code: "desc" }],
+  orders: [{ orders: { _count: "desc" } }, { code: "desc" }],
+} satisfies Record<VendorSort, Prisma.VendorOrderByWithRelationInput[]>
+
+export async function list(
+  f: VendorFilter,
+  page: number,
+  pageSize: number,
+  sort: VendorSort = "newest",
+) {
   const [items, total] = await prisma.$transaction([
     prisma.vendor.findMany({
       where: where(f),
       include: withZone,
-      orderBy: { code: "desc" },
+      orderBy: orderBy[sort],
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
@@ -79,13 +91,14 @@ export function summary(f: Pick<VendorFilter, "businesses" | "zoneIds">) {
   return Promise.all(
     f.businesses.map(async (business) => {
       const w = where({ ...f, businesses: [business] })
-      const [total, active, pending, suspended] = await prisma.$transaction([
+      const [total, active, pending, suspended, rejected] = await prisma.$transaction([
         prisma.vendor.count({ where: w }),
         prisma.vendor.count({ where: { ...w, status: "active" } }),
         prisma.vendor.count({ where: { ...w, status: "pending_review" } }),
         prisma.vendor.count({ where: { ...w, status: "suspended" } }),
+        prisma.vendor.count({ where: { ...w, status: "rejected" } }),
       ])
-      return { business, total, active, pending, suspended }
+      return { business, total, active, pending, suspended, rejected }
     }),
   )
 }
@@ -104,16 +117,29 @@ async function nextCode(tx: Prisma.TransactionClient) {
   return `VEN-${n}`
 }
 
-export function create(data: Omit<Prisma.VendorUncheckedCreateInput, "code">, actor: Actor) {
+export function create(
+  data: Omit<Prisma.VendorUncheckedCreateInput, "code">,
+  bank:
+    | { holderName: string; bankName: string; ifsc: string; upiId: string | null; last4: string }
+    | undefined,
+  actor: Actor,
+) {
   return prisma.$transaction(async (tx) => {
     const v = await tx.vendor.create({
       data: { ...data, code: await nextCode(tx) },
       include: withDetail,
     })
+    if (bank)
+      await tx.bankAccount.create({ data: { accountType: "vendor", accountId: v.id, ...bank } })
     await audit(tx, actor, "vendor.created", { type: "vendor", id: v.id }, { code: v.code })
     return v
   })
 }
+
+export const bankAccount = (vendorId: string) =>
+  prisma.bankAccount.findUnique({
+    where: { accountType_accountId: { accountType: "vendor", accountId: vendorId } },
+  })
 
 /**
  * Applies a decision only if the vendor is still in the status the caller checked,
@@ -151,6 +177,28 @@ export function decide(
         payload: { vendorId: vendor.id, code: vendor.code, from: vendor.status, to: to.status },
       },
     })
+    return tx.vendor.findUniqueOrThrow({ where: { id: vendor.id }, include: withDetail })
+  })
+}
+
+/** Saves profile edits only if the vendor hasn't changed since `updatedAt`; audited. */
+export function update(
+  vendor: { id: string; code: string },
+  updatedAt: Date,
+  data: Prisma.VendorUncheckedUpdateManyInput,
+  fields: string[],
+  actor: Actor,
+) {
+  return prisma.$transaction(async (tx) => {
+    const { count } = await tx.vendor.updateMany({ where: { id: vendor.id, updatedAt }, data })
+    if (count === 0) return null
+    await audit(
+      tx,
+      actor,
+      "vendor.updated",
+      { type: "vendor", id: vendor.id },
+      { code: vendor.code, fields },
+    )
     return tx.vendor.findUniqueOrThrow({ where: { id: vendor.id }, include: withDetail })
   })
 }

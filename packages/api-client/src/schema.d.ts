@@ -634,6 +634,7 @@ export interface paths {
                     status?: "placed" | "accepted" | "preparing" | "packed" | "ready" | "assigned" | "picked_up" | "out_for_delivery" | "delivered" | "cancelled" | "refund_requested" | "refunded";
                     search?: string;
                     partnerId?: string;
+                    vendorId?: string;
                     page?: number;
                     pageSize?: number;
                 };
@@ -1958,6 +1959,7 @@ export interface paths {
                     business?: "food" | "mart";
                     status?: "pending_review" | "active" | "rejected" | "suspended";
                     search?: string;
+                    sort?: "newest" | "orders";
                     page?: number;
                     pageSize?: number;
                 };
@@ -2034,6 +2036,21 @@ export interface paths {
                         gstin?: string;
                         fssai?: string;
                         commissionPct: number;
+                        category?: string;
+                        /** @enum {string} */
+                        launchPreference?: "on_approval" | "paused";
+                        ownerPhone?: string;
+                        pan?: string;
+                        pinCode?: string;
+                        /** @enum {string} */
+                        settlementCycle?: "weekly" | "biweekly" | "monthly";
+                        bank?: {
+                            holderName: string;
+                            bankName: string;
+                            accountNumber: string;
+                            ifsc: string;
+                            upiId?: string;
+                        };
                     };
                 };
             };
@@ -2112,6 +2129,7 @@ export interface paths {
                             active: number;
                             pending: number;
                             suspended: number;
+                            rejected: number;
                         }[];
                     };
                 };
@@ -2205,7 +2223,99 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Edit a vendor (Super Admin) */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        name?: string;
+                        ownerName?: string;
+                        phone?: string;
+                        /** Format: email */
+                        email?: string;
+                        address?: string;
+                        zoneId?: string;
+                        gstin?: string;
+                        fssai?: string;
+                        commissionPct?: number;
+                        category?: string;
+                        /** @enum {string} */
+                        launchPreference?: "on_approval" | "paused";
+                        ownerPhone?: string;
+                        pinCode?: string;
+                        /** @enum {string} */
+                        settlementCycle?: "weekly" | "biweekly" | "monthly";
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Updated vendor */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VendorDetail"];
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Changed by someone else; reload and retry */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
         trace?: never;
     };
     "/vendors/{id}/decision": {
@@ -2575,6 +2685,24 @@ export interface components {
                 at: string;
                 reason: string | null;
             }[];
+            category: string | null;
+            /** @enum {string|null} */
+            launchPreference: "on_approval" | "paused" | null;
+            ownerPhone: string | null;
+            panMasked: string | null;
+            pinCode: string | null;
+            /** @enum {string|null} */
+            settlementCycle: "weekly" | "biweekly" | "monthly" | null;
+            bank: {
+                holderName: string;
+                bankName: string | null;
+                last4: string;
+                ifsc: string;
+                upiId: string | null;
+                verified: boolean;
+            } | null;
+            /** Format: date-time */
+            updatedAt: string;
         };
     };
     responses: never;

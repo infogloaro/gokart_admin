@@ -1,0 +1,24 @@
+// Owner: Dev 1 (platform). Generator, datasource and cross-module enums.
+// Money columns are integer paise and always end in `Paise`.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Business {
+  food
+  mart
+}
+
+enum AccountType {
+  partner
+  admin
+  vendor
+}

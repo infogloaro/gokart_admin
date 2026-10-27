@@ -1,6 +1,7 @@
 import {
   CreateVendorRequest,
   paged,
+  UpdateVendorRequest,
   Vendor,
   VendorDecisionRequest,
   VendorDetail,
@@ -52,5 +53,13 @@ registry.registerPath({
   tags,
   summary: "Approve, reject, suspend or reactivate a vendor",
   request: { params: id, body: json(VendorDecisionRequest) },
+  responses: { 200: json(VendorDetailRef, "Updated vendor"), ...errors(400, 401, 403, 404, 409) },
+})
+registry.registerPath({
+  method: "patch",
+  path: "/vendors/{id}",
+  tags,
+  summary: "Edit a vendor (Super Admin)",
+  request: { params: id, body: json(UpdateVendorRequest) },
   responses: { 200: json(VendorDetailRef, "Updated vendor"), ...errors(400, 401, 403, 404, 409) },
 })

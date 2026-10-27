@@ -9,7 +9,7 @@ export async function list(req: Request, res: Response) {
   const s = scope(req, q.business)
   res.json(
     await service.list(
-      { ...s, status: q.status, search: q.search, partnerId: q.partnerId },
+      { ...s, status: q.status, search: q.search, partnerId: q.partnerId, vendorId: q.vendorId },
       q.page,
       q.pageSize,
     ),

@@ -553,3 +553,92 @@ describe("live tracking", () => {
     }
   })
 })
+
+describe("vendor profile", () => {
+  it("sorts by orders, filters orders by vendor and lets a Super Admin edit", async (ctx) => {
+    if (!ready) ctx.skip()
+    const { agent } = await signIn("superadmin@gokart.in", "Gokart@12345")
+    const sorted = await agent.get("/api/v1/vendors?sort=orders&pageSize=100").expect(200)
+    const counts = sorted.body.items.map((v: { ordersCount: number }) => v.ordersCount)
+    expect(counts).toEqual([...counts].sort((a: number, b: number) => b - a))
+    const top = sorted.body.items[0]
+    const orders = await agent.get(`/api/v1/orders?vendorId=${top.id}&pageSize=100`).expect(200)
+    expect(orders.body.total).toBe(top.ordersCount)
+    const summary = await agent.get("/api/v1/vendors/summary").expect(200)
+    expect(summary.body[0]).toHaveProperty("rejected")
+
+    const v = await prisma.vendor.findFirstOrThrow({ where: { code: "VEN-1044" } })
+    try {
+      const ok = await agent
+        .patch(`/api/v1/vendors/${v.id}`)
+        .send({ commissionPct: 16.5, updatedAt: v.updatedAt.toISOString() })
+      expect(ok.status).toBe(200)
+      expect(ok.body).toMatchObject({ commissionPct: 16.5 })
+      expect(ok.body.activity[0]).toMatchObject({ action: "vendor.updated" })
+      await agent
+        .patch(`/api/v1/vendors/${v.id}`)
+        .send({ commissionPct: 15, updatedAt: v.updatedAt.toISOString() })
+        .expect(409)
+      const admin = (await signIn("priya.shankar@gokart.in", "Admin@123")).agent
+      await admin
+        .patch(`/api/v1/vendors/${v.id}`)
+        .send({ commissionPct: 15, updatedAt: ok.body.updatedAt })
+        .expect(403)
+    } finally {
+      await prisma.vendor.update({ where: { id: v.id }, data: { commissionBps: v.commissionBps } })
+      await prisma.auditLog.deleteMany({ where: { entityId: v.id, action: "vendor.updated" } })
+    }
+  })
+})
+
+describe("vendor onboarding", () => {
+  it("saves every wizard field and keeps only the last four bank digits", async (ctx) => {
+    if (!ready) ctx.skip()
+    const { agent } = await signIn("superadmin@gokart.in", "Gokart@12345")
+    const zone = await prisma.zone.findFirstOrThrow({ where: { location: "Adyar" } })
+    const created = await agent.post("/api/v1/vendors").send({
+      business: "food",
+      name: "Test Mess",
+      ownerName: "Test Owner",
+      phone: "98400 77777",
+      email: "mess@example.com",
+      address: "3, Test Road, Adyar",
+      zoneId: zone.id,
+      fssai: "12345678901234",
+      commissionPct: 17,
+      category: "South Indian",
+      launchPreference: "paused",
+      ownerPhone: "98400 66666",
+      pan: "abcde1234f",
+      pinCode: "600020",
+      settlementCycle: "weekly",
+      bank: {
+        holderName: "Test Owner",
+        bankName: "ICICI Bank",
+        accountNumber: "002101998877",
+        ifsc: "icic0001845",
+        upiId: "testmess@icici",
+      },
+    })
+    expect(created.status).toBe(201)
+    try {
+      expect(created.body).toMatchObject({
+        category: "South Indian",
+        launchPreference: "paused",
+        ownerPhone: "+919840066666",
+        panMasked: "ABCDE••••F",
+        pinCode: "600020",
+        settlementCycle: "weekly",
+        bank: { last4: "8877", ifsc: "ICIC0001845", upiId: "testmess@icici", verified: false },
+      })
+      const bad = await agent
+        .post("/api/v1/vendors")
+        .send({ ...created.body, business: "food", pan: "BAD", commissionPct: 17 })
+      expect(bad.status).toBe(400)
+    } finally {
+      await prisma.bankAccount.deleteMany({ where: { accountId: created.body.id } })
+      await prisma.auditLog.deleteMany({ where: { entityId: created.body.id } })
+      await prisma.vendor.delete({ where: { id: created.body.id } })
+    }
+  })
+})

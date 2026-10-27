@@ -5,6 +5,7 @@ import { api, ApiError } from "@zoauro/api-client"
 import {
   availabilityLabel,
   CreatePartnerRequest,
+  formatIndianPhone,
   partnerStatusLabel,
   vehicleLabel,
   type Business,
@@ -56,7 +57,7 @@ export function useUpdatePartner() {
   })
 }
 
-/** Every partner matching the filters, page by page, as CSV rows. */
+/** Every partner matching the filters, page by page, as a CSV file and its row count. */
 export async function partnersCsv(q: Omit<PartnerQuery, "page" | "pageSize">) {
   const rows: Partner[] = []
   for (let page = 1; ; page++) {
@@ -82,7 +83,7 @@ export async function partnersCsv(q: Omit<PartnerQuery, "page" | "pageSize">) {
   const body = rows.map((p) => [
     p.code,
     p.name,
-    p.phone,
+    formatIndianPhone(p.phone),
     servicesLabel(p.businesses),
     p.zoneName,
     vehicleLabel[p.vehicleType],
@@ -93,7 +94,8 @@ export async function partnersCsv(q: Omit<PartnerQuery, "page" | "pageSize">) {
     p.deliveriesCompleted,
     p.rating ?? "",
   ])
-  return [head, ...body].map((r) => r.map(cell).join(",")).join("\r\n")
+  const csv = [head, ...body].map((r) => r.map(cell).join(",")).join("\r\n")
+  return { csv, count: rows.length }
 }
 
 export const usePartner = (id: string | null) =>

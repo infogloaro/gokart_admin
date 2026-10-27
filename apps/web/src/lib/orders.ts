@@ -9,6 +9,7 @@ export type OrderQuery = {
   status?: OrderStatus | undefined
   search?: string | undefined
   partnerId?: string | undefined
+  vendorId?: string | undefined
   page: number
   pageSize: number
 }

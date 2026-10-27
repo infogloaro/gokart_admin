@@ -43,9 +43,8 @@ import {
   X,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useEffect, useState, type ReactNode } from "react"
-import { createPortal } from "react-dom"
-import { download, useCountUp, useSince } from "@/lib/motion"
+import { useEffect, useState } from "react"
+import { useSince } from "@/lib/motion"
 import { placedLabel, statusTone, useOrders } from "@/lib/orders"
 import {
   availabilityTone,
@@ -66,7 +65,9 @@ import {
 import { useMe, useZones } from "@/lib/session"
 import { activityLabel, dateLabel, dateTimeLabel, documentLabel, fieldErrors } from "@/lib/vendors"
 import { AvailabilityButton } from "./availability"
+import { Count, HeadActions } from "./dashboard"
 import { DecisionDialog, type Decision } from "./decision"
+import { useCsvExport } from "./export"
 import { useBusinessFilter } from "./shell"
 import {
   Badge,
@@ -80,6 +81,7 @@ import {
   Section,
   Select,
   Tabs,
+  Toast,
   Value,
 } from "./ui"
 
@@ -110,18 +112,6 @@ function chipQuery(chip: Chip): Pick<PartnerQuery, "status" | "availability"> {
   return { status: "active", availability: chip }
 }
 
-/** Renders children into the shell's page-head action slot once it exists. */
-function HeadActions({ children }: { children: ReactNode }) {
-  const [slot, setSlot] = useState<HTMLElement | null>(null)
-  useEffect(() => setSlot(document.getElementById("page-head-actions")), [])
-  return slot ? createPortal(children, slot) : null
-}
-
-function Count({ value }: { value: number | undefined }) {
-  const n = useCountUp(value)
-  return <b className="count-up">{n === undefined ? "—" : n.toLocaleString("en-IN")}</b>
-}
-
 export function SuperPartners() {
   const business = useBusinessFilter()
   const me = useMe()
@@ -132,7 +122,7 @@ export function SuperPartners() {
   const [selected, setSelected] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [flash, setFlash] = useState<string | null>(null)
-  const [exporting, setExporting] = useState(false)
+  const csv = useCsvExport()
   const filters = {
     business: business === "all" ? undefined : business,
     ...chipQuery(chip),
@@ -152,17 +142,8 @@ export function SuperPartners() {
     return () => clearTimeout(t)
   }, [flash])
 
-  async function exportCsv() {
-    setExporting(true)
-    try {
-      download(
-        `delivery-partners-${new Date().toISOString().slice(0, 10)}.csv`,
-        await partnersCsv(filters),
-      )
-    } finally {
-      setExporting(false)
-    }
-  }
+  /** Exports what the table currently shows, across all pages. */
+  const exportCsv = () => csv.run("delivery-partners", () => partnersCsv(filters))
 
   return (
     <>
@@ -170,8 +151,8 @@ export function SuperPartners() {
         <span className="updated-note" aria-live="polite">
           Updated {since}
         </span>
-        <Button icon={Download} disabled={exporting} onClick={exportCsv}>
-          {exporting ? "Exporting…" : "Export"}
+        <Button icon={Download} disabled={csv.exporting} onClick={exportCsv}>
+          {csv.exporting ? "Exporting…" : "Export"}
         </Button>
         <Button
           primary
@@ -343,6 +324,7 @@ export function SuperPartners() {
           close={() => setAdding(false)}
         />
       )}
+      {csv.toast && <Toast toast={csv.toast} close={csv.dismiss} />}
     </>
   )
 }

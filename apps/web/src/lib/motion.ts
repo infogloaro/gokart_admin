@@ -49,8 +49,12 @@ export function useSince(ms: number | undefined) {
 
 /** Downloads text as a file in the browser. */
 export function download(fileName: string, text: string, type = "text/csv;charset=utf-8") {
-  const url = URL.createObjectURL(new Blob([text], { type }))
+  // The byte-order mark makes Excel read the file as UTF-8 (₹, ★, Tamil names).
+  const url = URL.createObjectURL(new Blob(["﻿", text], { type }))
   const a = Object.assign(document.createElement("a"), { href: url, download: fileName })
+  document.body.append(a)
   a.click()
-  URL.revokeObjectURL(url)
+  a.remove()
+  // Some browsers read the blob after click() returns; release it a little later.
+  setTimeout(() => URL.revokeObjectURL(url), 10_000)
 }

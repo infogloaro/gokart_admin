@@ -1248,6 +1248,97 @@
                 "reason"
               ]
             }
+          },
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "launchPreference": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "on_approval",
+              "paused",
+              null
+            ]
+          },
+          "ownerPhone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "panMasked": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pinCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "settlementCycle": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "weekly",
+              "biweekly",
+              "monthly",
+              null
+            ]
+          },
+          "bank": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "holderName": {
+                "type": "string"
+              },
+              "bankName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "last4": {
+                "type": "string"
+              },
+              "ifsc": {
+                "type": "string"
+              },
+              "upiId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "verified": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "holderName",
+              "bankName",
+              "last4",
+              "ifsc",
+              "upiId",
+              "verified"
+            ]
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "required": [
@@ -1273,7 +1364,15 @@
           "decisionReason",
           "decidedAt",
           "documents",
-          "activity"
+          "activity",
+          "category",
+          "launchPreference",
+          "ownerPhone",
+          "panMasked",
+          "pinCode",
+          "settlementCycle",
+          "bank",
+          "updatedAt"
         ]
       }
     },
@@ -1912,6 +2011,14 @@
             },
             "required": false,
             "name": "partnerId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "vendorId",
             "in": "query"
           },
           {
@@ -3771,6 +3878,19 @@
           },
           {
             "schema": {
+              "type": "string",
+              "enum": [
+                "newest",
+                "orders"
+              ],
+              "default": "newest"
+            },
+            "required": false,
+            "name": "sort",
+            "in": "query"
+          },
+          {
+            "schema": {
               "type": "integer",
               "minimum": 1,
               "default": 1
@@ -3907,6 +4027,68 @@
                     "type": "number",
                     "minimum": 0,
                     "maximum": 50
+                  },
+                  "category": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 60
+                  },
+                  "launchPreference": {
+                    "type": "string",
+                    "enum": [
+                      "on_approval",
+                      "paused"
+                    ]
+                  },
+                  "ownerPhone": {
+                    "type": "string"
+                  },
+                  "pan": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{5}\\d{4}[A-Z]$"
+                  },
+                  "pinCode": {
+                    "type": "string",
+                    "pattern": "^[1-9]\\d{5}$"
+                  },
+                  "settlementCycle": {
+                    "type": "string",
+                    "enum": [
+                      "weekly",
+                      "biweekly",
+                      "monthly"
+                    ]
+                  },
+                  "bank": {
+                    "type": "object",
+                    "properties": {
+                      "holderName": {
+                        "type": "string",
+                        "minLength": 2
+                      },
+                      "bankName": {
+                        "type": "string",
+                        "minLength": 2
+                      },
+                      "accountNumber": {
+                        "type": "string",
+                        "pattern": "^\\d{9,18}$"
+                      },
+                      "ifsc": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{4}0[A-Z\\d]{6}$"
+                      },
+                      "upiId": {
+                        "type": "string",
+                        "pattern": "^[\\w.-]{2,}@[a-zA-Z]{2,}$"
+                      }
+                    },
+                    "required": [
+                      "holderName",
+                      "bankName",
+                      "accountNumber",
+                      "ifsc"
+                    ]
                   }
                 },
                 "required": [
@@ -4001,6 +4183,9 @@
                       },
                       "suspended": {
                         "type": "integer"
+                      },
+                      "rejected": {
+                        "type": "integer"
                       }
                     },
                     "required": [
@@ -4008,7 +4193,8 @@
                       "total",
                       "active",
                       "pending",
-                      "suspended"
+                      "suspended",
+                      "rejected"
                     ]
                   }
                 }
@@ -4087,6 +4273,166 @@
           },
           "404": {
             "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Vendors"
+        ],
+        "summary": "Edit a vendor (Super Admin)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2
+                  },
+                  "ownerName": {
+                    "type": "string",
+                    "minLength": 2
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "address": {
+                    "type": "string",
+                    "minLength": 5
+                  },
+                  "zoneId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "gstin": {
+                    "type": "string",
+                    "pattern": "^\\d{2}[A-Z]{5}\\d{4}[A-Z][A-Z\\d]Z[A-Z\\d]$"
+                  },
+                  "fssai": {
+                    "type": "string",
+                    "pattern": "^\\d{14}$"
+                  },
+                  "commissionPct": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 50
+                  },
+                  "category": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 60
+                  },
+                  "launchPreference": {
+                    "type": "string",
+                    "enum": [
+                      "on_approval",
+                      "paused"
+                    ]
+                  },
+                  "ownerPhone": {
+                    "type": "string"
+                  },
+                  "pinCode": {
+                    "type": "string",
+                    "pattern": "^[1-9]\\d{5}$"
+                  },
+                  "settlementCycle": {
+                    "type": "string",
+                    "enum": [
+                      "weekly",
+                      "biweekly",
+                      "monthly"
+                    ]
+                  },
+                  "updatedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "updatedAt"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated vendor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendorDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Changed by someone else; reload and retry",
             "content": {
               "application/json": {
                 "schema": {

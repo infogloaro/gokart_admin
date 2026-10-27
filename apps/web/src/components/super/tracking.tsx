@@ -59,15 +59,17 @@ export function SuperTracking() {
     const q = search.trim().toLowerCase()
     return (partners.data ?? []).filter(
       (p) =>
-        (!zoneId || p.zoneId === zoneId) &&
-        (show === "all" ||
-          (show === "active" ? p.availability !== "offline" : p.availability === show)) &&
-        (!q ||
-          p.name.toLowerCase().includes(q) ||
-          p.code.toLowerCase().includes(q) ||
-          p.currentOrder?.code.toLowerCase().includes(q)),
+        // The partner you opened (e.g. from "View live tracking") always stays listed.
+        p.id === selected ||
+        ((!zoneId || p.zoneId === zoneId) &&
+          (show === "all" ||
+            (show === "active" ? p.availability !== "offline" : p.availability === show)) &&
+          (!q ||
+            p.name.toLowerCase().includes(q) ||
+            p.code.toLowerCase().includes(q) ||
+            p.currentOrder?.code.toLowerCase().includes(q))),
     )
-  }, [partners.data, zoneId, show, search])
+  }, [partners.data, zoneId, show, search, selected])
   const current = partners.data?.find((p) => p.id === selected) ?? null
   const counts = (partners.data ?? []).reduce(
     (c, p) => ({ ...c, [p.availability]: c[p.availability] + 1 }),

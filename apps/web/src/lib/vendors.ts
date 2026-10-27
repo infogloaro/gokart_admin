@@ -2,31 +2,99 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@zoauro/api-client"
-import type {
-  Business,
-  CreateVendorRequest,
-  VendorDecision,
-  VendorStatus,
-  VerificationStatus,
+import {
+  businessName,
+  formatIndianPhone,
+  vendorStatusLabel,
+  verificationLabel,
+  type Business,
+  type CreateVendorRequest,
+  type UpdateVendorRequest,
+  type Vendor,
+  type VendorDecision,
+  type VendorStatus,
+  type VerificationStatus,
 } from "@zoauro/shared"
 
 export type VendorQuery = {
   business?: Business | undefined
   status?: VendorStatus | undefined
   search?: string | undefined
+  sort?: "newest" | "orders" | undefined
   page: number
   pageSize: number
 }
 
-export const useVendors = (q: VendorQuery) =>
+/** Pass `refetchInterval` (ms) to keep a dashboard current. */
+export const useVendors = (q: VendorQuery, refetchInterval?: number) =>
   useQuery({
     queryKey: ["vendors", "list", q],
     queryFn: () => api("get", "/vendors", { query: q }),
     placeholderData: keepPreviousData,
+    refetchInterval,
   })
 
-export const useVendorSummary = () =>
-  useQuery({ queryKey: ["vendors", "summary"], queryFn: () => api("get", "/vendors/summary") })
+export const useVendorSummary = (refetchInterval?: number) =>
+  useQuery({
+    queryKey: ["vendors", "summary"],
+    queryFn: () => api("get", "/vendors/summary"),
+    refetchInterval,
+  })
+
+export function useUpdateVendor() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (v: { id: string; body: UpdateVendorRequest }) =>
+      api("patch", "/vendors/{id}", { params: { id: v.id }, body: v.body }),
+    onSuccess: (v) => {
+      client.setQueryData(["vendors", "detail", v.id], v)
+      void client.invalidateQueries({ queryKey: ["vendors", "list"] })
+    },
+  })
+}
+
+/** Every vendor matching the filters, page by page, as a CSV file and its row count. */
+export async function vendorsCsv(q: Omit<VendorQuery, "page" | "pageSize">) {
+  const rows: Vendor[] = []
+  for (let page = 1; ; page++) {
+    const r = await api("get", "/vendors", { query: { ...q, page, pageSize: 100 } })
+    rows.push(...r.items)
+    if (rows.length >= r.total || r.items.length === 0) break
+  }
+  const head = [
+    "Code",
+    "Name",
+    "Business",
+    "Owner",
+    "Mobile",
+    "Email",
+    "Service area",
+    "Verification",
+    "Status",
+    "Commission %",
+    "Orders",
+    "Open orders",
+    "Sales (INR)",
+  ]
+  const cell = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`
+  const body = rows.map((v) => [
+    v.code,
+    v.name,
+    businessName[v.business],
+    v.ownerName,
+    formatIndianPhone(v.phone),
+    v.email,
+    v.zoneName,
+    verificationLabel[v.verification],
+    vendorStatusLabel[v.status],
+    v.commissionPct,
+    v.ordersCount,
+    v.openOrders,
+    (v.salesPaise / 100).toFixed(2),
+  ])
+  const csv = [head, ...body].map((r) => r.map(cell).join(",")).join("\r\n")
+  return { csv, count: rows.length }
+}
 
 export const useVendor = (id: string | null) =>
   useQuery({

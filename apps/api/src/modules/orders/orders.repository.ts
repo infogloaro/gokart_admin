@@ -18,6 +18,7 @@ export type OrderFilter = {
   status?: OrderStatus | undefined
   search?: string | undefined
   partnerId?: string | undefined
+  vendorId?: string | undefined
 }
 
 function where(f: OrderFilter): Prisma.OrderWhereInput {
@@ -26,6 +27,7 @@ function where(f: OrderFilter): Prisma.OrderWhereInput {
     ...(f.zoneIds && { zoneId: { in: f.zoneIds } }),
     ...(f.status && { status: f.status }),
     ...(f.partnerId && { partnerId: f.partnerId }),
+    ...(f.vendorId && { vendorId: f.vendorId }),
     ...(f.search && {
       OR: [
         { code: { contains: f.search, mode: "insensitive" } },
