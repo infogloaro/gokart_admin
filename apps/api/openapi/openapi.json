@@ -1,0 +1,3073 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "GoKart Admin API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "fields": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "Zone": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "district": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "district",
+          "city",
+          "location"
+        ]
+      },
+      "LoginChallenge": {
+        "type": "object",
+        "properties": {
+          "challengeId": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "method": {
+                  "type": "string",
+                  "enum": [
+                    "email",
+                    "sms",
+                    "totp"
+                  ]
+                },
+                "destination": {
+                  "type": "string"
+                },
+                "available": {
+                  "type": "boolean"
+                },
+                "note": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "method",
+                "destination",
+                "available"
+              ]
+            }
+          },
+          "preferred": {
+            "type": "string",
+            "enum": [
+              "email",
+              "sms",
+              "totp"
+            ]
+          },
+          "expiresInSeconds": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "challengeId",
+          "options",
+          "preferred",
+          "expiresInSeconds"
+        ]
+      },
+      "CodeSent": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "email",
+              "sms",
+              "totp"
+            ]
+          },
+          "destination": {
+            "type": "string"
+          },
+          "resendInSeconds": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "method",
+          "destination",
+          "resendInSeconds"
+        ]
+      },
+      "Me": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "super_admin",
+              "admin"
+            ]
+          },
+          "initials": {
+            "type": "string"
+          },
+          "businesses": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "food",
+                "mart"
+              ]
+            }
+          },
+          "zoneIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "dashboard.view",
+                "vendors.view",
+                "vendors.manage",
+                "vendors.approve",
+                "partners.view",
+                "partners.manage",
+                "partners.approve",
+                "orders.view",
+                "orders.manage",
+                "inventory.view",
+                "inventory.manage",
+                "complaints.view",
+                "complaints.manage",
+                "tracking.view",
+                "ledger.view",
+                "finance.view",
+                "finance.approve",
+                "finance.manage_plans",
+                "reports.view",
+                "reports.export",
+                "members.manage",
+                "settings.manage",
+                "audit.view"
+              ]
+            }
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "totpEnabled": {
+            "type": "boolean"
+          },
+          "preferredMfa": {
+            "type": "string",
+            "enum": [
+              "email",
+              "sms",
+              "totp"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role",
+          "initials",
+          "businesses",
+          "zoneIds",
+          "permissions",
+          "phone",
+          "totpEnabled",
+          "preferredMfa"
+        ]
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "business": {
+            "type": "string",
+            "enum": [
+              "food",
+              "mart"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "placed",
+              "accepted",
+              "preparing",
+              "packed",
+              "ready",
+              "assigned",
+              "picked_up",
+              "out_for_delivery",
+              "delivered",
+              "cancelled",
+              "refund_requested",
+              "refunded"
+            ]
+          },
+          "version": {
+            "type": "integer"
+          },
+          "customerName": {
+            "type": "string"
+          },
+          "customerPhone": {
+            "type": "string"
+          },
+          "vendorId": {
+            "type": "string"
+          },
+          "vendorName": {
+            "type": "string"
+          },
+          "partnerId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "partnerName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "zoneId": {
+            "type": "string"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "upi",
+              "card",
+              "cod",
+              "wallet",
+              "netbanking"
+            ]
+          },
+          "paymentStatus": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "paid",
+              "failed",
+              "refunded"
+            ]
+          },
+          "itemsTotalPaise": {
+            "type": "integer"
+          },
+          "deliveryFeePaise": {
+            "type": "integer"
+          },
+          "totalPaise": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "unitPricePaise": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "name",
+                "quantity",
+                "unitPricePaise"
+              ]
+            }
+          },
+          "placedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "business",
+          "status",
+          "version",
+          "customerName",
+          "customerPhone",
+          "vendorId",
+          "vendorName",
+          "partnerId",
+          "partnerName",
+          "zoneId",
+          "paymentMethod",
+          "paymentStatus",
+          "itemsTotalPaise",
+          "deliveryFeePaise",
+          "totalPaise",
+          "items",
+          "placedAt"
+        ]
+      },
+      "Partner": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "businesses": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "food",
+                "mart"
+              ]
+            }
+          },
+          "zoneId": {
+            "type": "string"
+          },
+          "zoneName": {
+            "type": "string"
+          },
+          "vehicleType": {
+            "type": "string",
+            "enum": [
+              "motorcycle",
+              "scooter",
+              "e_bike",
+              "bicycle"
+            ]
+          },
+          "vehicleNumber": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending_approval",
+              "active",
+              "rejected",
+              "suspended"
+            ]
+          },
+          "availability": {
+            "type": "string",
+            "enum": [
+              "available",
+              "on_delivery",
+              "offline"
+            ]
+          },
+          "kycVerified": {
+            "type": "boolean"
+          },
+          "bankVerified": {
+            "type": "boolean"
+          },
+          "rating": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "deliveriesCompleted": {
+            "type": "integer"
+          },
+          "currentOrderCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "managedByAdminId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "phone",
+          "businesses",
+          "zoneId",
+          "zoneName",
+          "vehicleType",
+          "vehicleNumber",
+          "status",
+          "availability",
+          "kycVerified",
+          "bankVerified",
+          "rating",
+          "deliveriesCompleted",
+          "currentOrderCode",
+          "managedByAdminId",
+          "createdAt"
+        ]
+      },
+      "PartnerDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "businesses": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "food",
+                "mart"
+              ]
+            }
+          },
+          "zoneId": {
+            "type": "string"
+          },
+          "zoneName": {
+            "type": "string"
+          },
+          "vehicleType": {
+            "type": "string",
+            "enum": [
+              "motorcycle",
+              "scooter",
+              "e_bike",
+              "bicycle"
+            ]
+          },
+          "vehicleNumber": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending_approval",
+              "active",
+              "rejected",
+              "suspended"
+            ]
+          },
+          "availability": {
+            "type": "string",
+            "enum": [
+              "available",
+              "on_delivery",
+              "offline"
+            ]
+          },
+          "kycVerified": {
+            "type": "boolean"
+          },
+          "bankVerified": {
+            "type": "boolean"
+          },
+          "rating": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "deliveriesCompleted": {
+            "type": "integer"
+          },
+          "currentOrderCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "managedByAdminId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dateOfBirth": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "gender": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pinCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "district": {
+            "type": "string"
+          },
+          "vehicleModel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "drivingLicence": {
+            "type": "string"
+          },
+          "licenceValidUntil": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "bank": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "holderName": {
+                "type": "string"
+              },
+              "bankName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "last4": {
+                "type": "string"
+              },
+              "ifsc": {
+                "type": "string"
+              },
+              "verified": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "holderName",
+              "bankName",
+              "last4",
+              "ifsc",
+              "verified"
+            ]
+          },
+          "managerName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "submittedByName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "decisionReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "decidedByName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "decidedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string"
+                },
+                "fileName": {
+                  "type": "string"
+                },
+                "uploadedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "verified": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "kind",
+                "fileName",
+                "uploadedAt",
+                "verified"
+              ]
+            }
+          },
+          "activity": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string"
+                },
+                "actorName": {
+                  "type": "string"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "reason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "action",
+                "actorName",
+                "at",
+                "reason"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "phone",
+          "businesses",
+          "zoneId",
+          "zoneName",
+          "vehicleType",
+          "vehicleNumber",
+          "status",
+          "availability",
+          "kycVerified",
+          "bankVerified",
+          "rating",
+          "deliveriesCompleted",
+          "currentOrderCode",
+          "managedByAdminId",
+          "createdAt",
+          "email",
+          "dateOfBirth",
+          "gender",
+          "address",
+          "pinCode",
+          "district",
+          "vehicleModel",
+          "drivingLicence",
+          "licenceValidUntil",
+          "bank",
+          "managerName",
+          "submittedByName",
+          "decisionReason",
+          "decidedByName",
+          "decidedAt",
+          "documents",
+          "activity"
+        ]
+      },
+      "Vendor": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "business": {
+            "type": "string",
+            "enum": [
+              "food",
+              "mart"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "ownerName": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "zoneId": {
+            "type": "string"
+          },
+          "zoneName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending_review",
+              "active",
+              "rejected",
+              "suspended"
+            ]
+          },
+          "verification": {
+            "type": "string",
+            "enum": [
+              "under_review",
+              "verified",
+              "rejected"
+            ]
+          },
+          "commissionPct": {
+            "type": "number"
+          },
+          "salesPaise": {
+            "type": "integer"
+          },
+          "ordersCount": {
+            "type": "integer"
+          },
+          "openOrders": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "business",
+          "name",
+          "ownerName",
+          "phone",
+          "email",
+          "address",
+          "zoneId",
+          "zoneName",
+          "status",
+          "verification",
+          "commissionPct",
+          "salesPaise",
+          "ordersCount",
+          "openOrders",
+          "createdAt"
+        ]
+      },
+      "VendorDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "business": {
+            "type": "string",
+            "enum": [
+              "food",
+              "mart"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "ownerName": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "zoneId": {
+            "type": "string"
+          },
+          "zoneName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending_review",
+              "active",
+              "rejected",
+              "suspended"
+            ]
+          },
+          "verification": {
+            "type": "string",
+            "enum": [
+              "under_review",
+              "verified",
+              "rejected"
+            ]
+          },
+          "commissionPct": {
+            "type": "number"
+          },
+          "salesPaise": {
+            "type": "integer"
+          },
+          "ordersCount": {
+            "type": "integer"
+          },
+          "openOrders": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "gstin": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fssai": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "decisionReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "decidedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string"
+                },
+                "fileName": {
+                  "type": "string"
+                },
+                "uploadedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "verified": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "kind",
+                "fileName",
+                "uploadedAt",
+                "verified"
+              ]
+            }
+          },
+          "activity": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string"
+                },
+                "actorName": {
+                  "type": "string"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "reason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "action",
+                "actorName",
+                "at",
+                "reason"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "business",
+          "name",
+          "ownerName",
+          "phone",
+          "email",
+          "address",
+          "zoneId",
+          "zoneName",
+          "status",
+          "verification",
+          "commissionPct",
+          "salesPaise",
+          "ordersCount",
+          "openOrders",
+          "createdAt",
+          "gstin",
+          "fssai",
+          "decisionReason",
+          "decidedAt",
+          "documents",
+          "activity"
+        ]
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/zones": {
+      "get": {
+        "tags": [
+          "Zones"
+        ],
+        "summary": "Service areas the member can see",
+        "responses": {
+          "200": {
+            "description": "Zones",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Zone"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Check email or mobile number and password; lists the ways to get a code",
+        "requestBody": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "email": {
+                        "type": "string",
+                        "format": "email"
+                      },
+                      "password": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "email",
+                      "password"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "phone": {
+                        "type": "string"
+                      },
+                      "password": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "phone",
+                      "password"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Choose a method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginChallenge"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/send-code": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Use the chosen method: email or SMS sends a code; an authenticator app needs nothing sent",
+        "requestBody": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "challengeId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "method": {
+                    "type": "string",
+                    "enum": [
+                      "email",
+                      "sms",
+                      "totp"
+                    ]
+                  }
+                },
+                "required": [
+                  "challengeId",
+                  "method"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ready for the code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CodeSent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service temporarily unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/verify": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Check the code and start a session (sets the gk_session cookie)",
+        "requestBody": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "challengeId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "code": {
+                    "type": "string",
+                    "pattern": "^\\d{6}$"
+                  }
+                },
+                "required": [
+                  "challengeId",
+                  "code"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/resend": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Send another code by the method already chosen",
+        "requestBody": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "challengeId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "challengeId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Code sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CodeSent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service temporarily unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/forgot-password": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Ask for a password reset",
+        "requestBody": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  }
+                },
+                "required": [
+                  "email"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No content"
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "End the current session",
+        "responses": {
+          "204": {
+            "description": "No content"
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "The signed-in member",
+        "responses": {
+          "200": {
+            "description": "Current member",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/totp/setup": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Start authenticator-app setup",
+        "responses": {
+          "200": {
+            "description": "QR code to scan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "otpauthUrl": {
+                      "type": "string"
+                    },
+                    "qrDataUrl": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "otpauthUrl",
+                    "qrDataUrl"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/totp/confirm": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Confirm authenticator-app setup",
+        "requestBody": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "pattern": "^\\d{6}$"
+                  }
+                },
+                "required": [
+                  "code"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No content"
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders": {
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Orders in the member's businesses and zones",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "food",
+                "mart"
+              ]
+            },
+            "required": false,
+            "name": "business",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "placed",
+                "accepted",
+                "preparing",
+                "packed",
+                "ready",
+                "assigned",
+                "picked_up",
+                "out_for_delivery",
+                "delivered",
+                "cancelled",
+                "refund_requested",
+                "refunded"
+              ]
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "pageSize",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of orders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Order"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "total",
+                    "page"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/summary": {
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Total and open orders per business",
+        "responses": {
+          "200": {
+            "description": "Counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "business": {
+                        "type": "string",
+                        "enum": [
+                          "food",
+                          "mart"
+                        ]
+                      },
+                      "total": {
+                        "type": "integer"
+                      },
+                      "open": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "business",
+                      "total",
+                      "open"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/{id}": {
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "One order",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/{id}/status": {
+      "post": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Move an order to its next status",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "to": {
+                    "type": "string",
+                    "enum": [
+                      "placed",
+                      "accepted",
+                      "preparing",
+                      "packed",
+                      "ready",
+                      "assigned",
+                      "picked_up",
+                      "out_for_delivery",
+                      "delivered",
+                      "cancelled",
+                      "refund_requested",
+                      "refunded"
+                    ]
+                  },
+                  "version": {
+                    "type": "integer"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "to",
+                  "version"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Changed by someone else; reload and retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partners": {
+      "get": {
+        "tags": [
+          "Delivery partners"
+        ],
+        "summary": "Delivery partners serving the member's businesses and zones",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "food",
+                "mart"
+              ]
+            },
+            "required": false,
+            "name": "business",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending_approval",
+                "active",
+                "rejected",
+                "suspended"
+              ]
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "available",
+                "on_delivery",
+                "offline"
+              ]
+            },
+            "required": false,
+            "name": "availability",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "pageSize",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of partners",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Partner"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "total",
+                    "page"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Delivery partners"
+        ],
+        "summary": "Submit a partner application for Super Admin approval",
+        "requestBody": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "dateOfBirth": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "gender": {
+                    "type": "string",
+                    "enum": [
+                      "Female",
+                      "Male",
+                      "Non-binary",
+                      "Prefer not to say"
+                    ]
+                  },
+                  "address": {
+                    "type": "string",
+                    "minLength": 5
+                  },
+                  "pinCode": {
+                    "type": "string",
+                    "pattern": "^[1-9]\\d{5}$"
+                  },
+                  "businesses": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "food",
+                        "mart"
+                      ]
+                    },
+                    "minItems": 1
+                  },
+                  "zoneId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "vehicleType": {
+                    "type": "string",
+                    "enum": [
+                      "motorcycle",
+                      "scooter",
+                      "e_bike",
+                      "bicycle"
+                    ]
+                  },
+                  "vehicleNumber": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{2}\\s?\\d{1,2}\\s?[A-Z]{0,3}\\s?\\d{4}$"
+                  },
+                  "vehicleModel": {
+                    "type": "string",
+                    "minLength": 2
+                  },
+                  "drivingLicence": {
+                    "type": "string",
+                    "minLength": 8
+                  },
+                  "licenceValidUntil": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "bank": {
+                    "type": "object",
+                    "properties": {
+                      "holderName": {
+                        "type": "string",
+                        "minLength": 2
+                      },
+                      "bankName": {
+                        "type": "string",
+                        "minLength": 2
+                      },
+                      "accountNumber": {
+                        "type": "string",
+                        "pattern": "^\\d{9,18}$"
+                      },
+                      "ifsc": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{4}0[A-Z\\d]{6}$"
+                      }
+                    },
+                    "required": [
+                      "holderName",
+                      "bankName",
+                      "accountNumber",
+                      "ifsc"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "phone",
+                  "businesses",
+                  "zoneId",
+                  "vehicleType",
+                  "vehicleNumber",
+                  "drivingLicence"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The application",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partners/summary": {
+      "get": {
+        "tags": [
+          "Delivery partners"
+        ],
+        "summary": "Partner counts by status and availability",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "food",
+                "mart"
+              ]
+            },
+            "required": false,
+            "name": "business",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total": {
+                      "type": "integer"
+                    },
+                    "active": {
+                      "type": "integer"
+                    },
+                    "pending": {
+                      "type": "integer"
+                    },
+                    "suspended": {
+                      "type": "integer"
+                    },
+                    "available": {
+                      "type": "integer"
+                    },
+                    "onDelivery": {
+                      "type": "integer"
+                    },
+                    "offline": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "total",
+                    "active",
+                    "pending",
+                    "suspended",
+                    "available",
+                    "onDelivery",
+                    "offline"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partners/{id}": {
+      "get": {
+        "tags": [
+          "Delivery partners"
+        ],
+        "summary": "One partner with identity, vehicle, payout and activity",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The partner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partners/{id}/decision": {
+      "post": {
+        "tags": [
+          "Delivery partners"
+        ],
+        "summary": "Approve, reject, suspend or reactivate a partner",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "approve",
+                      "reject",
+                      "suspend",
+                      "reactivate"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "decision"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated partner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Changed by someone else; reload and retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vendors": {
+      "get": {
+        "tags": [
+          "Vendors"
+        ],
+        "summary": "Restaurants and sellers in the member's businesses and zones",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "food",
+                "mart"
+              ]
+            },
+            "required": false,
+            "name": "business",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending_review",
+                "active",
+                "rejected",
+                "suspended"
+              ]
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "pageSize",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of vendors",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Vendor"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "total",
+                    "page"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Vendors"
+        ],
+        "summary": "Add a vendor; it waits for review before going live",
+        "requestBody": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "business": {
+                    "type": "string",
+                    "enum": [
+                      "food",
+                      "mart"
+                    ]
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 2
+                  },
+                  "ownerName": {
+                    "type": "string",
+                    "minLength": 2
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "address": {
+                    "type": "string",
+                    "minLength": 5
+                  },
+                  "zoneId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "gstin": {
+                    "type": "string",
+                    "pattern": "^\\d{2}[A-Z]{5}\\d{4}[A-Z][A-Z\\d]Z[A-Z\\d]$"
+                  },
+                  "fssai": {
+                    "type": "string",
+                    "pattern": "^\\d{14}$"
+                  },
+                  "commissionPct": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 50
+                  }
+                },
+                "required": [
+                  "business",
+                  "name",
+                  "ownerName",
+                  "phone",
+                  "email",
+                  "address",
+                  "zoneId",
+                  "commissionPct"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new vendor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendorDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vendors/summary": {
+      "get": {
+        "tags": [
+          "Vendors"
+        ],
+        "summary": "Vendor counts by status per business",
+        "responses": {
+          "200": {
+            "description": "Counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "business": {
+                        "type": "string",
+                        "enum": [
+                          "food",
+                          "mart"
+                        ]
+                      },
+                      "total": {
+                        "type": "integer"
+                      },
+                      "active": {
+                        "type": "integer"
+                      },
+                      "pending": {
+                        "type": "integer"
+                      },
+                      "suspended": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "business",
+                      "total",
+                      "active",
+                      "pending",
+                      "suspended"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vendors/{id}": {
+      "get": {
+        "tags": [
+          "Vendors"
+        ],
+        "summary": "One vendor with documents and activity",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The vendor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendorDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vendors/{id}/decision": {
+      "post": {
+        "tags": [
+          "Vendors"
+        ],
+        "summary": "Approve, reject, suspend or reactivate a vendor",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "approve",
+                      "reject",
+                      "suspend",
+                      "reactivate"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "decision"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated vendor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendorDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Changed by someone else; reload and retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}

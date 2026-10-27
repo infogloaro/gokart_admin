@@ -1,0 +1,101 @@
+// Owner: Dev 2 (operations). Delivery partners, their documents and bank accounts.
+
+enum PartnerStatus {
+  pending_approval
+  active
+  rejected
+  suspended
+}
+
+enum PartnerAvailability {
+  available
+  on_delivery
+  offline
+}
+
+enum VehicleType {
+  motorcycle
+  scooter
+  e_bike
+  bicycle
+}
+
+model Partner {
+  id                  String              @id @default(cuid())
+  code                String              @unique
+  name                String
+  phone               String              @unique
+  zoneId              String
+  vehicleType         VehicleType
+  vehicleNumber       String
+  vehicleModel        String?
+  drivingLicence      String
+  licenceValidUntil   DateTime?           @db.Date
+  email               String?
+  dateOfBirth         DateTime?           @db.Date
+  gender              String?
+  address             String?
+  pinCode             String?
+  status              PartnerStatus       @default(pending_approval)
+  availability        PartnerAvailability @default(offline)
+  kycVerified         Boolean             @default(false)
+  bankVerified        Boolean             @default(false)
+  /// Average rating × 10 (49 = ★4.9); null until the first rating.
+  ratingTenths        Int?
+  deliveriesCompleted Int                 @default(0)
+  managedByAdminId    String?
+  submittedById       String?
+  decisionReason      String?
+  decidedById         String?
+  decidedAt           DateTime?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  zone       Zone              @relation(fields: [zoneId], references: [id])
+  manager    Member?           @relation("PartnerManager", fields: [managedByAdminId], references: [id])
+  businesses PartnerBusiness[]
+  documents  PartnerDocument[]
+  orders     Order[]
+
+  @@index([status, availability])
+  @@map("partners")
+}
+
+model PartnerBusiness {
+  partnerId String
+  business  Business
+  partner   Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@id([partnerId, business])
+  @@map("partner_businesses")
+}
+
+model PartnerDocument {
+  id         String    @id @default(cuid())
+  partnerId  String
+  kind       String // aadhaar, driving_licence, vehicle_rc, insurance, bank_proof, photo
+  s3Key      String
+  fileName   String
+  uploadedAt DateTime  @default(now())
+  verifiedAt DateTime?
+  partner    Partner   @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@map("partner_documents")
+}
+
+/// Payout destination for a partner or admin. Only the last 4 digits are stored here;
+/// the full number belongs in the payment provider's vault.
+model BankAccount {
+  id          String      @id @default(cuid())
+  accountType AccountType
+  accountId   String
+  holderName  String
+  bankName    String?
+  last4       String
+  ifsc        String
+  verified    Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+
+  @@unique([accountType, accountId])
+  @@map("bank_accounts")
+}
