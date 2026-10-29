@@ -7,6 +7,7 @@ import {
   TRANSACTION_TYPE_OPTIONS,
   type LedgerFilters,
   type LedgerSummary,
+  type LedgerTransactionRow,
   type LedgerTransactionsPage,
   type PaymentMethodFilter,
   type TransactionTypeFilter,
@@ -37,6 +38,9 @@ export default function TransactionLedger({
   const [transactionsLoading, setTransactionsLoading] = useState(true)
   const [transactionsError, setTransactionsError] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
+
+  const [selectedRow, setSelectedRow] = useState<LedgerTransactionRow | null>(null)
+  const [copyFeedback, setCopyFeedback] = useState(false)
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setSearch(searchInput.trim()), 300)
@@ -91,6 +95,25 @@ export default function TransactionLedger({
       cancelled = true
     }
   }, [workspaceId, dateRange.start, dateRange.end, type, paymentMethod, search, page])
+
+  useEffect(() => {
+    if (!selectedRow) return
+    setCopyFeedback(false)
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setSelectedRow(null)
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [selectedRow])
+
+  async function handleCopyCode(code: string) {
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopyFeedback(true)
+    } catch {
+      setCopyFeedback(false)
+    }
+  }
 
   async function handleExport() {
     if (exporting) return
@@ -236,18 +259,19 @@ export default function TransactionLedger({
                 <th>Gross</th>
                 <th>Fee</th>
                 <th>Net</th>
+                <th aria-label="Actions" />
               </tr>
             </thead>
             <tbody>
               {transactionsLoading ? (
                 <tr>
-                  <td colSpan={9} className="ledger-table-empty">
+                  <td colSpan={10} className="ledger-table-empty">
                     Loading transactions…
                   </td>
                 </tr>
               ) : (transactions?.items.length ?? 0) === 0 ? (
                 <tr>
-                  <td colSpan={9} className="ledger-table-empty">
+                  <td colSpan={10} className="ledger-table-empty">
                     No transactions match these filters.
                   </td>
                 </tr>
@@ -268,6 +292,16 @@ export default function TransactionLedger({
                     <td>{row.fee}</td>
                     <td className={row.isNegative ? "ledger-amount-negative" : undefined}>
                       {row.net}
+                    </td>
+                    <td className="ledger-table-actions">
+                      <button
+                        type="button"
+                        className="ledger-row-menu"
+                        aria-label={`View details for ${row.code}`}
+                        onClick={() => setSelectedRow(row)}
+                      >
+                        ⋯
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -303,6 +337,90 @@ export default function TransactionLedger({
           </div>
         </div>
       </div>
+
+      {selectedRow && (
+        <div className="ledger-modal-overlay">
+          <button
+            type="button"
+            className="ledger-modal-backdrop"
+            aria-label="Close transaction details"
+            onClick={() => setSelectedRow(null)}
+          />
+          <div
+            className="ledger-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Transaction ${selectedRow.code} details`}
+          >
+            <div className="ledger-modal-head">
+              <div>
+                <small className="ledger-table-id">{selectedRow.code}</small>
+                <h2>{selectedRow.typeLabel}</h2>
+              </div>
+              <button
+                type="button"
+                className="ledger-modal-close"
+                aria-label="Close"
+                onClick={() => setSelectedRow(null)}
+              >
+                ✕
+              </button>
+            </div>
+            <dl className="ledger-modal-grid">
+              <div>
+                <dt>Tag</dt>
+                <dd>
+                  <span className={`admin-tag admin-tag-${selectedRow.tag.toLowerCase()}`}>
+                    {selectedRow.tag}
+                  </span>
+                </dd>
+              </div>
+              <div>
+                <dt>Reference</dt>
+                <dd>{selectedRow.reference}</dd>
+              </div>
+              <div>
+                <dt>Counterparty</dt>
+                <dd>{selectedRow.counterparty}</dd>
+              </div>
+              <div>
+                <dt>Payment method</dt>
+                <dd>{selectedRow.paymentMethod.replace(/_/g, " ")}</dd>
+              </div>
+              <div>
+                <dt>Gross amount</dt>
+                <dd>{selectedRow.gross}</dd>
+              </div>
+              <div>
+                <dt>Fee</dt>
+                <dd>{selectedRow.fee}</dd>
+              </div>
+              <div>
+                <dt>Net amount</dt>
+                <dd className={selectedRow.isNegative ? "ledger-amount-negative" : undefined}>
+                  {selectedRow.net}
+                </dd>
+              </div>
+            </dl>
+            <div className="ledger-modal-actions">
+              <button
+                type="button"
+                className="admin-action-btn"
+                onClick={() => handleCopyCode(selectedRow.code)}
+              >
+                {copyFeedback ? "Copied!" : "Copy transaction ID"}
+              </button>
+              <button
+                type="button"
+                className="admin-action-btn admin-action-primary"
+                onClick={() => setSelectedRow(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
