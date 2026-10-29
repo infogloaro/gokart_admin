@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useMemo, useState } from "react"
 
 export type AdminMenuSection = {
   title: string
@@ -555,67 +555,18 @@ function OverviewIcon({ icon }: { icon: AdminOverview["icon"] }) {
   )
 }
 
-function EditableValue({
-  value,
-  onSave,
-  className,
-}: {
-  value: string
-  onSave: (next: string) => void
-  className?: string
-}) {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(value)
-  const inputRef = useRef<HTMLInputElement>(null)
-  useEffect(() => {
-    if (editing) inputRef.current?.focus()
-  }, [editing])
-  function commit() {
-    setEditing(false)
-    const next = draft.trim()
-    if (next && next !== value) onSave(next)
-    else setDraft(value)
-  }
-  if (editing) {
-    return (
-      <input
-        ref={inputRef}
-        className={`admin-editable-input ${className ?? ""}`}
-        value={draft}
-        onChange={(event) => setDraft(event.target.value)}
-        onBlur={commit}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") commit()
-          if (event.key === "Escape") {
-            setDraft(value)
-            setEditing(false)
-          }
-        }}
-      />
-    )
-  }
+function BuildingIcon() {
   return (
-    <button
-      type="button"
-      className={`admin-editable-value ${className ?? ""}`}
-      onClick={() => {
-        setDraft(value)
-        setEditing(true)
-      }}
-      title="Click to edit"
-    >
-      {value}
-      <svg viewBox="0 0 24 24" aria-hidden="true" className="admin-editable-pencil">
-        <path
-          d="M4 20h4L19 9l-4-4L4 16Zm11-15 4 4"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </button>
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M4 5h7v7H4ZM13 5h7v7h-7ZM4 14h7v5H4ZM13 14h7v5h-7Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   )
 }
 
@@ -653,22 +604,8 @@ export default function AdministrationView({
       setLastRefreshed(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))
     }, 700)
   }
-  const [dashboardMetrics, setDashboardMetrics] = useState(data.metrics)
-  const [overviewMetrics, setOverviewMetrics] = useState(data.overview.metrics)
-  useEffect(() => {
-    setDashboardMetrics(data.metrics)
-    setOverviewMetrics(data.overview.metrics)
-  }, [data])
-  function editDashboardMetric(index: number, next: string) {
-    setDashboardMetrics((prev) =>
-      prev.map((metric, i) => (i === index ? [metric[0], next, metric[2]] : metric)),
-    )
-  }
-  function editOverviewMetric(index: number, next: string) {
-    setOverviewMetrics((prev) =>
-      prev.map((metric, i) => (i === index ? { ...metric, value: next } : metric)),
-    )
-  }
+  const dashboardMetrics = data.metrics
+  const overviewMetrics = data.overview.metrics
   const flatMenu = data.sections.flatMap((group) => group.items)
   const current = section
     ? (flatMenu.find((item) => slugify(item) === section) ?? flatMenu[0] ?? "Global dashboard")
@@ -912,15 +849,10 @@ export default function AdministrationView({
                 <span className="admin-overview-badge">{data.overview.badge}</span>
               </div>
               <div className="admin-stats">
-                {overviewMetrics.map((metric, index) => (
+                {overviewMetrics.map((metric) => (
                   <article key={metric.label}>
                     <span>{metric.label}</span>
-                    <strong>
-                      <EditableValue
-                        value={metric.value}
-                        onSave={(next) => editOverviewMetric(index, next)}
-                      />
-                    </strong>
+                    <strong>{metric.value}</strong>
                     <small>
                       <em>Within target</em> today
                     </small>
@@ -952,19 +884,22 @@ export default function AdministrationView({
           ) : current === "Global dashboard" ? (
             <>
               <div className="admin-live">
-                <b>{data.label} view</b>
-                <span>● Live data{lastRefreshed ? ` · updated ${lastRefreshed}` : ""}</span>
+                <span className="admin-live-icon" aria-hidden="true">
+                  <BuildingIcon />
+                </span>
+                <div className="admin-live-text">
+                  <b>{data.label} view</b>
+                  <p>All metrics, charts and records below are filtered consistently.</p>
+                </div>
+                <span className="admin-live-status">
+                  ● Live data{lastRefreshed ? ` · updated ${lastRefreshed}` : ""}
+                </span>
               </div>
               <div className="admin-stats">
-                {dashboardMetrics.map(([label, value, change], index) => (
+                {dashboardMetrics.map(([label, value, change]) => (
                   <article key={label}>
                     <span>{label}</span>
-                    <strong>
-                      <EditableValue
-                        value={value}
-                        onSave={(next) => editDashboardMetric(index, next)}
-                      />
-                    </strong>
+                    <strong>{value}</strong>
                     <small>
                       {change} <em>vs last period</em>
                     </small>
@@ -1037,8 +972,16 @@ export default function AdministrationView({
           ) : (
             <>
               <div className="admin-live">
-                <b>{data.label} view</b>
-                <span>● Live data{lastRefreshed ? ` · updated ${lastRefreshed}` : ""}</span>
+                <span className="admin-live-icon" aria-hidden="true">
+                  <BuildingIcon />
+                </span>
+                <div className="admin-live-text">
+                  <b>{data.label} view</b>
+                  <p>All metrics, charts and records below are filtered consistently.</p>
+                </div>
+                <span className="admin-live-status">
+                  ● Live data{lastRefreshed ? ` · updated ${lastRefreshed}` : ""}
+                </span>
               </div>
               <div className="admin-stats">
                 {dashboardMetrics.map(([label, value, change]) => (

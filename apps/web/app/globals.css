@@ -255,15 +255,45 @@ body {
   border-radius: 16px;
   padding: 22px;
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
   color: #64748b;
 }
-.admin-live span {
+.admin-live-icon {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: #eef2f8;
+  color: #182b4f;
+}
+.admin-live-icon svg {
+  width: 18px;
+  height: 18px;
+}
+.admin-live-text {
+  flex: 1;
+  min-width: 0;
+}
+.admin-live-text b {
+  display: block;
+  color: #182b4f;
+  font-size: 15px;
+}
+.admin-live-text p {
+  margin: 2px 0 0;
+  color: #71809a;
+  font-size: 13px;
+}
+.admin-live-status {
   color: #168347;
   background: #effdf4;
   border: 1px solid #b6f2cd;
   border-radius: 18px;
   padding: 8px 18px;
+  flex: none;
 }
 .admin-stats {
   display: grid;
@@ -682,41 +712,6 @@ body {
 .admin-attention-arrow {
   color: #91a5c4;
   flex: none;
-}
-.admin-editable-value {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 8px;
-  font: inherit;
-  color: inherit;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: text;
-  text-align: left;
-}
-.admin-editable-pencil {
-  width: 14px;
-  height: 14px;
-  opacity: 0;
-  color: #91a5c4;
-  transition: opacity 0.15s ease;
-}
-.admin-editable-value:hover .admin-editable-pencil,
-.admin-editable-value:focus-visible .admin-editable-pencil {
-  opacity: 1;
-}
-.admin-editable-input {
-  font: inherit;
-  font-size: inherit;
-  font-weight: inherit;
-  color: inherit;
-  background: #fff;
-  border: 1px solid #8ca8d0;
-  border-radius: 8px;
-  padding: 2px 8px;
-  width: 100%;
-  outline: none;
 }
 .admin-overview-head {
   display: flex;

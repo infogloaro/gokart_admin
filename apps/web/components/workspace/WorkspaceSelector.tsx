@@ -210,9 +210,19 @@ export default function WorkspaceSelector() {
                 const selected = selectedWorkspaceId === workspace.id
 
                 return (
-                  <article
+                  <div
                     key={workspace.id}
                     className={`m05-card ${selected ? "is-selected" : ""}`}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Open ${details.title} Administration`}
+                    onClick={() => void openWorkspace(workspace.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault()
+                        void openWorkspace(workspace.id)
+                      }
+                    }}
                   >
                     <div className="m05-card-top">
                       <div className={`m05-business-icon ${details.kind}`}>
@@ -252,7 +262,7 @@ export default function WorkspaceSelector() {
                         →
                       </span>
                     </button>
-                  </article>
+                  </div>
                 )
               })}
             </div>
