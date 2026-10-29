@@ -7,7 +7,13 @@ model Workspace {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  activeContexts ActiveWorkspaceContext[]
+  activeContexts   ActiveWorkspaceContext[]
+  vendors          Vendor[]
+  deliveryPartners DeliveryPartner[]
+  orders           Order[]
+  complaints       Complaint[]
+  refundCases      RefundCase[]
+  partnerDocuments PartnerDocument[]
 }
 
 model ActiveWorkspaceContext {

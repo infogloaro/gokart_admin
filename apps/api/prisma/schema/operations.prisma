@@ -1,0 +1,123 @@
+enum VendorApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum DeliveryPartnerStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum OrderStatus {
+  PLACED
+  PREPARING
+  ON_THE_WAY
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum ComplaintStatus {
+  OPEN
+  RESOLVED
+}
+
+enum RefundCaseStatus {
+  PENDING
+  ESCALATED
+  RESOLVED
+}
+
+model Vendor {
+  id               String               @id @default(cuid())
+  workspaceId      String
+  name             String
+  approvalStatus   VendorApprovalStatus @default(PENDING)
+  createdAt        DateTime             @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  orders    Order[]
+
+  @@index([workspaceId])
+  @@index([workspaceId, approvalStatus])
+}
+
+model DeliveryPartner {
+  id          String                 @id @default(cuid())
+  workspaceId String
+  name        String
+  status      DeliveryPartnerStatus  @default(ACTIVE)
+  createdAt   DateTime               @default(now())
+
+  workspace Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  documents PartnerDocument[]
+
+  @@index([workspaceId])
+  @@index([workspaceId, status])
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  workspaceId     String
+  orderNumber     String
+  vendorId        String?
+  status          OrderStatus @default(PLACED)
+  grossValue      Decimal     @db.Decimal(12, 2)
+  platformRevenue Decimal     @db.Decimal(12, 2)
+  placedAt        DateTime    @default(now())
+  acceptedAt      DateTime?
+  readyAt         DateTime?
+  deliveredAt     DateTime?
+  rating          Int?
+
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  vendor      Vendor?       @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  refundCases RefundCase[]
+
+  @@unique([workspaceId, orderNumber])
+  @@index([workspaceId, placedAt])
+  @@index([workspaceId, status])
+}
+
+model Complaint {
+  id          String           @id @default(cuid())
+  workspaceId String
+  title       String
+  status      ComplaintStatus  @default(OPEN)
+  createdAt   DateTime         @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([workspaceId, status])
+}
+
+model RefundCase {
+  id          String            @id @default(cuid())
+  workspaceId String
+  orderId     String?
+  amount      Decimal           @db.Decimal(12, 2)
+  status      RefundCaseStatus  @default(PENDING)
+  createdAt   DateTime          @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  order     Order?    @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId])
+  @@index([workspaceId, status])
+}
+
+model PartnerDocument {
+  id                String   @id @default(cuid())
+  workspaceId       String
+  deliveryPartnerId String
+  name              String
+  expiresAt         DateTime
+
+  workspace       Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  deliveryPartner DeliveryPartner @relation(fields: [deliveryPartnerId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([workspaceId, expiresAt])
+}

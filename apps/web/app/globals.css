@@ -295,6 +295,11 @@ body {
   padding: 8px 18px;
   flex: none;
 }
+.admin-live-status.is-error {
+  color: #b42318;
+  background: #fef3f2;
+  border-color: #fecdca;
+}
 .admin-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

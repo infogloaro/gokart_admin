@@ -1,7 +1,9 @@
 "use client"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { fetchDashboard, fetchOverview } from "@/lib/dashboard-api"
+import type { DashboardData, OverviewData } from "@/types/dashboard"
 
 export type AdminMenuSection = {
   title: string
@@ -297,6 +299,14 @@ export const ALL: AdminWorkspace = {
     ],
   },
 }
+function defaultDateRange() {
+  const end = new Date()
+  const start = new Date(end)
+  start.setDate(start.getDate() - 29)
+  const format = (value: Date) => value.toISOString().slice(0, 10)
+  return { start: format(start), end: format(end) }
+}
+
 const slugify = (value: string) =>
   value
     .toLowerCase()
@@ -304,7 +314,7 @@ const slugify = (value: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "")
 
-const TREND_DAYS = ["Jun 1", "Jun 5", "Jun 9", "Jun 13", "Jun 18"]
+const FALLBACK_TREND_DAYS = ["Jun 1", "Jun 5", "Jun 9", "Jun 13", "Jun 18"]
 
 function trendCoords(points: number[], width: number, height: number) {
   const max = Math.max(...points)
@@ -327,10 +337,11 @@ function buildTrendPath(coords: Array<[number, number]>) {
   }, "")
 }
 
-function RevenueTrendChart({ series }: { series: AdminTrendSeries[] }) {
+function RevenueTrendChart({ series, days }: { series: AdminTrendSeries[]; days: string[] }) {
   const width = 560
   const height = 180
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
+  const trendDays = days.length > 0 ? days : FALLBACK_TREND_DAYS
   const seriesCoords = series.map((item) => trendCoords(item.points, width, height))
   return (
     <div className="admin-chart">
@@ -353,12 +364,12 @@ function RevenueTrendChart({ series }: { series: AdminTrendSeries[] }) {
             strokeLinecap="round"
           />
         ))}
-        {TREND_DAYS.map((day, index) => (
+        {trendDays.map((day, index) => (
           <text
             key={day}
-            x={(index * width) / (TREND_DAYS.length - 1)}
+            x={(index * width) / (trendDays.length - 1)}
             y={height + 18}
-            textAnchor={index === 0 ? "start" : index === TREND_DAYS.length - 1 ? "end" : "middle"}
+            textAnchor={index === 0 ? "start" : index === trendDays.length - 1 ? "end" : "middle"}
             className="admin-chart-axis"
           >
             {day}
@@ -384,15 +395,15 @@ function RevenueTrendChart({ series }: { series: AdminTrendSeries[] }) {
         {activeIndex !== null && (
           <g className="admin-chart-tooltip">
             <line
-              x1={(activeIndex * width) / (TREND_DAYS.length - 1)}
+              x1={(activeIndex * width) / (trendDays.length - 1)}
               y1={0}
-              x2={(activeIndex * width) / (TREND_DAYS.length - 1)}
+              x2={(activeIndex * width) / (trendDays.length - 1)}
               y2={height}
               className="admin-chart-tooltip-line"
             />
             <foreignObject
               x={Math.min(
-                Math.max((activeIndex * width) / (TREND_DAYS.length - 1) - 90, 0),
+                Math.max((activeIndex * width) / (trendDays.length - 1) - 90, 0),
                 width - 180,
               )}
               y={0}
@@ -400,7 +411,7 @@ function RevenueTrendChart({ series }: { series: AdminTrendSeries[] }) {
               height={26 + series.length * 20}
             >
               <div className="admin-chart-tooltip-box">
-                <b>{TREND_DAYS[activeIndex]}</b>
+                <b>{trendDays[activeIndex]}</b>
                 {series.map((item) => (
                   <p key={item.label}>
                     <i style={{ background: item.color }} />
@@ -582,7 +593,7 @@ export default function AdministrationView({
   const router = useRouter()
   const [query, setQuery] = useState("")
   const [businessMenuOpen, setBusinessMenuOpen] = useState(false)
-  const [dateRange, setDateRange] = useState({ start: "2026-06-01", end: "2026-06-18" })
+  const [dateRange, setDateRange] = useState(() => defaultDateRange())
   const [dateDraft, setDateDraft] = useState(dateRange)
   const [datePickerOpen, setDatePickerOpen] = useState(false)
   function formatDateLabel(value: string) {
@@ -596,16 +607,52 @@ export default function AdministrationView({
   }
   const [refreshing, setRefreshing] = useState(false)
   const [lastRefreshed, setLastRefreshed] = useState<string | null>(null)
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
+  const [overviewData, setOverviewData] = useState<OverviewData | null>(null)
+  const [dataLoading, setDataLoading] = useState(true)
+  const [dataError, setDataError] = useState<string | null>(null)
+  const loadLiveData = useCallback(async () => {
+    setDataError(null)
+    try {
+      const [dashboard, overview] = await Promise.all([
+        fetchDashboard(workspaceId, dateRange),
+        fetchOverview(workspaceId, dateRange),
+      ])
+      setDashboardData(dashboard)
+      setOverviewData(overview)
+      setLastRefreshed(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))
+    } catch (err) {
+      setDataError(err instanceof Error ? err.message : "Unable to load live data.")
+    }
+  }, [workspaceId, dateRange])
+  useEffect(() => {
+    let cancelled = false
+    setDataLoading(true)
+    loadLiveData().finally(() => {
+      if (!cancelled) setDataLoading(false)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [loadLiveData])
   function handleRefresh() {
     if (refreshing) return
     setRefreshing(true)
-    window.setTimeout(() => {
-      setRefreshing(false)
-      setLastRefreshed(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))
-    }, 700)
+    loadLiveData().finally(() => setRefreshing(false))
   }
-  const dashboardMetrics = data.metrics
-  const overviewMetrics = data.overview.metrics
+  const dashboardMetrics: Array<[string, string, string]> = dashboardData
+    ? dashboardData.metrics.map((metric) => [metric.label, metric.value, metric.change])
+    : data.metrics
+  const overviewMetrics = data.overview.metrics.map((staticMetric, index) => ({
+    label: staticMetric.label,
+    value: overviewData?.metrics[index]?.value ?? staticMetric.value,
+    barPercent: overviewData?.metrics[index]?.barPercent ?? staticMetric.barPercent,
+  }))
+  const trendSeries = dashboardData?.trend.series ?? data.trend
+  const trendDays = dashboardData?.trend.days ?? []
+  const orderDistribution = dashboardData?.orderDistribution ?? data.orderDistribution
+  const transactions = dashboardData?.transactions ?? data.transactions
+  const attentionItems = dashboardData?.attention ?? data.attention
   const flatMenu = data.sections.flatMap((group) => group.items)
   const current = section
     ? (flatMenu.find((item) => slugify(item) === section) ?? flatMenu[0] ?? "Global dashboard")
@@ -877,7 +924,9 @@ export default function AdministrationView({
                       </li>
                     ))}
                   </ul>
-                  <p className="admin-insight-note">{data.overview.insight}</p>
+                  <p className="admin-insight-note">
+                    {overviewData?.insight ?? data.overview.insight}
+                  </p>
                 </div>
               </div>
             </>
@@ -891,8 +940,12 @@ export default function AdministrationView({
                   <b>{data.label} view</b>
                   <p>All metrics, charts and records below are filtered consistently.</p>
                 </div>
-                <span className="admin-live-status">
-                  ● Live data{lastRefreshed ? ` · updated ${lastRefreshed}` : ""}
+                <span className={`admin-live-status${dataError ? " is-error" : ""}`}>
+                  {dataError
+                    ? `⚠ ${dataError}`
+                    : dataLoading
+                      ? "● Loading live data…"
+                      : `● Live data${lastRefreshed ? ` · updated ${lastRefreshed}` : ""}`}
                 </span>
               </div>
               <div className="admin-stats">
@@ -910,12 +963,12 @@ export default function AdministrationView({
                 <div>
                   <h2>Revenue trend</h2>
                   <p>Platform revenue, excluding vendor gross sales</p>
-                  <RevenueTrendChart series={data.trend} />
+                  <RevenueTrendChart series={trendSeries} days={trendDays} />
                 </div>
                 <div>
                   <h2>Order distribution</h2>
                   <p>Current order statuses</p>
-                  <OrderDistributionChart slices={data.orderDistribution} total={data.orders} />
+                  <OrderDistributionChart slices={orderDistribution} total={data.orders} />
                 </div>
               </div>
               <div className="admin-panels admin-panels-bottom">
@@ -923,7 +976,7 @@ export default function AdministrationView({
                   <h2>Recent transactions</h2>
                   <p>Latest platform activity</p>
                   <ul>
-                    {data.transactions.map((transaction) => (
+                    {transactions.map((transaction) => (
                       <li key={transaction.id}>
                         <Link href={`/admin/${workspaceId}/${slugify("Transaction ledger")}`}>
                           <span className="admin-tx-icon" aria-hidden="true">
@@ -951,7 +1004,7 @@ export default function AdministrationView({
                   <h2>Needs your attention</h2>
                   <p>Prioritized actions</p>
                   <ul>
-                    {data.attention.map((item) => (
+                    {attentionItems.map((item) => (
                       <li key={item.title}>
                         <Link href={`/admin/${workspaceId}/${slugify(item.target)}`}>
                           <span className={`admin-attention-icon admin-attention-${item.icon}`}>
@@ -981,8 +1034,12 @@ export default function AdministrationView({
                   <b>{data.label} view</b>
                   <p>All metrics, charts and records below are filtered consistently.</p>
                 </div>
-                <span className="admin-live-status">
-                  ● Live data{lastRefreshed ? ` · updated ${lastRefreshed}` : ""}
+                <span className={`admin-live-status${dataError ? " is-error" : ""}`}>
+                  {dataError
+                    ? `⚠ ${dataError}`
+                    : dataLoading
+                      ? "● Loading live data…"
+                      : `● Live data${lastRefreshed ? ` · updated ${lastRefreshed}` : ""}`}
                 </span>
               </div>
               <div className="admin-stats">
