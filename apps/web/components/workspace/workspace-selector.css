@@ -1,0 +1,463 @@
+.m05-page {
+  min-height: 100vh;
+  color: #111a2e;
+  background: #fff;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.m05-topbar {
+  height: 92px;
+  padding: 0 clamp(24px, 5.5vw, 92px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: rgba(255, 255, 255, 0.96);
+  position: relative;
+  z-index: 2;
+}
+.m05-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: #10203b;
+  text-decoration: none;
+}
+.m05-brand-mark {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  color: #10203b;
+  background: #d99700;
+  border-radius: 11px;
+  transform: rotate(-7deg);
+  font-size: 19px;
+  font-weight: 800;
+}
+.m05-brand-word {
+  font-size: 16px;
+  letter-spacing: 1.6px;
+  font-weight: 800;
+}
+.m05-brand-word span {
+  color: #b97800;
+}
+.m05-session {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #64748b;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.m05-shield {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+}
+.m05-shield svg,
+.m05-logout svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.m05-logout {
+  margin-left: 8px;
+  width: 49px;
+  height: 49px;
+  display: grid;
+  place-items: center;
+  padding: 13px;
+  color: #64748b;
+  background: #fff;
+  border: 1px solid #dce3ef;
+  border-radius: 13px;
+  cursor: pointer;
+}
+.m05-logout:hover {
+  background: #f8fafc;
+}
+.m05-hero {
+  min-height: calc(100vh - 92px);
+  position: relative;
+  overflow: hidden;
+  padding: 70px 24px 26px;
+  background:
+    radial-gradient(ellipse at 2% 100%, rgba(255, 205, 157, 0.64), transparent 44%),
+    radial-gradient(ellipse at 100% 100%, rgba(156, 183, 255, 0.58), transparent 45%),
+    linear-gradient(110deg, #fff5e9 0%, #fffdfa 48%, #edf2ff 100%);
+}
+.m05-content {
+  position: relative;
+  z-index: 1;
+  max-width: 838px;
+  margin: 0 auto;
+  text-align: center;
+}
+.m05-step {
+  margin-bottom: 27px;
+  color: #ad6b00;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+.m05-content h1 {
+  margin: 0;
+  color: #111a2e;
+  font-size: clamp(30px, 3.2vw, 40px);
+  line-height: 1.18;
+  letter-spacing: -1.6px;
+  font-weight: 750;
+}
+.m05-subtitle {
+  margin: 17px auto 44px;
+  max-width: 720px;
+  color: #71809a;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.m05-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 17px;
+  text-align: left;
+}
+.m05-card {
+  min-height: 366px;
+  display: flex;
+  flex-direction: column;
+  padding: 26px 26px 22px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid #e0e6f0;
+  border-radius: 20px;
+  box-shadow: 0 12px 32px rgba(27, 43, 77, 0.08);
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+.m05-card:hover {
+  transform: translateY(-2px);
+  border-color: #c7d5ef;
+  box-shadow: 0 16px 36px rgba(27, 43, 77, 0.12);
+}
+.m05-card.is-selected {
+  border-color: #b8cfff;
+}
+.m05-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 29px;
+}
+.m05-business-icon {
+  width: 53px;
+  height: 53px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+}
+.m05-business-icon svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.m05-business-icon.food {
+  color: #a96900;
+  background: #fff6e2;
+}
+.m05-business-icon.mart {
+  color: #416de0;
+  background: #edf3ff;
+}
+.m05-access {
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 13px;
+  border: 1px solid;
+  border-radius: 13px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.m05-access.green {
+  color: #168347;
+  border-color: #b6f2cd;
+  background: #effdf4;
+}
+.m05-access.blue {
+  color: #2458e8;
+  border-color: #c1d5ff;
+  background: #f0f6ff;
+}
+.m05-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.m05-card h2 {
+  margin: 0 0 6px;
+  color: #141d31;
+  font-size: 21px;
+  letter-spacing: -0.4px;
+  line-height: 1.25;
+  font-weight: 800;
+}
+.m05-description {
+  min-height: 43px;
+  margin: 0;
+  color: #71809a;
+  font-size: 12.5px;
+  line-height: 1.65;
+}
+.m05-metrics {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-top: 15px;
+  padding: 18px 0;
+  border-top: 1px solid #edf0f5;
+  border-bottom: 1px solid #edf0f5;
+}
+.m05-metrics div {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+.m05-metrics strong {
+  color: #172238;
+  font-size: 16px;
+  font-weight: 800;
+}
+.m05-metrics span {
+  color: #71809a;
+  font-size: 10px;
+}
+.m05-open {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding: 20px 0 0;
+  border: 0;
+  background: transparent;
+  color: #0e2b58;
+  font-size: 12px;
+  font-weight: 750;
+  text-align: left;
+  cursor: pointer;
+}
+.m05-open:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.m05-arrow {
+  font-size: 23px;
+  font-weight: 400;
+  line-height: 1;
+  transition: transform 0.15s ease;
+}
+.m05-open:hover .m05-arrow {
+  transform: translateX(4px);
+}
+.m05-footer-note {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 30px;
+  color: #71809a;
+  font-size: 11px;
+}
+.m05-lock {
+  color: #5e718e;
+  font-size: 15px;
+}
+.m05-error {
+  margin: -20px 0 22px;
+  padding: 12px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  color: #b42318;
+  background: #fff1f0;
+  border: 1px solid #ffd5d2;
+  border-radius: 10px;
+  text-align: left;
+  font-size: 13px;
+}
+.m05-error button,
+.m05-state button {
+  padding: 8px 13px;
+  color: #18243a;
+  background: white;
+  border: 1px solid #d5dce7;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.m05-state {
+  padding: 36px 20px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 15px;
+  color: #64748b;
+  background: rgba(255, 255, 255, 0.65);
+}
+.m05-state strong {
+  display: block;
+  color: #172238;
+  font-size: 16px;
+}
+.m05-state p {
+  margin: 10px 0 20px;
+  font-size: 13px;
+}
+.m05-decor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.decor {
+  position: absolute;
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.48;
+}
+.decor-pizza {
+  width: 100px;
+  left: 4.5%;
+  top: 5%;
+  stroke: #f5a77f;
+  transform: rotate(-9deg);
+}
+.decor-cutlery {
+  width: 60px;
+  left: 24%;
+  top: 2%;
+  stroke: #f5a77f;
+}
+.decor-bag {
+  width: 58px;
+  left: 71%;
+  top: 3%;
+  stroke: #a6a9ff;
+}
+.decor-cart {
+  width: 100px;
+  right: 4%;
+  top: 5%;
+  stroke: #9b9eff;
+  transform: rotate(-5deg);
+}
+.decor-cup {
+  width: 75px;
+  left: 16%;
+  top: 24%;
+  stroke: #f5a77f;
+  transform: rotate(8deg);
+}
+.decor-box {
+  width: 65px;
+  right: 18%;
+  top: 27%;
+  stroke: #a6a9ff;
+  transform: rotate(-7deg);
+}
+.decor-shirt {
+  width: 78px;
+  right: 7%;
+  top: 51%;
+  stroke: #9b9eff;
+}
+.decor-phone {
+  width: 58px;
+  right: 20%;
+  bottom: 12%;
+  stroke: #a6a9ff;
+  transform: rotate(8deg);
+}
+.decor-bowl {
+  width: 90px;
+  left: 5%;
+  top: 54%;
+  stroke: #f5a77f;
+}
+.decor-sandwich {
+  width: 75px;
+  left: 18%;
+  bottom: 12%;
+  stroke: #f5a77f;
+  transform: rotate(-8deg);
+}
+.decor-gift {
+  width: 55px;
+  right: 5%;
+  bottom: 5%;
+  stroke: #a6a9ff;
+}
+@media (max-width: 720px) {
+  .m05-topbar {
+    height: 76px;
+    padding: 0 18px;
+  }
+  .m05-session {
+    font-size: 0;
+    gap: 6px;
+  }
+  .m05-shield {
+    width: 19px;
+    height: 19px;
+  }
+  .m05-logout {
+    width: 40px;
+    height: 40px;
+    padding: 10px;
+  }
+  .m05-hero {
+    min-height: calc(100vh - 76px);
+    padding: 48px 16px 24px;
+  }
+  .m05-subtitle {
+    margin: 14px auto 30px;
+    font-size: 14px;
+  }
+  .m05-cards {
+    grid-template-columns: 1fr;
+    max-width: 440px;
+    margin: 0 auto;
+  }
+  .m05-card {
+    min-height: 340px;
+    padding: 22px;
+  }
+  .m05-footer-note {
+    line-height: 1.5;
+  }
+  .decor {
+    opacity: 0.22;
+  }
+  .decor-cutlery,
+  .decor-cup,
+  .decor-phone,
+  .decor-sandwich {
+    display: none;
+  }
+}
