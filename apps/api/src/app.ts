@@ -6,6 +6,29 @@ import { prisma } from "./lib/prisma.js"
 import { healthRouter } from "./routes/health.js"
 import { createWorkspaceRouter } from "./modules/workspace.routes.js"
 import { createDashboardRouter } from "./modules/dashboard/dashboard.routes.js"
+import { createLedgerRouter } from "./modules/ledger/ledger.routes.js"
+import type { PrismaClient } from "./generated/client/index.js"
+
+// Authentication and membership resolution are supplied by the auth module
+// once it lands. Until then, keep the local development app usable with a
+// stable development principal and all active workspaces.
+function buildAuthDependencies(prismaClient: PrismaClient) {
+  return {
+    prisma: prismaClient,
+    requireAuth: (_req: express.Request, _res: express.Response, next: express.NextFunction) =>
+      next(),
+    getPrincipal: (req: express.Request) => ({
+      userId: req.header("x-user-id") ?? "development-user",
+    }),
+    resolveAccessibleWorkspaceIds: async () => {
+      const workspaces = await prismaClient.workspace.findMany({
+        where: { status: "ACTIVE" },
+        select: { id: true },
+      })
+      return workspaces.map(({ id }) => id)
+    },
+  }
+}
 
 export function createApp() {
   const app = express()
@@ -15,42 +38,11 @@ export function createApp() {
 
   app.use("/health", healthRouter)
 
-  // Authentication and membership resolution are supplied by the auth module
-  // once it lands. Until then, keep the local development app usable with a
-  // stable development principal and all active workspaces.
-  const workspaceRouter = createWorkspaceRouter({
-    prisma,
-    requireAuth: (_req, _res, next) => next(),
-    getPrincipal: (req) => ({
-      userId: req.header("x-user-id") ?? "development-user",
-    }),
-    resolveAccessibleWorkspaceIds: async () => {
-      const workspaces = await prisma.workspace.findMany({
-        where: { status: "ACTIVE" },
-        select: { id: true },
-      })
-      return workspaces.map(({ id }) => id)
-    },
-  })
+  const authDependencies = buildAuthDependencies(prisma)
 
-  app.use("/api/workspaces", workspaceRouter)
-
-  const dashboardRouter = createDashboardRouter({
-    prisma,
-    requireAuth: (_req, _res, next) => next(),
-    getPrincipal: (req) => ({
-      userId: req.header("x-user-id") ?? "development-user",
-    }),
-    resolveAccessibleWorkspaceIds: async () => {
-      const workspaces = await prisma.workspace.findMany({
-        where: { status: "ACTIVE" },
-        select: { id: true },
-      })
-      return workspaces.map(({ id }) => id)
-    },
-  })
-
-  app.use("/api/workspaces", dashboardRouter)
+  app.use("/api/workspaces", createWorkspaceRouter(authDependencies))
+  app.use("/api/workspaces", createDashboardRouter(authDependencies))
+  app.use("/api/workspaces", createLedgerRouter(authDependencies))
 
   app.use(
     (

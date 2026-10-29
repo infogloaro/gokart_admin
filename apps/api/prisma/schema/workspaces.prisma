@@ -14,6 +14,7 @@ model Workspace {
   complaints       Complaint[]
   refundCases      RefundCase[]
   partnerDocuments PartnerDocument[]
+  transactions     Transaction[]
 }
 
 model ActiveWorkspaceContext {

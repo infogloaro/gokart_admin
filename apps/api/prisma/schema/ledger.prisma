@@ -1,0 +1,40 @@
+enum TransactionType {
+  ORDER_PAYMENT
+  COD_COLLECTION
+  REFUND
+  VENDOR_SETTLEMENT
+  PARTNER_EARNINGS
+  PAYOUT_HISTORY
+  CREDIT_NOTE
+}
+
+enum PaymentMethod {
+  UPI
+  CARD
+  COD
+  NET_BANKING
+  WALLET
+  BANK_TRANSFER
+  STORE_CREDIT
+}
+
+model Transaction {
+  id                String          @id @default(cuid())
+  workspaceId       String
+  type              TransactionType
+  transactionCode   String
+  reference         String
+  counterparty      String
+  paymentMethod     PaymentMethod
+  grossAmount       Decimal         @db.Decimal(12, 2)
+  commissionAmount  Decimal         @default(0) @db.Decimal(12, 2)
+  deliveryFeeAmount Decimal         @default(0) @db.Decimal(12, 2)
+  netAmount         Decimal         @db.Decimal(12, 2)
+  createdAt         DateTime        @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, transactionCode])
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, type])
+}

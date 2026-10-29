@@ -52,6 +52,17 @@ const VENDOR_NAMES = [
   "Sunrise Grocers",
 ]
 
+const CUSTOMER_NAMES = [
+  "Isha P.",
+  "Rohan K.",
+  "Meera S.",
+  "Aditya R.",
+  "Priya M.",
+  "Karan V.",
+  "Neha T.",
+  "Vikram J.",
+]
+
 const PARTNER_NAMES = [
   "A. Sharma",
   "R. Verma",
@@ -92,7 +103,29 @@ function pickOrderStatus() {
   return "DELIVERED" as const
 }
 
+const PAYMENT_METHOD_WEIGHTS: Array<{
+  method: "UPI" | "CARD" | "COD" | "NET_BANKING" | "WALLET"
+  weight: number
+}> = [
+  { method: "UPI", weight: 42.8 },
+  { method: "CARD", weight: 31.4 },
+  { method: "COD", weight: 18.6 },
+  { method: "NET_BANKING", weight: 5.2 },
+  { method: "WALLET", weight: 2.0 },
+]
+
+function pickPaymentMethod() {
+  const total = PAYMENT_METHOD_WEIGHTS.reduce((sum, item) => sum + item.weight, 0)
+  let roll = random() * total
+  for (const item of PAYMENT_METHOD_WEIGHTS) {
+    if (roll < item.weight) return item.method
+    roll -= item.weight
+  }
+  return "UPI" as const
+}
+
 async function clear() {
+  await prisma.transaction.deleteMany()
   await prisma.refundCase.deleteMany()
   await prisma.partnerDocument.deleteMany()
   await prisma.complaint.deleteMany()
@@ -199,7 +232,7 @@ async function seedWorkspace(config: (typeof WORKSPACES)[number]) {
     (order) => order.status === "DELIVERED" || order.status === "REFUNDED",
   )
   const refundSample = deliveredOrders.slice(0, 5)
-  await Promise.all(
+  const refundCases = await Promise.all(
     refundSample.map((order, index) =>
       prisma.refundCase.create({
         data: {
@@ -227,6 +260,153 @@ async function seedWorkspace(config: (typeof WORKSPACES)[number]) {
       }),
     ),
   )
+
+  await seedLedgerTransactions(workspace.id, config, {
+    orders,
+    vendors,
+    deliveryPartners,
+    refundCases,
+  })
+}
+
+interface SeedWorkspaceData {
+  orders: Awaited<ReturnType<typeof prisma.order.create>>[]
+  vendors: Awaited<ReturnType<typeof prisma.vendor.create>>[]
+  deliveryPartners: Awaited<ReturnType<typeof prisma.deliveryPartner.create>>[]
+  refundCases: Awaited<ReturnType<typeof prisma.refundCase.create>>[]
+}
+
+async function seedLedgerTransactions(
+  workspaceId: string,
+  config: (typeof WORKSPACES)[number],
+  { orders, vendors, deliveryPartners, refundCases }: SeedWorkspaceData,
+) {
+  const vendorNameById = new Map(vendors.map((vendor) => [vendor.id, vendor.name]))
+  const approvedVendors = vendors.filter((vendor) => vendor.approvalStatus === "APPROVED")
+
+  let txnSeq = 773999
+  let refSeq = 2899
+  let setSeq = 8499
+  let paySeq = 4299
+  let crnSeq = 1399
+  let venRefSeq = 1040
+  let partnerRefSeq = 2370
+
+  const transactions: Array<Parameters<typeof prisma.transaction.create>[0]["data"]> = []
+
+  for (const order of orders) {
+    if (order.status === "CANCELLED") continue
+
+    const paymentMethod = pickPaymentMethod()
+    const grossValue = Number(order.grossValue)
+    const platformRevenue = Number(order.platformRevenue)
+    const commissionAmount = Math.round(platformRevenue * 0.65)
+    const deliveryFeeAmount = platformRevenue - commissionAmount
+
+    transactions.push({
+      workspaceId,
+      type: paymentMethod === "COD" ? "COD_COLLECTION" : "ORDER_PAYMENT",
+      transactionCode: `TXN-${txnSeq--}`,
+      reference: order.orderNumber,
+      counterparty: order.vendorId
+        ? (vendorNameById.get(order.vendorId) ?? "Unknown vendor")
+        : "Walk-in customer",
+      paymentMethod,
+      grossAmount: grossValue,
+      commissionAmount,
+      deliveryFeeAmount,
+      netAmount: grossValue - platformRevenue,
+      createdAt: order.placedAt,
+    })
+  }
+
+  for (const refundCase of refundCases) {
+    const order = orders.find((candidate) => candidate.id === refundCase.orderId)
+    transactions.push({
+      workspaceId,
+      type: "REFUND",
+      transactionCode: `REF-${refSeq--}`,
+      reference: order?.orderNumber ?? "—",
+      counterparty: pick(CUSTOMER_NAMES),
+      paymentMethod: "UPI",
+      grossAmount: refundCase.amount,
+      commissionAmount: 0,
+      deliveryFeeAmount: 0,
+      netAmount: Number(refundCase.amount) * -1,
+      createdAt: refundCase.createdAt,
+    })
+  }
+
+  for (const vendor of approvedVendors.slice(0, 4)) {
+    const grossAmount = randomInt(40000, 180000)
+    transactions.push({
+      workspaceId,
+      type: "VENDOR_SETTLEMENT",
+      transactionCode: `SET-${setSeq--}`,
+      reference: `VEN-${venRefSeq++}`,
+      counterparty: vendor.name,
+      paymentMethod: "BANK_TRANSFER",
+      grossAmount,
+      commissionAmount: 0,
+      deliveryFeeAmount: 0,
+      netAmount: -grossAmount,
+      createdAt: daysAgo(randomInt(0, 12)),
+    })
+  }
+
+  for (const partner of deliveryPartners.slice(0, 4)) {
+    const partnerRef = `DP-${partnerRefSeq++}`
+    const earnings = randomInt(4000, 12000)
+    transactions.push({
+      workspaceId,
+      type: "PARTNER_EARNINGS",
+      transactionCode: `PAY-${paySeq--}`,
+      reference: partnerRef,
+      counterparty: partner.name,
+      paymentMethod: "BANK_TRANSFER",
+      grossAmount: earnings,
+      commissionAmount: 0,
+      deliveryFeeAmount: 0,
+      netAmount: earnings,
+      createdAt: daysAgo(randomInt(0, 12)),
+    })
+
+    const payout = randomInt(3000, 10000)
+    transactions.push({
+      workspaceId,
+      type: "PAYOUT_HISTORY",
+      transactionCode: `PAY-${paySeq--}`,
+      reference: partnerRef,
+      counterparty: partner.name,
+      paymentMethod: random() < 0.5 ? "UPI" : "BANK_TRANSFER",
+      grossAmount: payout,
+      commissionAmount: 0,
+      deliveryFeeAmount: 0,
+      netAmount: -payout,
+      createdAt: daysAgo(randomInt(0, 12)),
+    })
+  }
+
+  for (const vendor of vendors.slice(0, 3)) {
+    const grossAmount = randomInt(500, 3000)
+    transactions.push({
+      workspaceId,
+      type: "CREDIT_NOTE",
+      transactionCode: `CRN-${crnSeq--}`,
+      reference: `${config.orderPrefix}-${88000 + randomInt(0, 149)}`,
+      counterparty: vendor.name,
+      paymentMethod: "STORE_CREDIT",
+      grossAmount,
+      commissionAmount: 0,
+      deliveryFeeAmount: 0,
+      netAmount: -grossAmount,
+      createdAt: daysAgo(randomInt(0, 20)),
+    })
+  }
+
+  for (const data of transactions) {
+    await prisma.transaction.create({ data })
+  }
 }
 
 async function main() {
@@ -235,7 +415,7 @@ async function main() {
     await seedWorkspace(config)
   }
   console.log(
-    "Seeded workspaces, vendors, delivery partners, orders, complaints, refunds and documents.",
+    "Seeded workspaces, vendors, delivery partners, orders, complaints, refunds, documents and ledger transactions.",
   )
 }
 

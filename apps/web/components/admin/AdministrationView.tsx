@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { fetchDashboard, fetchOverview } from "@/lib/dashboard-api"
 import type { DashboardData, OverviewData } from "@/types/dashboard"
+import { downloadCsv } from "@/lib/csv"
+import TransactionLedger from "./TransactionLedger"
 
 export type AdminMenuSection = {
   title: string
@@ -530,21 +532,6 @@ function AttentionIcon({ icon }: { icon: AdminAttentionItem["icon"] }) {
   )
 }
 
-function downloadCsv(filenameBase: string, headers: string[], rows: string[][]) {
-  const csv = [headers, ...rows]
-    .map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(","))
-    .join("\n")
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement("a")
-  link.href = url
-  link.download = `${filenameBase}.csv`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
-}
-
 const OVERVIEW_ICON_PATHS: Record<AdminOverview["icon"], string> = {
   food: "M3 3l18 18M8 3l13 13M3 8l13 13M14 3l7 7",
   mart: "M5 8h14l-1 13H6L5 8ZM8 8V6a4 4 0 0 1 8 0v2",
@@ -1024,6 +1011,8 @@ export default function AdministrationView({
                 </div>
               </div>
             </>
+          ) : current === "Transaction ledger" ? (
+            <TransactionLedger workspaceId={workspaceId} dateRange={dateRange} />
           ) : (
             <>
               <div className="admin-live">
