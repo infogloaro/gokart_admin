@@ -925,22 +925,24 @@ export default function AdministrationView({
                   <ul>
                     {data.transactions.map((transaction) => (
                       <li key={transaction.id}>
-                        <span className="admin-tx-icon" aria-hidden="true">
-                          🧾
-                        </span>
-                        <div className="admin-tx-info">
-                          <b>{transaction.id}</b>
-                          <small>
-                            {transaction.vendor} ·{" "}
-                            <em className={statusClass(transaction.status)}>
-                              {transaction.status}
-                            </em>
-                          </small>
-                        </div>
-                        <span className={`admin-tag admin-tag-${transaction.tag.toLowerCase()}`}>
-                          {transaction.tag}
-                        </span>
-                        <strong>{transaction.amount}</strong>
+                        <Link href={`/admin/${workspaceId}/${slugify("Transaction ledger")}`}>
+                          <span className="admin-tx-icon" aria-hidden="true">
+                            🧾
+                          </span>
+                          <div className="admin-tx-info">
+                            <b>{transaction.id}</b>
+                            <small>
+                              {transaction.vendor} ·{" "}
+                              <em className={statusClass(transaction.status)}>
+                                {transaction.status}
+                              </em>
+                            </small>
+                          </div>
+                          <span className={`admin-tag admin-tag-${transaction.tag.toLowerCase()}`}>
+                            {transaction.tag}
+                          </span>
+                          <strong>{transaction.amount}</strong>
+                        </Link>
                       </li>
                     ))}
                   </ul>
