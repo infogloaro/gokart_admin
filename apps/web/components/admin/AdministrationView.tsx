@@ -83,12 +83,18 @@ export default function AdministrationView({
   const current = section
     ? (data.menu.find((item) => slugify(item) === section) ?? data.menu[0] ?? "Global dashboard")
     : (data.menu[0] ?? "Global dashboard")
+  const searchablePages = [
+    ...FOOD.menu.map((item) => ({ item, workspaceId: "zoauro-food", workspace: FOOD.label })),
+    ...MART.menu.map((item) => ({ item, workspaceId: "gloaro-mart", workspace: MART.label })),
+  ]
   const matches = useMemo(
     () =>
       query.trim()
-        ? data.menu.filter((item) => item.toLowerCase().includes(query.toLowerCase()))
+        ? searchablePages.filter(({ item, workspace }) =>
+            `${item} ${workspace}`.toLowerCase().includes(query.toLowerCase()),
+          )
         : [],
-    [data.menu, query],
+    [query],
   )
   return (
     <main className="admin-shell">
@@ -128,13 +134,14 @@ export default function AdministrationView({
             />
             {matches.length > 0 && (
               <div className="admin-search-results">
-                {matches.map((item) => (
+                {matches.map(({ item, workspaceId: resultWorkspace, workspace }) => (
                   <Link
-                    key={item}
-                    href={`/admin/${workspaceId}/${slugify(item)}`}
+                    key={`${resultWorkspace}-${item}`}
+                    href={`/admin/${resultWorkspace}/${slugify(item)}`}
                     onClick={() => setQuery("")}
                   >
-                    {item}
+                    <b>{item}</b>
+                    <small>{workspace}</small>
                   </Link>
                 ))}
               </div>

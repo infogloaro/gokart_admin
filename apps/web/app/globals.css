@@ -155,6 +155,12 @@ body {
 .admin-search-results a:hover {
   background: #f1f5fb;
 }
+.admin-search-results small {
+  display: block;
+  margin-top: 3px;
+  color: #71809a;
+  font-size: 11px;
+}
 .admin-header strong {
   color: #182b4f;
   border: 1px solid #dbe3ee;
