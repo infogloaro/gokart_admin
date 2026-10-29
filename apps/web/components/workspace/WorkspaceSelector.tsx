@@ -4,7 +4,12 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useWorkspace } from "@/providers/WorkspaceProvider"
+import { FOOD, MART } from "@/components/admin/AdministrationView"
 import "./workspace-selector.css"
+
+function liveMetric(workspace: typeof FOOD, label: string) {
+  return workspace.metrics.find(([metricLabel]) => metricLabel === label)?.[1] ?? "—"
+}
 
 function FoodIcon() {
   return (
@@ -93,8 +98,8 @@ function businessDetails(name: string) {
       description:
         "Restaurant orders, preparation, food delivery partners, revenue and customer issues.",
       kind: "food",
-      orders: "—",
-      partners: "—",
+      orders: liveMetric(FOOD, "Total orders"),
+      partners: liveMetric(FOOD, "Delivery partners"),
     }
   }
   if (normalized.includes("gloaro") || normalized.includes("mart")) {
@@ -102,8 +107,8 @@ function businessDetails(name: string) {
       title: "GLOARO MART",
       description: "Marketplace orders, sellers, inventory, parcel shipments, revenue and returns.",
       kind: "mart",
-      orders: "—",
-      partners: "—",
+      orders: liveMetric(MART, "Total orders"),
+      partners: liveMetric(MART, "Delivery partners"),
     }
   }
   return {

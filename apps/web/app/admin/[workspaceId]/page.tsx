@@ -1,4 +1,10 @@
-import AdministrationView, { FOOD, MART } from "@/components/admin/AdministrationView"
+import AdministrationView, { ALL, FOOD, MART } from "@/components/admin/AdministrationView"
+
+function resolveWorkspace(workspaceId: string) {
+  if (workspaceId === "all") return ALL
+  if (workspaceId === "gloaro-mart") return MART
+  return FOOD
+}
 
 export default async function AdministrationPage({
   params,
@@ -6,10 +12,5 @@ export default async function AdministrationPage({
   params: Promise<{ workspaceId: string }>
 }) {
   const { workspaceId } = await params
-  return (
-    <AdministrationView
-      workspaceId={workspaceId}
-      data={workspaceId === "gloaro-mart" ? MART : FOOD}
-    />
-  )
+  return <AdministrationView workspaceId={workspaceId} data={resolveWorkspace(workspaceId)} />
 }
