@@ -120,6 +120,22 @@ export interface ReportsResponse {
   topVendors: TopVendorRow[]
 }
 
+export type NotificationKind = "order" | "vendor" | "partner" | "complaint" | "refund" | "document"
+
+export interface NotificationItem {
+  id: string
+  kind: NotificationKind
+  title: string
+  message: string
+  tags: string[]
+  createdAt: string
+  target: string
+}
+
+export interface NotificationsResponse {
+  items: NotificationItem[]
+}
+
 export interface ResolvedWorkspace {
   id: string
   slug: string

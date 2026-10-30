@@ -55,6 +55,14 @@ export function createDashboardController(
       return service.getReports(principal, workspaceSlug, range, period)
     }),
 
+    getNotifications: handle((req, principal) => {
+      const { workspaceSlug } = parseDashboardQuery(
+        req.params as Record<string, unknown>,
+        req.query as Record<string, unknown>,
+      )
+      return service.getNotifications(principal, workspaceSlug)
+    }),
+
     getOverview: handle((req, principal) => {
       const { workspaceSlug, range } = parseDashboardQuery(
         req.params as Record<string, unknown>,

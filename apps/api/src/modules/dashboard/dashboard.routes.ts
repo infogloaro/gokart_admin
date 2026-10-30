@@ -29,6 +29,7 @@ export function createDashboardRouter(dependencies: DashboardRouterDependencies)
   router.get("/:workspaceId/overview", controller.getOverview)
   router.get("/:workspaceId/revenue", controller.getRevenue)
   router.get("/:workspaceId/reports", controller.getReports)
+  router.get("/:workspaceId/notifications", controller.getNotifications)
 
   return router
 }

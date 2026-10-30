@@ -104,6 +104,26 @@ export interface ReportsResponse {
   data: ReportsData
 }
 
+export type NotificationKind = "order" | "vendor" | "partner" | "complaint" | "refund" | "document"
+
+export interface NotificationItem {
+  id: string
+  kind: NotificationKind
+  title: string
+  message: string
+  tags: string[]
+  createdAt: string
+  target: string
+}
+
+export interface NotificationsData {
+  items: NotificationItem[]
+}
+
+export interface NotificationsResponse {
+  data: NotificationsData
+}
+
 export interface RevenueResponse {
   data: RevenueData
 }

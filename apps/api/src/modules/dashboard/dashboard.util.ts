@@ -66,7 +66,7 @@ const DAY_MS = 24 * 60 * 60 * 1000
 export function buildPeriodBuckets(
   range: DateRange,
   period: "daily" | "weekly" | "monthly",
-  maxBuckets = 31,
+  maxBuckets = 62,
 ): TrendBucket[] {
   const buckets: TrendBucket[] = []
   const label = (date: Date) =>
@@ -74,12 +74,16 @@ export function buildPeriodBuckets(
       ? date.toLocaleDateString("en-US", { month: "short", year: "2-digit", timeZone: "UTC" })
       : date.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })
 
+  // Widen the step instead of truncating, so the buckets always cover the whole range.
+  const totalDays = Math.ceil((range.end.getTime() - range.start.getTime()) / DAY_MS) + 1
+  const stepDays = Math.max(period === "weekly" ? 7 : 1, Math.ceil(totalDays / maxBuckets))
+
   let cursor = new Date(range.start)
-  while (cursor.getTime() <= range.end.getTime() && buckets.length < maxBuckets) {
+  while (cursor.getTime() <= range.end.getTime()) {
     const next =
       period === "monthly"
         ? new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 1))
-        : new Date(cursor.getTime() + (period === "weekly" ? 7 : 1) * DAY_MS)
+        : new Date(cursor.getTime() + stepDays * DAY_MS)
     const end = new Date(Math.min(next.getTime() - 1, range.end.getTime()))
     buckets.push({ start: new Date(cursor), end, label: label(cursor) })
     cursor = next

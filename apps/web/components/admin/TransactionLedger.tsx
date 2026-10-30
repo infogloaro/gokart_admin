@@ -20,9 +20,11 @@ const EXPORT_LIMIT = 1000
 export default function TransactionLedger({
   workspaceId,
   dateRange,
+  lockedType,
 }: {
   workspaceId: string
   dateRange: DateRangeInput
+  lockedType?: TransactionTypeFilter
 }) {
   const [summary, setSummary] = useState<LedgerSummary | null>(null)
   const [summaryLoading, setSummaryLoading] = useState(true)
@@ -30,7 +32,7 @@ export default function TransactionLedger({
 
   const [searchInput, setSearchInput] = useState("")
   const [search, setSearch] = useState("")
-  const [type, setType] = useState<TransactionTypeFilter | "">("")
+  const [type, setType] = useState<TransactionTypeFilter | "">(lockedType ?? "")
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodFilter | "">("")
   const [page, setPage] = useState(1)
 
@@ -212,17 +214,19 @@ export default function TransactionLedger({
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
           />
-          <select
-            value={type}
-            onChange={(event) => setType(event.target.value as TransactionTypeFilter | "")}
-          >
-            <option value="">All transaction types</option>
-            {TRANSACTION_TYPE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          {!lockedType && (
+            <select
+              value={type}
+              onChange={(event) => setType(event.target.value as TransactionTypeFilter | "")}
+            >
+              <option value="">All transaction types</option>
+              {TRANSACTION_TYPE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          )}
           <select
             value={paymentMethod}
             onChange={(event) => setPaymentMethod(event.target.value as PaymentMethodFilter | "")}

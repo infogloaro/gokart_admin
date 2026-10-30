@@ -16,6 +16,8 @@ import type {
   AttentionItem,
   DashboardResponse,
   DateRange,
+  NotificationItem,
+  NotificationsResponse,
   OverviewResponse,
   ReportPeriod,
   ReportsResponse,
@@ -34,6 +36,8 @@ const RECENT_TRANSACTIONS_LIMIT = 5
 const REVENUE_TRANSACTIONS_LIMIT = 10
 const REVENUE_CHART_BUCKETS = 11
 const TOP_VENDORS_LIMIT = 5
+const NOTIFICATIONS_PER_SOURCE = 8
+const NOTIFICATIONS_LIMIT = 20
 
 function fail(message: string, status: number): never {
   throw Object.assign(new Error(message), { status })
@@ -425,7 +429,10 @@ export function createDashboardService(
       workspaces.map((workspace) => workspace.id),
       range,
     )
-    const buckets = buildPeriodBuckets(range, period)
+    const periodBuckets = buildPeriodBuckets(range, period)
+    // A period wider than the range (e.g. monthly over 30 days) yields a single
+    // point, which cannot draw a line, so fall back to an even split of the range.
+    const buckets = periodBuckets.length >= 2 ? periodBuckets : buildTrendBuckets(range)
     const series: TrendSeries[] = workspaces.map((workspace) => {
       const sums = buckets.map((bucket) =>
         orders
@@ -474,7 +481,100 @@ export function createDashboardService(
     })
   }
 
+  async function buildNotifications(workspaceIds: string[]): Promise<NotificationItem[]> {
+    const startOfToday = new Date()
+    startOfToday.setUTCHours(0, 0, 0, 0)
+
+    const [orders, vendors, partners, complaints, refunds, expiringDocs] = await Promise.all([
+      repository.listRecentOrdersForNotifications(workspaceIds, NOTIFICATIONS_PER_SOURCE),
+      repository.listRecentVendors(workspaceIds, NOTIFICATIONS_PER_SOURCE),
+      repository.listRecentDeliveryPartners(workspaceIds, NOTIFICATIONS_PER_SOURCE),
+      repository.listRecentComplaints(workspaceIds, NOTIFICATIONS_PER_SOURCE),
+      repository.listEscalatedRefunds(workspaceIds, NOTIFICATIONS_PER_SOURCE),
+      repository.countExpiringPartnerDocuments(
+        workspaceIds,
+        new Date(Date.now() + PARTNER_DOC_WINDOW_DAYS * 24 * 60 * 60 * 1000),
+      ),
+    ])
+
+    const items: NotificationItem[] = [
+      ...orders.map((order) => ({
+        id: `order-${order.id}`,
+        kind: "order" as const,
+        title: "New order received",
+        message: `${order.customerName} placed an order worth ${formatInr(toNumber(order.grossValue))}${order.vendor ? ` at ${order.vendor.name}` : ""}.`,
+        tags: [order.orderNumber, order.workspace.name],
+        createdAt: order.placedAt.toISOString(),
+        target: "Orders",
+      })),
+      ...vendors.map((vendor) => ({
+        id: `vendor-${vendor.id}`,
+        kind: "vendor" as const,
+        title: vendor.approvalStatus === "PENDING" ? "New vendor application" : "Vendor added",
+        message:
+          vendor.approvalStatus === "PENDING"
+            ? `${vendor.name} has applied to join. Your approval is required.`
+            : `${vendor.name} was added as a ${titleCase(vendor.approvalStatus)} vendor.`,
+        tags: [vendor.name, vendor.workspace.name],
+        createdAt: vendor.createdAt.toISOString(),
+        target: "Vendors",
+      })),
+      ...partners.map((partner) => ({
+        id: `partner-${partner.id}`,
+        kind: "partner" as const,
+        title: "New delivery partner",
+        message: `${partner.name} was added as a delivery partner (${titleCase(partner.status)}).`,
+        tags: [partner.name, partner.workspace.name],
+        createdAt: partner.createdAt.toISOString(),
+        target: "Delivery partners",
+      })),
+      ...complaints.map((complaint) => ({
+        id: `complaint-${complaint.id}`,
+        kind: "complaint" as const,
+        title: "New complaint",
+        message: complaint.title,
+        tags: [complaint.workspace.name],
+        createdAt: complaint.createdAt.toISOString(),
+        target: "Complaints & exceptions",
+      })),
+      ...refunds.map((refund) => ({
+        id: `refund-${refund.id}`,
+        kind: "refund" as const,
+        title: "Refund escalated",
+        message: `${refund.order?.orderNumber ?? "A refund"} for ${formatInr(toNumber(refund.amount))} requires Finance review.`,
+        tags: [refund.order?.orderNumber ?? "Refund", refund.workspace.name],
+        createdAt: refund.createdAt.toISOString(),
+        target: "Finance & payouts",
+      })),
+    ]
+
+    if (expiringDocs > 0) {
+      items.push({
+        id: `documents-${startOfToday.toISOString().slice(0, 10)}`,
+        kind: "document",
+        title: "Partner documents expiring",
+        message: `${expiringDocs} document${expiringDocs === 1 ? "" : "s"} expire within ${PARTNER_DOC_WINDOW_DAYS} days.`,
+        tags: [],
+        createdAt: startOfToday.toISOString(),
+        target: "Delivery partners",
+      })
+    }
+
+    return items
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, NOTIFICATIONS_LIMIT)
+  }
+
   return {
+    async getNotifications(
+      principal: WorkspacePrincipal,
+      workspaceSlug: string,
+    ): Promise<NotificationsResponse> {
+      const workspaces = await resolveWorkspaces(principal, workspaceSlug)
+      const items = await buildNotifications(workspaces.map((workspace) => workspace.id))
+      return { items }
+    },
+
     async getReports(
       principal: WorkspacePrincipal,
       workspaceSlug: string,

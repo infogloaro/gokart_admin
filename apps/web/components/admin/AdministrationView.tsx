@@ -10,6 +10,8 @@ import { RevenueTrendChart } from "./TrendChart"
 import RevenuePage from "./RevenuePage"
 import ReportsPage from "./ReportsPage"
 import NavIcon from "./NavIcon"
+import FinancePage from "./finance/FinancePage"
+import HeaderActions from "./HeaderActions"
 
 export type AdminMenuSection = {
   title: string
@@ -653,7 +655,11 @@ export default function AdministrationView({
               </ul>
             )}
           </div>
-          <span>◯ ♧ AM Arjun Menon</span>
+          <HeaderActions
+            workspaceId={workspaceId}
+            workspaceLabel={data.label}
+            refreshKey={lastRefreshed}
+          />
         </header>
         <div className="admin-content">
           <div className="admin-title-row">
@@ -903,6 +909,12 @@ export default function AdministrationView({
             <RevenuePage
               workspaceId={workspaceId}
               businessSlug={current === "Food revenue" ? "zoauro-food" : "gloaro-mart"}
+              dateRange={dateRange}
+              refreshKey={lastRefreshed}
+            />
+          ) : current === "Finance & payouts" ? (
+            <FinancePage
+              workspaceId={workspaceId}
               dateRange={dateRange}
               refreshKey={lastRefreshed}
             />

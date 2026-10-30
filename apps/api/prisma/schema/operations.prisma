@@ -51,15 +51,27 @@ model Vendor {
 }
 
 model DeliveryPartner {
-  id          String                @id @default(cuid())
-  workspaceId String
-  name        String
-  status      DeliveryPartnerStatus @default(ACTIVE)
-  createdAt   DateTime              @default(now())
+  id              String                @id @default(cuid())
+  workspaceId     String
+  name            String
+  status          DeliveryPartnerStatus @default(ACTIVE)
+  createdAt       DateTime              @default(now())
+  code            String?
+  accountCode     String?
+  adminId         String?
+  monthlySalary   Decimal               @default(0) @db.Decimal(12, 2)
+  fixedPay        Decimal               @default(0) @db.Decimal(12, 2)
+  perDeliveryRate Decimal               @default(0) @db.Decimal(12, 2)
+  feeSharePercent Decimal               @default(0) @db.Decimal(5, 2)
 
-  workspace Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  documents PartnerDocument[]
-  orders    Order[]
+  workspace      Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  admin          AdminAccount?       @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  documents      PartnerDocument[]
+  orders         Order[]
+  remittances    PartnerRemittance[]
+  adjustments    PayAdjustment[]
+  payouts        Payout[]
+  changeRequests PayChangeRequest[]
 
   @@index([workspaceId])
   @@index([workspaceId, status])
@@ -74,6 +86,7 @@ model Order {
   customerName      String        @default("Walk-in customer")
   status            OrderStatus   @default(PLACED)
   paymentStatus     PaymentStatus @default(PENDING)
+  paymentMethod     PaymentMethod @default(UPI)
   grossValue        Decimal       @db.Decimal(12, 2)
   platformRevenue   Decimal       @db.Decimal(12, 2)
   commissionAmount  Decimal       @default(0) @db.Decimal(12, 2)

@@ -1,4 +1,5 @@
 import { PrismaClient } from "../src/generated/client/index.js"
+import { createFinanceService } from "../src/modules/finance/finance.service.js"
 
 const prisma = new PrismaClient()
 
@@ -133,14 +134,78 @@ function pickPaymentMethod() {
 }
 
 async function clear() {
+  await prisma.financeAuditLog.deleteMany()
+  await prisma.payChangeRequest.deleteMany()
+  await prisma.payAdjustment.deleteMany()
+  await prisma.payout.deleteMany()
+  await prisma.partnerRemittance.deleteMany()
   await prisma.transaction.deleteMany()
   await prisma.refundCase.deleteMany()
   await prisma.partnerDocument.deleteMany()
   await prisma.complaint.deleteMany()
   await prisma.order.deleteMany()
   await prisma.deliveryPartner.deleteMany()
+  await prisma.adminAccount.deleteMany()
   await prisma.vendor.deleteMany()
 }
+
+const ADMIN_ACCOUNTS: Record<
+  string,
+  Array<{
+    name: string
+    location: string
+    accountCode: string
+    monthlySalary: number
+    commissionPercent: number
+    incentiveAmount: number
+    onTimeThreshold: number
+  }>
+> = {
+  "zoauro-food": [
+    {
+      name: "Priya Shankar",
+      location: "Chennai · Food operations",
+      accountCode: "ADA-70104",
+      monthlySalary: 45000,
+      commissionPercent: 2,
+      incentiveAmount: 8000,
+      onTimeThreshold: 92,
+    },
+    {
+      name: "Fathima Begum",
+      location: "Coimbatore · Food operations",
+      accountCode: "ADA-70138",
+      monthlySalary: 38000,
+      commissionPercent: 2,
+      incentiveAmount: 5000,
+      onTimeThreshold: 93,
+    },
+  ],
+  "gloaro-mart": [
+    {
+      name: "Ravi Chandran",
+      location: "Madurai · Mart operations",
+      accountCode: "ADA-70121",
+      monthlySalary: 40000,
+      commissionPercent: 1.5,
+      incentiveAmount: 6000,
+      onTimeThreshold: 90,
+    },
+  ],
+}
+
+const PARTNER_PAY_PLANS = [
+  { monthlySalary: 0, fixedPay: 0, perDeliveryRate: 30, feeSharePercent: 0 },
+  { monthlySalary: 14000, fixedPay: 0, perDeliveryRate: 10, feeSharePercent: 0 },
+  { monthlySalary: 0, fixedPay: 0, perDeliveryRate: 32, feeSharePercent: 0 },
+  { monthlySalary: 0, fixedPay: 0, perDeliveryRate: 0, feeSharePercent: 60 },
+  { monthlySalary: 12000, fixedPay: 0, perDeliveryRate: 8, feeSharePercent: 0 },
+  { monthlySalary: 0, fixedPay: 0, perDeliveryRate: 28, feeSharePercent: 0 },
+  { monthlySalary: 10000, fixedPay: 2000, perDeliveryRate: 5, feeSharePercent: 0 },
+  { monthlySalary: 0, fixedPay: 0, perDeliveryRate: 0, feeSharePercent: 55 },
+  { monthlySalary: 0, fixedPay: 0, perDeliveryRate: 35, feeSharePercent: 0 },
+  { monthlySalary: 15000, fixedPay: 0, perDeliveryRate: 6, feeSharePercent: 0 },
+]
 
 async function seedWorkspace(config: (typeof WORKSPACES)[number]) {
   const workspace = await prisma.workspace.upsert({
@@ -162,14 +227,25 @@ async function seedWorkspace(config: (typeof WORKSPACES)[number]) {
     ),
   )
 
+  const admins = await Promise.all(
+    (ADMIN_ACCOUNTS[config.slug] ?? []).map((admin) =>
+      prisma.adminAccount.create({ data: { workspaceId: workspace.id, ...admin } }),
+    ),
+  )
+  const codeBase = config.businessType === "FOOD" ? 2370 : 2470
+
   const deliveryPartners = await Promise.all(
-    PARTNER_NAMES.map((name) =>
+    PARTNER_NAMES.map((name, index) =>
       prisma.deliveryPartner.create({
         data: {
           workspaceId: workspace.id,
           name,
           status: random() < 0.9 ? "ACTIVE" : "INACTIVE",
           createdAt: daysAgo(randomInt(1, 90)),
+          code: `DP-${codeBase + index}`,
+          accountCode: `DPA-${40200 + index * 13 + (config.businessType === "FOOD" ? 0 : 500)}`,
+          adminId: admins.length > 0 ? admins[index % admins.length]!.id : null,
+          ...PARTNER_PAY_PLANS[index % PARTNER_PAY_PLANS.length]!,
         },
       }),
     ),
@@ -212,10 +288,12 @@ async function seedWorkspace(config: (typeof WORKSPACES)[number]) {
     const assignedPartner =
       status === "PLACED" || status === "CANCELLED" ? null : pick(activePartners)
 
+    const paymentMethod = pickPaymentMethod()
     const order = await prisma.order.create({
       data: {
         workspaceId: workspace.id,
         orderNumber: `${config.orderPrefix}-${(88000 + i).toString()}`,
+        paymentMethod,
         vendorId: approvedVendors.length > 0 ? pick(approvedVendors).id : null,
         deliveryPartnerId: assignedPartner?.id ?? null,
         customerName: pick(CUSTOMER_NAMES),
@@ -295,6 +373,156 @@ async function seedWorkspace(config: (typeof WORKSPACES)[number]) {
     deliveryPartners,
     refundCases,
   })
+
+  await seedFinanceActivity(workspace.id, admins, deliveryPartners, orders)
+}
+
+function monthStart(offset: number): Date {
+  const now = new Date()
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset, 1))
+}
+
+async function seedFinanceActivity(
+  workspaceId: string,
+  admins: Awaited<ReturnType<typeof prisma.adminAccount.create>>[],
+  partners: Awaited<ReturnType<typeof prisma.deliveryPartner.create>>[],
+  orders: Awaited<ReturnType<typeof prisma.order.create>>[],
+) {
+  const now = new Date()
+  const methods = ["CASH_DEPOSIT", "UPI", "BANK_TRANSFER"] as const
+
+  for (const partner of partners) {
+    for (const offset of [-1, 0]) {
+      const start = monthStart(offset)
+      const end = offset === 0 ? now : new Date(monthStart(1).getTime() - 1)
+      const collected = orders
+        .filter(
+          (order) =>
+            order.deliveryPartnerId === partner.id &&
+            order.status === "DELIVERED" &&
+            order.paymentMethod === "COD" &&
+            order.deliveredAt !== null &&
+            order.deliveredAt >= start &&
+            order.deliveredAt <= end,
+        )
+        .reduce((sum, order) => sum + Number(order.grossValue), 0)
+      if (collected <= 0) continue
+      const ratio = offset === -1 ? 0.85 + random() * 0.15 : 0.55 + random() * 0.35
+      const total = Math.round(collected * ratio)
+      const parts = random() < 0.5 ? 1 : 2
+      for (let part = 0; part < parts; part += 1) {
+        const span = Math.max(1, Math.floor((end.getTime() - start.getTime()) / 86_400_000))
+        await prisma.partnerRemittance.create({
+          data: {
+            workspaceId,
+            partnerId: partner.id,
+            amount: Math.round(total / parts),
+            method: pick(methods),
+            remittedAt: new Date(start.getTime() + randomInt(1, span) * 86_400_000),
+          },
+        })
+      }
+    }
+  }
+
+  if (partners[2]) {
+    await prisma.payAdjustment.create({
+      data: {
+        workspaceId,
+        partnerId: partners[2].id,
+        kind: "BONUS",
+        amount: 750,
+        note: "Festival peak-hour bonus",
+      },
+    })
+  }
+  if (partners[3]) {
+    await prisma.payAdjustment.create({
+      data: {
+        workspaceId,
+        partnerId: partners[3].id,
+        kind: "DEDUCTION",
+        amount: 200,
+        note: "Damaged parcel",
+      },
+    })
+  }
+
+  const requester = admins[0]
+  if (requester && partners[2] && admins.length > 1) {
+    await prisma.payChangeRequest.create({
+      data: {
+        workspaceId,
+        code: "REQ-1041",
+        partnerId: partners[2].id,
+        requestedById: requester.id,
+        proposedPerDelivery: 35,
+        reason: "Rain-season retention: raise per-delivery rate",
+        createdAt: daysAgo(4, 11),
+      },
+    })
+  }
+  if (requester && partners[5] && admins.length === 1) {
+    await prisma.payChangeRequest.create({
+      data: {
+        workspaceId,
+        code: "REQ-1042",
+        partnerId: partners[5].id,
+        requestedById: requester.id,
+        proposedFixedPay: 3000,
+        proposedPerDelivery: 28,
+        reason: "Long-distance mart route allowance",
+        createdAt: daysAgo(3, 16),
+      },
+    })
+  }
+}
+
+async function seedFinancePayouts() {
+  const workspaces = await prisma.workspace.findMany({ select: { id: true } })
+  const service = createFinanceService(prisma, async () => workspaces.map(({ id }) => id))
+  const principal = { userId: "seed" }
+  const previous = monthStart(-1)
+  const cycle = `${previous.getUTCFullYear()}-${String(previous.getUTCMonth() + 1).padStart(2, "0")}`
+  await service.generatePayouts(principal, "all", cycle)
+
+  const payouts = await prisma.payout.findMany({ where: { cycle }, orderBy: { code: "asc" } })
+  const keepPending = new Set<string>()
+  const firstPartner = payouts.find((payout) => payout.kind === "PARTNER")
+  const firstAdmin = payouts.find((payout) => payout.kind === "ADMIN")
+  const secondPartner = payouts.filter((payout) => payout.kind === "PARTNER")[1]
+  if (firstPartner) keepPending.add(firstPartner.id)
+  if (firstAdmin) keepPending.add(firstAdmin.id)
+
+  for (const payout of payouts) {
+    if (keepPending.has(payout.id)) continue
+    const paidAt = new Date(payout.dueDate.getTime() - 2 * 86_400_000)
+    await prisma.payout.update({
+      where: { id: payout.id },
+      data: {
+        status: payout.id === secondPartner?.id ? "PAID" : "SETTLED",
+        approvedAt: new Date(paidAt.getTime() - 86_400_000),
+        approvedBy: "Arjun Menon (Super Admin)",
+        paidAt,
+      },
+    })
+  }
+  await prisma.financeAuditLog.createMany({
+    data: [
+      {
+        actor: "System",
+        action: "Payouts generated",
+        detail: `${payouts.length} payouts generated for the previous cycle`,
+        createdAt: daysAgo(28, 9),
+      },
+      {
+        actor: "Arjun Menon (Super Admin)",
+        action: "Payouts approved",
+        detail: `${payouts.length - keepPending.size} payouts approved and settled`,
+        createdAt: daysAgo(26, 15),
+      },
+    ],
+  })
 }
 
 interface SeedWorkspaceData {
@@ -325,7 +553,7 @@ async function seedLedgerTransactions(
   for (const order of orders) {
     if (order.status === "CANCELLED") continue
 
-    const paymentMethod = pickPaymentMethod()
+    const paymentMethod = order.paymentMethod
     const grossValue = Number(order.grossValue)
     const platformRevenue = Number(order.platformRevenue)
     const commissionAmount = Number(order.commissionAmount)
@@ -442,6 +670,7 @@ async function main() {
   for (const config of WORKSPACES) {
     await seedWorkspace(config)
   }
+  await seedFinancePayouts()
   console.log(
     "Seeded workspaces, vendors, delivery partners, orders, complaints, refunds, documents and ledger transactions.",
   )

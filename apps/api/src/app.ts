@@ -7,6 +7,7 @@ import { healthRouter } from "./routes/health.js"
 import { createWorkspaceRouter } from "./modules/workspace.routes.js"
 import { createDashboardRouter } from "./modules/dashboard/dashboard.routes.js"
 import { createLedgerRouter } from "./modules/ledger/ledger.routes.js"
+import { createFinanceRouter } from "./modules/finance/finance.routes.js"
 import type { PrismaClient } from "./generated/client/index.js"
 
 // Authentication and membership resolution are supplied by the auth module
@@ -43,6 +44,7 @@ export function createApp() {
   app.use("/api/workspaces", createWorkspaceRouter(authDependencies))
   app.use("/api/workspaces", createDashboardRouter(authDependencies))
   app.use("/api/workspaces", createLedgerRouter(authDependencies))
+  app.use("/api/workspaces", createFinanceRouter(authDependencies))
 
   app.use(
     (

@@ -1,4 +1,3 @@
-
 model Workspace {
   id        String   @id @default(cuid())
   name      String
@@ -7,14 +6,19 @@ model Workspace {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  activeContexts   ActiveWorkspaceContext[]
-  vendors          Vendor[]
-  deliveryPartners DeliveryPartner[]
-  orders           Order[]
-  complaints       Complaint[]
-  refundCases      RefundCase[]
-  partnerDocuments PartnerDocument[]
-  transactions     Transaction[]
+  activeContexts    ActiveWorkspaceContext[]
+  vendors           Vendor[]
+  deliveryPartners  DeliveryPartner[]
+  orders            Order[]
+  complaints        Complaint[]
+  refundCases       RefundCase[]
+  partnerDocuments  PartnerDocument[]
+  transactions      Transaction[]
+  adminAccounts     AdminAccount[]
+  remittances       PartnerRemittance[]
+  payAdjustments    PayAdjustment[]
+  payouts           Payout[]
+  payChangeRequests PayChangeRequest[]
 }
 
 model ActiveWorkspaceContext {

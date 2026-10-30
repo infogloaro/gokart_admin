@@ -115,28 +115,49 @@ export default function ReportsPage({
       </div>
 
       <div className="admin-panels">
-        <div>
-          <h2>Business comparison</h2>
-          <p>{periodLabel} platform revenue</p>
-          {hasChart ? (
-            <RevenueTrendChart series={data.comparison.series} days={data.comparison.days} />
-          ) : (
-            <p>
-              {loading
-                ? "Loading…"
-                : "Not enough data for this view. Try a wider date range or a shorter period."}
-            </p>
-          )}
-        </div>
-        <div>
-          <h2>Top vendor performance</h2>
-          <p>By gross order value</p>
+        <section className="reports-card">
+          <header className="reports-card-head">
+            <div>
+              <h2>Business comparison</h2>
+              <p>{periodLabel} platform revenue</p>
+            </div>
+            <span aria-hidden="true">⋯</span>
+          </header>
+          <div className="reports-card-body">
+            {hasChart ? (
+              <RevenueTrendChart
+                series={data.comparison.series}
+                days={data.comparison.days}
+                zeroBased
+              />
+            ) : (
+              <p className="reports-empty">
+                {loading ? "Loading…" : "No orders in this date range to chart."}
+              </p>
+            )}
+          </div>
+        </section>
+        <section className="reports-card">
+          <header className="reports-card-head">
+            <div>
+              <h2>Top vendor performance</h2>
+              <p>By gross order value</p>
+            </div>
+            <span aria-hidden="true">⋯</span>
+          </header>
           <ul className="reports-vendors">
             {(data?.topVendors ?? []).map((vendor) => (
               <li key={vendor.id}>
-                <span className="admin-tx-icon" aria-hidden="true">
-                  🧾
-                </span>
+                <svg viewBox="0 0 24 24" aria-hidden="true" className="reports-vendor-icon">
+                  <path
+                    d="M6 3h12v18l-3-2-3 2-3-2-3 2ZM9 8h6M9 12h6M9 16h3"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
                 <div className="admin-tx-info">
                   <b>{vendor.name}</b>
                   <small>
@@ -149,10 +170,12 @@ export default function ReportsPage({
                 <strong>{vendor.amount}</strong>
               </li>
             ))}
-            {data && data.topVendors.length === 0 && <li>No vendor orders in this date range.</li>}
-            {!data && loading && <li>Loading…</li>}
+            {data && data.topVendors.length === 0 && (
+              <li className="reports-empty">No vendor orders in this date range.</li>
+            )}
+            {!data && loading && <li className="reports-empty">Loading…</li>}
           </ul>
-        </div>
+        </section>
       </div>
     </>
   )

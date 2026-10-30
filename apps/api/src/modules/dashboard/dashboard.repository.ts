@@ -176,6 +176,82 @@ export function createDashboardRepository(prisma: PrismaClient) {
       })
     },
 
+    listRecentOrdersForNotifications(workspaceIds: string[], limit: number) {
+      return prisma.order.findMany({
+        where: { workspaceId: { in: workspaceIds } },
+        orderBy: { placedAt: "desc" },
+        take: limit,
+        select: {
+          id: true,
+          orderNumber: true,
+          customerName: true,
+          grossValue: true,
+          placedAt: true,
+          workspace: { select: { name: true } },
+          vendor: { select: { name: true } },
+        },
+      })
+    },
+
+    listRecentVendors(workspaceIds: string[], limit: number) {
+      return prisma.vendor.findMany({
+        where: { workspaceId: { in: workspaceIds } },
+        orderBy: { createdAt: "desc" },
+        take: limit,
+        select: {
+          id: true,
+          name: true,
+          approvalStatus: true,
+          createdAt: true,
+          workspace: { select: { name: true } },
+        },
+      })
+    },
+
+    listRecentDeliveryPartners(workspaceIds: string[], limit: number) {
+      return prisma.deliveryPartner.findMany({
+        where: { workspaceId: { in: workspaceIds } },
+        orderBy: { createdAt: "desc" },
+        take: limit,
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          createdAt: true,
+          workspace: { select: { name: true } },
+        },
+      })
+    },
+
+    listRecentComplaints(workspaceIds: string[], limit: number) {
+      return prisma.complaint.findMany({
+        where: { workspaceId: { in: workspaceIds }, status: "OPEN" },
+        orderBy: { createdAt: "desc" },
+        take: limit,
+        select: {
+          id: true,
+          title: true,
+          createdAt: true,
+          workspace: { select: { name: true } },
+        },
+      })
+    },
+
+    listEscalatedRefunds(workspaceIds: string[], limit: number) {
+      return prisma.refundCase.findMany({
+        where: { workspaceId: { in: workspaceIds }, status: "ESCALATED" },
+        orderBy: { createdAt: "desc" },
+        take: limit,
+        select: {
+          id: true,
+          amount: true,
+          createdAt: true,
+          workspace: { select: { name: true } },
+          order: { select: { orderNumber: true } },
+        },
+      })
+    },
+
     listPendingVendorApprovals(workspaceIds: string[]) {
       return prisma.vendor.findMany({
         where: { workspaceId: { in: workspaceIds }, approvalStatus: "PENDING" },

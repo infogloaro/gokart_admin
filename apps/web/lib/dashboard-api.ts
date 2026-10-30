@@ -2,6 +2,8 @@ import type {
   DashboardData,
   DashboardResponse,
   DateRangeInput,
+  NotificationsData,
+  NotificationsResponse,
   OverviewData,
   OverviewResponse,
   ReportPeriod,
@@ -77,6 +79,13 @@ export async function fetchReports(
   const params = new URLSearchParams({ start: range.start, end: range.end, period })
   const result = await request<ReportsResponse>(
     `/api/workspaces/${encodeURIComponent(workspaceId)}/reports?${params.toString()}`,
+  )
+  return result.data
+}
+
+export async function fetchNotifications(workspaceId: string): Promise<NotificationsData> {
+  const result = await request<NotificationsResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/notifications`,
   )
   return result.data
 }
