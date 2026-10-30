@@ -174,14 +174,7 @@ export const MART: AdminWorkspace = {
     },
     {
       title: "OPERATIONS",
-      items: [
-        "Vendors",
-        "Delivery partners",
-        "Orders",
-        "Products & inventory",
-        "Complaints & exceptions",
-        "Live tracking",
-      ],
+      items: ["Vendors", "Delivery partners", "Orders", "Complaints & exceptions", "Live tracking"],
     },
     {
       title: "FINANCIAL",
@@ -239,14 +232,7 @@ export const ALL: AdminWorkspace = {
     },
     {
       title: "OPERATIONS",
-      items: [
-        "Vendors",
-        "Delivery partners",
-        "Orders",
-        "Products & inventory",
-        "Complaints & exceptions",
-        "Live tracking",
-      ],
+      items: ["Vendors", "Delivery partners", "Orders", "Complaints & exceptions", "Live tracking"],
     },
     {
       title: "FINANCIAL",
