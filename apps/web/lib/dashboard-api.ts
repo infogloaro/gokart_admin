@@ -4,6 +4,9 @@ import type {
   DateRangeInput,
   OverviewData,
   OverviewResponse,
+  ReportPeriod,
+  ReportsData,
+  ReportsResponse,
   RevenueData,
   RevenueResponse,
 } from "@/types/dashboard"
@@ -62,6 +65,18 @@ export async function fetchRevenue(
   const params = new URLSearchParams({ start: range.start, end: range.end, business: businessSlug })
   const result = await request<RevenueResponse>(
     `/api/workspaces/${encodeURIComponent(workspaceId)}/revenue?${params.toString()}`,
+  )
+  return result.data
+}
+
+export async function fetchReports(
+  workspaceId: string,
+  period: ReportPeriod,
+  range: DateRangeInput,
+): Promise<ReportsData> {
+  const params = new URLSearchParams({ start: range.start, end: range.end, period })
+  const result = await request<ReportsResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/reports?${params.toString()}`,
   )
   return result.data
 }

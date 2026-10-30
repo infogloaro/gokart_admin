@@ -153,6 +153,29 @@ export function createDashboardRepository(prisma: PrismaClient) {
       })
     },
 
+    groupOrdersByVendor(workspaceIds: string[], range: DateRange, limit: number) {
+      return prisma.order.groupBy({
+        by: ["vendorId"],
+        where: {
+          workspaceId: { in: workspaceIds },
+          vendorId: { not: null },
+          placedAt: { gte: range.start, lte: range.end },
+        },
+        _count: { _all: true },
+        _sum: { grossValue: true },
+        orderBy: { _sum: { grossValue: "desc" } },
+        take: limit,
+      })
+    },
+
+    findVendorsByIds(ids: string[]) {
+      if (ids.length === 0) return Promise.resolve([])
+      return prisma.vendor.findMany({
+        where: { id: { in: ids } },
+        select: { id: true, name: true, approvalStatus: true, workspaceId: true },
+      })
+    },
+
     listPendingVendorApprovals(workspaceIds: string[]) {
       return prisma.vendor.findMany({
         where: { workspaceId: { in: workspaceIds }, approvalStatus: "PENDING" },

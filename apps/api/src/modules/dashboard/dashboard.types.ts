@@ -98,6 +98,28 @@ export interface RevenueResponse {
   transactions: RevenueTransactionRow[]
 }
 
+export type ReportPeriod = "daily" | "weekly" | "monthly"
+
+export interface ReportsQuery extends DashboardQuery {
+  period: ReportPeriod
+}
+
+export interface TopVendorRow {
+  id: string
+  name: string
+  status: string
+  orders: number
+  tag: string
+  amount: string
+}
+
+export interface ReportsResponse {
+  period: ReportPeriod
+  metrics: MetricRow[]
+  comparison: TrendData
+  topVendors: TopVendorRow[]
+}
+
 export interface ResolvedWorkspace {
   id: string
   slug: string

@@ -1,4 +1,4 @@
-import type { DashboardQuery, RevenueQuery } from "./dashboard.types.js"
+import type { DashboardQuery, ReportPeriod, ReportsQuery, RevenueQuery } from "./dashboard.types.js"
 
 const DEFAULT_RANGE_DAYS = 30
 
@@ -62,4 +62,19 @@ export function parseRevenueQuery(
     fail("business is required")
   }
   return { ...base, businessSlug: business.trim() }
+}
+
+const REPORT_PERIODS: ReportPeriod[] = ["daily", "weekly", "monthly"]
+
+export function parseReportsQuery(
+  params: Record<string, unknown>,
+  query: Record<string, unknown>,
+): ReportsQuery {
+  const base = parseDashboardQuery(params, query)
+  const { period } = query
+  if (period === undefined) return { ...base, period: "monthly" }
+  if (typeof period !== "string" || !REPORT_PERIODS.includes(period as ReportPeriod)) {
+    fail("period must be one of daily, weekly, monthly")
+  }
+  return { ...base, period: period as ReportPeriod }
 }

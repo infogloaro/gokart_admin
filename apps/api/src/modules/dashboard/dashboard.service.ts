@@ -4,6 +4,7 @@ import {
   DISTRIBUTION_LABELS,
   WORKSPACE_COLORS,
   WORKSPACE_TAGS,
+  buildPeriodBuckets,
   buildTrendBuckets,
   distributionBucket,
   formatChange,
@@ -16,6 +17,8 @@ import type {
   DashboardResponse,
   DateRange,
   OverviewResponse,
+  ReportPeriod,
+  ReportsResponse,
   ResolveAccessibleWorkspaceIds,
   ResolvedWorkspace,
   RevenueResponse,
@@ -30,6 +33,7 @@ const PARTNER_DOC_WINDOW_DAYS = 30
 const RECENT_TRANSACTIONS_LIMIT = 5
 const REVENUE_TRANSACTIONS_LIMIT = 10
 const REVENUE_CHART_BUCKETS = 11
+const TOP_VENDORS_LIMIT = 5
 
 function fail(message: string, status: number): never {
   throw Object.assign(new Error(message), { status })
@@ -371,7 +375,124 @@ export function createDashboardService(
     }))
   }
 
+  async function buildReportMetrics(workspaceIds: string[], range: DateRange) {
+    const [current, previous] = await Promise.all([
+      repository.aggregateRevenue(workspaceIds, range),
+      repository.aggregateRevenue(workspaceIds, previousRange(range)),
+    ])
+    const read = (aggregate: typeof current) => {
+      const orders = aggregate._count._all
+      const gross = toNumber(aggregate._sum.grossValue)
+      return {
+        orders,
+        gross,
+        platformRevenue: toNumber(aggregate._sum.platformRevenue),
+        averageOrder: orders > 0 ? gross / orders : 0,
+      }
+    }
+    const now = read(current)
+    const before = read(previous)
+    return [
+      {
+        label: "Total orders",
+        value: now.orders.toLocaleString("en-IN"),
+        change: formatChange(now.orders, before.orders),
+      },
+      {
+        label: "Combined GTV",
+        value: formatInr(now.gross),
+        change: formatChange(now.gross, before.gross),
+      },
+      {
+        label: "Platform revenue",
+        value: formatInr(now.platformRevenue),
+        change: formatChange(now.platformRevenue, before.platformRevenue),
+      },
+      {
+        label: "Average order",
+        value: formatInr(now.averageOrder),
+        change: formatChange(now.averageOrder, before.averageOrder),
+      },
+    ]
+  }
+
+  async function buildReportComparison(
+    workspaces: ResolvedWorkspace[],
+    range: DateRange,
+    period: ReportPeriod,
+  ) {
+    const orders = await repository.listOrdersForTrend(
+      workspaces.map((workspace) => workspace.id),
+      range,
+    )
+    const buckets = buildPeriodBuckets(range, period)
+    const series: TrendSeries[] = workspaces.map((workspace) => {
+      const sums = buckets.map((bucket) =>
+        orders
+          .filter(
+            (order) =>
+              order.workspaceId === workspace.id &&
+              order.placedAt >= bucket.start &&
+              order.placedAt <= bucket.end,
+          )
+          .reduce((total, order) => total + toNumber(order.platformRevenue), 0),
+      )
+      return {
+        label: workspace.name,
+        color: WORKSPACE_COLORS[workspace.slug] ?? "#08224b",
+        points: sums.map((sum) => sum / 1_00_000),
+        values: sums.map((sum) => formatInr(sum)),
+      }
+    })
+    return { days: buckets.map((bucket) => bucket.label), series }
+  }
+
+  async function buildTopVendors(workspaces: ResolvedWorkspace[], range: DateRange) {
+    const grouped = await repository.groupOrdersByVendor(
+      workspaces.map((workspace) => workspace.id),
+      range,
+      TOP_VENDORS_LIMIT,
+    )
+    const vendorIds = grouped.flatMap((row) => (row.vendorId ? [row.vendorId] : []))
+    const vendors = await repository.findVendorsByIds(vendorIds)
+    const slugById = new Map(workspaces.map((workspace) => [workspace.id, workspace.slug]))
+
+    return grouped.flatMap((row) => {
+      const vendor = vendors.find((item) => item.id === row.vendorId)
+      if (!vendor) return []
+      return [
+        {
+          id: vendor.id,
+          name: vendor.name,
+          status:
+            vendor.approvalStatus === "APPROVED" ? "Active" : titleCase(vendor.approvalStatus),
+          orders: row._count._all,
+          tag: WORKSPACE_TAGS[slugById.get(vendor.workspaceId) ?? ""] ?? "FOOD",
+          amount: formatInr(toNumber(row._sum.grossValue)),
+        },
+      ]
+    })
+  }
+
   return {
+    async getReports(
+      principal: WorkspacePrincipal,
+      workspaceSlug: string,
+      range: DateRange,
+      period: ReportPeriod,
+    ): Promise<ReportsResponse> {
+      const workspaces = await resolveWorkspaces(principal, workspaceSlug)
+      const workspaceIds = workspaces.map((workspace) => workspace.id)
+
+      const [metrics, comparison, topVendors] = await Promise.all([
+        buildReportMetrics(workspaceIds, range),
+        buildReportComparison(workspaces, range, period),
+        buildTopVendors(workspaces, range),
+      ])
+
+      return { period, metrics, comparison, topVendors }
+    },
+
     async getRevenue(
       principal: WorkspacePrincipal,
       workspaceSlug: string,

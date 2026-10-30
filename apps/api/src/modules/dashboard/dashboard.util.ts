@@ -61,6 +61,32 @@ export function previousRange(range: DateRange): DateRange {
   return { start, end }
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000
+
+export function buildPeriodBuckets(
+  range: DateRange,
+  period: "daily" | "weekly" | "monthly",
+  maxBuckets = 31,
+): TrendBucket[] {
+  const buckets: TrendBucket[] = []
+  const label = (date: Date) =>
+    period === "monthly"
+      ? date.toLocaleDateString("en-US", { month: "short", year: "2-digit", timeZone: "UTC" })
+      : date.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })
+
+  let cursor = new Date(range.start)
+  while (cursor.getTime() <= range.end.getTime() && buckets.length < maxBuckets) {
+    const next =
+      period === "monthly"
+        ? new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 1))
+        : new Date(cursor.getTime() + (period === "weekly" ? 7 : 1) * DAY_MS)
+    const end = new Date(Math.min(next.getTime() - 1, range.end.getTime()))
+    buckets.push({ start: new Date(cursor), end, label: label(cursor) })
+    cursor = next
+  }
+  return buckets
+}
+
 export interface TrendBucket {
   start: Date
   end: Date

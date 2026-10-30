@@ -82,6 +82,28 @@ export interface RevenueData {
   transactions: RevenueTransactionRow[]
 }
 
+export type ReportPeriod = "daily" | "weekly" | "monthly"
+
+export interface TopVendorRow {
+  id: string
+  name: string
+  status: string
+  orders: number
+  tag: string
+  amount: string
+}
+
+export interface ReportsData {
+  period: ReportPeriod
+  metrics: MetricRow[]
+  comparison: TrendData
+  topVendors: TopVendorRow[]
+}
+
+export interface ReportsResponse {
+  data: ReportsData
+}
+
 export interface RevenueResponse {
   data: RevenueData
 }

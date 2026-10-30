@@ -8,6 +8,7 @@ import { downloadCsv } from "@/lib/csv"
 import TransactionLedger from "./TransactionLedger"
 import { RevenueTrendChart } from "./TrendChart"
 import RevenuePage from "./RevenuePage"
+import ReportsPage from "./ReportsPage"
 
 export type AdminMenuSection = {
   title: string
@@ -658,7 +659,9 @@ export default function AdministrationView({
               <small className="admin-kicker">{data.label}</small>
               <h1>{current}</h1>
               <p className="admin-subtitle">
-                A live view of {current.toLowerCase()} across your entire platform.
+                {current === "Reports"
+                  ? "Explore operational and financial performance."
+                  : `A live view of ${current.toLowerCase()} across your entire platform.`}
               </p>
             </div>
             <div className="admin-actions">
@@ -714,27 +717,29 @@ export default function AdministrationView({
                   </div>
                 )}
               </div>
-              <button
-                type="button"
-                className="admin-action-btn"
-                onClick={() => {
-                  if (current === "Business overview") {
-                    downloadCsv(
-                      `${slugify(data.label)}-business-overview`,
-                      ["Metric", "Value"],
-                      overviewMetrics.map((metric) => [metric.label, metric.value]),
-                    )
-                  } else {
-                    downloadCsv(
-                      `${slugify(data.label)}-command-center`,
-                      ["Metric", "Value", "Change"],
-                      dashboardMetrics.map(([label, value, change]) => [label, value, change]),
-                    )
-                  }
-                }}
-              >
-                ⭳ Export
-              </button>
+              {current !== "Reports" && (
+                <button
+                  type="button"
+                  className="admin-action-btn"
+                  onClick={() => {
+                    if (current === "Business overview") {
+                      downloadCsv(
+                        `${slugify(data.label)}-business-overview`,
+                        ["Metric", "Value"],
+                        overviewMetrics.map((metric) => [metric.label, metric.value]),
+                      )
+                    } else {
+                      downloadCsv(
+                        `${slugify(data.label)}-command-center`,
+                        ["Metric", "Value", "Change"],
+                        dashboardMetrics.map(([label, value, change]) => [label, value, change]),
+                      )
+                    }
+                  }}
+                >
+                  ⭳ Export
+                </button>
+              )}
               <button
                 type="button"
                 className="admin-action-btn admin-action-primary"
@@ -896,6 +901,12 @@ export default function AdministrationView({
             <RevenuePage
               workspaceId={workspaceId}
               businessSlug={current === "Food revenue" ? "zoauro-food" : "gloaro-mart"}
+              dateRange={dateRange}
+              refreshKey={lastRefreshed}
+            />
+          ) : current === "Reports" ? (
+            <ReportsPage
+              workspaceId={workspaceId}
               dateRange={dateRange}
               refreshKey={lastRefreshed}
             />
