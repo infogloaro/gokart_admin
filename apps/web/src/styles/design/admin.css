@@ -955,3 +955,32 @@
 .admin-ui .account-timeline{padding:4px 19px 10px}.admin-ui .account-timeline>div{min-height:58px;display:flex;align-items:center;gap:11px;border-bottom:1px solid #edf1f5}.admin-ui .account-timeline>div:last-child{border:0}.admin-ui .account-timeline i{width:8px;height:8px;border:2px solid white;border-radius:50%;background:var(--success);box-shadow:0 0 0 2px #bce3c8}.admin-ui .account-timeline>div>span{flex:1}.admin-ui .account-timeline strong,.admin-ui .account-timeline small{display:block}.admin-ui .account-timeline strong{font-size:10px}.admin-ui .account-timeline small{margin-top:4px;color:var(--muted);font-size:8px}
 @media(max-width:1000px){.admin-ui .profile-layout{grid-template-columns:1fr}.admin-ui .profile-summary{position:static}.admin-ui .profile-quick-details{display:grid;grid-template-columns:1fr 1fr}}
 @media(max-width:620px){.admin-ui .profile-fields,.admin-ui .access-cards,.admin-ui .admin-details-grid{grid-template-columns:1fr}.admin-ui .profile-field:nth-last-child(2){border-bottom:1px solid #edf1f5}.admin-ui .profile-quick-details{grid-template-columns:1fr}.admin-ui .profile-section-head{align-items:flex-start}.admin-ui .profile-section-head>.badge{display:none}.admin-ui .profile-save-bar{align-items:stretch;flex-direction:column}.admin-ui .security-list>div{flex-wrap:wrap}.admin-ui .security-list>div>div{min-width:180px}}
+
+.admin-ui .wizard-shell .stepper>div:first-child small,
+.admin-ui .wizard-shell .wizard-title>span{font-size:11px}
+.admin-ui .wizard-shell .stepper h2{font-size:20px}
+.admin-ui .wizard-shell .stepper p,
+.admin-ui .wizard-shell .stepper li small,
+.admin-ui .wizard-shell .privacy-card p{font-size:12px}
+.admin-ui .wizard-shell .stepper li>span{font-size:12px}
+.admin-ui .wizard-shell .stepper li strong{font-size:13px}
+.admin-ui .wizard-shell .privacy-card strong{font-size:12px}
+.admin-ui .wizard-shell .wizard-title p{font-size:14px}
+.admin-ui .wizard-shell .form-section>h3{font-size:14px}
+.admin-ui .wizard-shell .form-field>span{font-size:12px}
+.admin-ui .wizard-shell .form-field input,
+.admin-ui .wizard-shell .form-field select{font-size:13px}
+.admin-ui .wizard-shell .form-field>small,
+.admin-ui .wizard-shell .eligibility small,
+.admin-ui .wizard-shell .upload-grid .upload-card small,
+.admin-ui .wizard-shell .bank-alert p,
+.admin-ui .wizard-shell .review-warning p{font-size:12px}
+.admin-ui .wizard-shell .eligibility b,
+.admin-ui .wizard-shell .upload-grid .upload-card strong,
+.admin-ui .wizard-shell .bank-alert strong,
+.admin-ui .wizard-shell .review-warning strong{font-size:13px}
+.admin-ui .wizard-shell .verification-copy{font-size:12px}
+.admin-ui .wizard-shell .review-list section small{font-size:11px}
+.admin-ui .wizard-shell .review-list section h3{font-size:14px}
+.admin-ui .wizard-shell .review-list section p{font-size:13px}
+.admin-ui .wizard-shell .review-consent{font-size:12px}
