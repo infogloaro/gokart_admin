@@ -171,7 +171,7 @@ const count = (n: number | undefined) => (n === undefined ? "—" : n.toLocaleSt
 
 // ---------- charts ----------
 
-type Series = { label: string; tone: "navy" | "gold"; values: number[] }
+export type Series = { label: string; tone: "navy" | "gold"; values: number[] }
 
 /** A smooth path through the points, with horizontal control handles. */
 function smooth(points: [number, number][]) {
@@ -187,7 +187,7 @@ function smooth(points: [number, number][]) {
 }
 
 /** Line chart in the prototype's markup; hover, focus or tap a day to read its values. */
-function TrendChart({
+export function TrendChart({
   dates,
   series,
   format = compactINR,

@@ -162,6 +162,7 @@ export const superNav: { group: string; items: Screen[] }[] = [
         owner: "Dev 3",
         module: "Ledger",
         permission: "ledger.view",
+        live: true,
       },
       {
         key: "finance",
@@ -172,6 +173,7 @@ export const superNav: { group: string; items: Screen[] }[] = [
         owner: "Dev 3",
         module: "Finance & payouts",
         permission: "finance.view",
+        live: true,
       },
       {
         key: "reports",
@@ -182,6 +184,7 @@ export const superNav: { group: string; items: Screen[] }[] = [
         owner: "Dev 3",
         module: "Reports & dashboards",
         permission: "reports.view",
+        live: true,
       },
     ],
   },

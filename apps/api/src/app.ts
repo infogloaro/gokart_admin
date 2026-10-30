@@ -8,11 +8,14 @@ import { authRoutes } from "./modules/auth/auth.routes"
 import { dashboardRoutes, searchRoutes } from "./modules/dashboard/dashboard.routes"
 import { auditRoutes } from "./modules/audit/audit"
 import { complaintRoutes } from "./modules/complaints/complaints.routes"
+import { financeRoutes } from "./modules/finance/finance.routes"
 import { inventoryRoutes } from "./modules/inventory/inventory"
+import { ledgerRoutes } from "./modules/ledger/ledger.routes"
 import { memberRoutes } from "./modules/members/members"
 import { notificationRoutes } from "./modules/notifications/notifications"
 import { orderRoutes } from "./modules/orders/orders.routes"
 import { partnerRoutes } from "./modules/partners/partners.routes"
+import { reportRoutes } from "./modules/reports/reports"
 import { settingsRoutes } from "./modules/settings/settings"
 import { intakeRoutes, trackingRoutes } from "./modules/tracking/tracking.routes"
 import { vendorRoutes } from "./modules/vendors/vendors.routes"
@@ -20,7 +23,9 @@ import { zoneRoutes } from "./modules/zones/zones"
 // OpenAPI path registrations, one per module.
 import "./modules/auth/auth.openapi"
 import "./modules/complaints/complaints.openapi"
+import "./modules/finance/finance.openapi"
 import "./modules/inventory/inventory.openapi"
+import "./modules/ledger/ledger.openapi"
 import "./modules/dashboard/dashboard.openapi"
 import "./modules/orders/orders.openapi"
 import "./modules/partners/partners.openapi"
@@ -46,7 +51,9 @@ export function createApp() {
   v1.use("/dashboard", dashboardRoutes)
   v1.use("/audit", auditRoutes)
   v1.use("/complaints", complaintRoutes)
+  v1.use("/finance", financeRoutes)
   v1.use("/inventory", inventoryRoutes)
+  v1.use("/ledger", ledgerRoutes)
   v1.use("/notifications", notificationRoutes)
   v1.use("/members", memberRoutes)
   v1.use("/orders", orderRoutes)
@@ -57,6 +64,7 @@ export function createApp() {
   v1.use("/zones", zoneRoutes)
   v1.use("/settings", settingsRoutes)
   v1.use("/search", searchRoutes)
+  v1.use("/reports", reportRoutes)
   v1.use(() => {
     throw notFound("Endpoint")
   })

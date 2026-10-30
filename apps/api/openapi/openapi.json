@@ -844,6 +844,1382 @@
           "updatedAt"
         ]
       },
+      "PayoutDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "accountType": {
+            "type": "string",
+            "enum": [
+              "partner",
+              "admin"
+            ]
+          },
+          "accountId": {
+            "type": "string"
+          },
+          "accountName": {
+            "type": "string"
+          },
+          "cycle": {
+            "type": "string",
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+          },
+          "amountPaise": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending_approval",
+              "approved",
+              "paid",
+              "settled",
+              "rejected"
+            ]
+          },
+          "displayStatus": {
+            "type": "string",
+            "enum": [
+              "pending_approval",
+              "approved",
+              "overdue",
+              "paid",
+              "settled",
+              "rejected"
+            ]
+          },
+          "version": {
+            "type": "integer"
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "approvedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "approvedBy": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "paidAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "paidRef": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "paidMethod": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "settledAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "rejectedBy": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rejectedReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string"
+                },
+                "formula": {
+                  "type": "string"
+                },
+                "amountPaise": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "label",
+                "formula",
+                "amountPaise"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "accountType",
+          "accountId",
+          "accountName",
+          "cycle",
+          "amountPaise",
+          "status",
+          "displayStatus",
+          "version",
+          "dueDate",
+          "createdAt",
+          "createdBy",
+          "approvedAt",
+          "approvedBy",
+          "paidAt",
+          "paidRef",
+          "paidMethod",
+          "settledAt",
+          "rejectedBy",
+          "rejectedReason",
+          "lines"
+        ]
+      },
+      "PayoutSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "accountType": {
+            "type": "string",
+            "enum": [
+              "partner",
+              "admin"
+            ]
+          },
+          "accountId": {
+            "type": "string"
+          },
+          "accountName": {
+            "type": "string"
+          },
+          "cycle": {
+            "type": "string",
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+          },
+          "amountPaise": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending_approval",
+              "approved",
+              "paid",
+              "settled",
+              "rejected"
+            ]
+          },
+          "displayStatus": {
+            "type": "string",
+            "enum": [
+              "pending_approval",
+              "approved",
+              "overdue",
+              "paid",
+              "settled",
+              "rejected"
+            ]
+          },
+          "version": {
+            "type": "integer"
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "approvedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "approvedBy": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "paidAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "paidRef": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "paidMethod": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "settledAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "rejectedBy": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rejectedReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "accountType",
+          "accountId",
+          "accountName",
+          "cycle",
+          "amountPaise",
+          "status",
+          "displayStatus",
+          "version",
+          "dueDate",
+          "createdAt",
+          "createdBy",
+          "approvedAt",
+          "approvedBy",
+          "paidAt",
+          "paidRef",
+          "paidMethod",
+          "settledAt",
+          "rejectedBy",
+          "rejectedReason"
+        ]
+      },
+      "FinanceOverview": {
+        "type": "object",
+        "properties": {
+          "cycle": {
+            "type": "object",
+            "properties": {
+              "cycle": {
+                "type": "string",
+                "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+              },
+              "label": {
+                "type": "string"
+              },
+              "closed": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "cycle",
+              "label",
+              "closed"
+            ]
+          },
+          "today": {
+            "type": "string",
+            "format": "date"
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "partners": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "bank": {
+                  "type": "string"
+                },
+                "statement": {
+                  "type": "object",
+                  "properties": {
+                    "lines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "label": {
+                            "type": "string"
+                          },
+                          "formula": {
+                            "type": "string"
+                          },
+                          "amountPaise": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "label",
+                          "formula",
+                          "amountPaise"
+                        ]
+                      }
+                    },
+                    "totalPaise": {
+                      "type": "integer"
+                    },
+                    "deliveries": {
+                      "type": "integer"
+                    },
+                    "salaryPaise": {
+                      "type": "integer"
+                    },
+                    "fixedPaise": {
+                      "type": "integer"
+                    },
+                    "incentivePaise": {
+                      "type": "integer"
+                    },
+                    "commissionPaise": {
+                      "type": "integer"
+                    },
+                    "bonusPaise": {
+                      "type": "integer"
+                    },
+                    "deductionPaise": {
+                      "type": "integer"
+                    },
+                    "codPaise": {
+                      "type": "integer"
+                    },
+                    "remittedPaise": {
+                      "type": "integer"
+                    },
+                    "outstandingPaise": {
+                      "type": "integer"
+                    },
+                    "feesPaise": {
+                      "type": "integer"
+                    },
+                    "revenuePaise": {
+                      "type": "integer"
+                    },
+                    "onTimeRate": {
+                      "type": "number"
+                    },
+                    "managedPartners": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "lines",
+                    "totalPaise",
+                    "deliveries",
+                    "salaryPaise",
+                    "fixedPaise",
+                    "incentivePaise",
+                    "commissionPaise",
+                    "bonusPaise",
+                    "deductionPaise",
+                    "codPaise",
+                    "remittedPaise",
+                    "outstandingPaise",
+                    "feesPaise",
+                    "revenuePaise",
+                    "onTimeRate",
+                    "managedPartners"
+                  ]
+                },
+                "payout": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "accountType": {
+                      "type": "string",
+                      "enum": [
+                        "partner",
+                        "admin"
+                      ]
+                    },
+                    "accountId": {
+                      "type": "string"
+                    },
+                    "accountName": {
+                      "type": "string"
+                    },
+                    "cycle": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                    },
+                    "amountPaise": {
+                      "type": "integer"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending_approval",
+                        "approved",
+                        "paid",
+                        "settled",
+                        "rejected"
+                      ]
+                    },
+                    "displayStatus": {
+                      "type": "string",
+                      "enum": [
+                        "pending_approval",
+                        "approved",
+                        "overdue",
+                        "paid",
+                        "settled",
+                        "rejected"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer"
+                    },
+                    "dueDate": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "createdBy": {
+                      "type": "string"
+                    },
+                    "approvedAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time"
+                    },
+                    "approvedBy": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "paidAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time"
+                    },
+                    "paidRef": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "paidMethod": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "settledAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time"
+                    },
+                    "rejectedBy": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "rejectedReason": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "code",
+                    "accountType",
+                    "accountId",
+                    "accountName",
+                    "cycle",
+                    "amountPaise",
+                    "status",
+                    "displayStatus",
+                    "version",
+                    "dueDate",
+                    "createdAt",
+                    "createdBy",
+                    "approvedAt",
+                    "approvedBy",
+                    "paidAt",
+                    "paidRef",
+                    "paidMethod",
+                    "settledAt",
+                    "rejectedBy",
+                    "rejectedReason"
+                  ]
+                },
+                "business": {
+                  "type": "string",
+                  "enum": [
+                    "food",
+                    "mart"
+                  ]
+                },
+                "managerId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "managerName": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "plan": {
+                  "type": "object",
+                  "properties": {
+                    "salaryPaise": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "fixedPaise": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "perDeliveryPaise": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "commissionPct": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    }
+                  },
+                  "required": [
+                    "salaryPaise",
+                    "fixedPaise",
+                    "perDeliveryPaise",
+                    "commissionPct"
+                  ]
+                },
+                "lastRemittance": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "day": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "method": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "day",
+                    "method"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "code",
+                "name",
+                "bank",
+                "statement",
+                "payout",
+                "business",
+                "managerId",
+                "managerName",
+                "plan",
+                "lastRemittance"
+              ]
+            }
+          },
+          "admins": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "bank": {
+                  "type": "string"
+                },
+                "statement": {
+                  "type": "object",
+                  "properties": {
+                    "lines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "label": {
+                            "type": "string"
+                          },
+                          "formula": {
+                            "type": "string"
+                          },
+                          "amountPaise": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "label",
+                          "formula",
+                          "amountPaise"
+                        ]
+                      }
+                    },
+                    "totalPaise": {
+                      "type": "integer"
+                    },
+                    "deliveries": {
+                      "type": "integer"
+                    },
+                    "salaryPaise": {
+                      "type": "integer"
+                    },
+                    "fixedPaise": {
+                      "type": "integer"
+                    },
+                    "incentivePaise": {
+                      "type": "integer"
+                    },
+                    "commissionPaise": {
+                      "type": "integer"
+                    },
+                    "bonusPaise": {
+                      "type": "integer"
+                    },
+                    "deductionPaise": {
+                      "type": "integer"
+                    },
+                    "codPaise": {
+                      "type": "integer"
+                    },
+                    "remittedPaise": {
+                      "type": "integer"
+                    },
+                    "outstandingPaise": {
+                      "type": "integer"
+                    },
+                    "feesPaise": {
+                      "type": "integer"
+                    },
+                    "revenuePaise": {
+                      "type": "integer"
+                    },
+                    "onTimeRate": {
+                      "type": "number"
+                    },
+                    "managedPartners": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "lines",
+                    "totalPaise",
+                    "deliveries",
+                    "salaryPaise",
+                    "fixedPaise",
+                    "incentivePaise",
+                    "commissionPaise",
+                    "bonusPaise",
+                    "deductionPaise",
+                    "codPaise",
+                    "remittedPaise",
+                    "outstandingPaise",
+                    "feesPaise",
+                    "revenuePaise",
+                    "onTimeRate",
+                    "managedPartners"
+                  ]
+                },
+                "payout": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "accountType": {
+                      "type": "string",
+                      "enum": [
+                        "partner",
+                        "admin"
+                      ]
+                    },
+                    "accountId": {
+                      "type": "string"
+                    },
+                    "accountName": {
+                      "type": "string"
+                    },
+                    "cycle": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                    },
+                    "amountPaise": {
+                      "type": "integer"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending_approval",
+                        "approved",
+                        "paid",
+                        "settled",
+                        "rejected"
+                      ]
+                    },
+                    "displayStatus": {
+                      "type": "string",
+                      "enum": [
+                        "pending_approval",
+                        "approved",
+                        "overdue",
+                        "paid",
+                        "settled",
+                        "rejected"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer"
+                    },
+                    "dueDate": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "createdBy": {
+                      "type": "string"
+                    },
+                    "approvedAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time"
+                    },
+                    "approvedBy": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "paidAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time"
+                    },
+                    "paidRef": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "paidMethod": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "settledAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time"
+                    },
+                    "rejectedBy": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "rejectedReason": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "code",
+                    "accountType",
+                    "accountId",
+                    "accountName",
+                    "cycle",
+                    "amountPaise",
+                    "status",
+                    "displayStatus",
+                    "version",
+                    "dueDate",
+                    "createdAt",
+                    "createdBy",
+                    "approvedAt",
+                    "approvedBy",
+                    "paidAt",
+                    "paidRef",
+                    "paidMethod",
+                    "settledAt",
+                    "rejectedBy",
+                    "rejectedReason"
+                  ]
+                },
+                "region": {
+                  "type": "string"
+                },
+                "plan": {
+                  "type": "object",
+                  "properties": {
+                    "salaryPaise": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "commissionPct": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "targetOnTimePct": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "incentivePaise": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "salaryPaise",
+                    "commissionPct",
+                    "targetOnTimePct",
+                    "incentivePaise"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "code",
+                "name",
+                "bank",
+                "statement",
+                "payout",
+                "region",
+                "plan"
+              ]
+            }
+          }
+        },
+        "required": [
+          "cycle",
+          "today",
+          "dueDate",
+          "partners",
+          "admins"
+        ]
+      },
+      "AccountDetail": {
+        "type": "object",
+        "properties": {
+          "accountType": {
+            "type": "string",
+            "enum": [
+              "partner",
+              "admin"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "bank": {
+            "type": "string"
+          },
+          "cycle": {
+            "type": "object",
+            "properties": {
+              "cycle": {
+                "type": "string",
+                "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+              },
+              "label": {
+                "type": "string"
+              },
+              "closed": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "cycle",
+              "label",
+              "closed"
+            ]
+          },
+          "statement": {
+            "type": "object",
+            "properties": {
+              "lines": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "label": {
+                      "type": "string"
+                    },
+                    "formula": {
+                      "type": "string"
+                    },
+                    "amountPaise": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "formula",
+                    "amountPaise"
+                  ]
+                }
+              },
+              "totalPaise": {
+                "type": "integer"
+              },
+              "deliveries": {
+                "type": "integer"
+              },
+              "salaryPaise": {
+                "type": "integer"
+              },
+              "fixedPaise": {
+                "type": "integer"
+              },
+              "incentivePaise": {
+                "type": "integer"
+              },
+              "commissionPaise": {
+                "type": "integer"
+              },
+              "bonusPaise": {
+                "type": "integer"
+              },
+              "deductionPaise": {
+                "type": "integer"
+              },
+              "codPaise": {
+                "type": "integer"
+              },
+              "remittedPaise": {
+                "type": "integer"
+              },
+              "outstandingPaise": {
+                "type": "integer"
+              },
+              "feesPaise": {
+                "type": "integer"
+              },
+              "revenuePaise": {
+                "type": "integer"
+              },
+              "onTimeRate": {
+                "type": "number"
+              },
+              "managedPartners": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "lines",
+              "totalPaise",
+              "deliveries",
+              "salaryPaise",
+              "fixedPaise",
+              "incentivePaise",
+              "commissionPaise",
+              "bonusPaise",
+              "deductionPaise",
+              "codPaise",
+              "remittedPaise",
+              "outstandingPaise",
+              "feesPaise",
+              "revenuePaise",
+              "onTimeRate",
+              "managedPartners"
+            ]
+          },
+          "planHistory": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "plan": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "salaryPaise": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "fixedPaise": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "perDeliveryPaise": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "commissionPct": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 100
+                        }
+                      },
+                      "required": [
+                        "salaryPaise",
+                        "fixedPaise",
+                        "perDeliveryPaise",
+                        "commissionPct"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "salaryPaise": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "commissionPct": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 100
+                        },
+                        "targetOnTimePct": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 100
+                        },
+                        "incentivePaise": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "salaryPaise",
+                        "commissionPct",
+                        "targetOnTimePct",
+                        "incentivePaise"
+                      ]
+                    }
+                  ]
+                },
+                "by": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "from",
+                "plan",
+                "by",
+                "reason"
+              ]
+            }
+          },
+          "payouts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "accountType": {
+                  "type": "string",
+                  "enum": [
+                    "partner",
+                    "admin"
+                  ]
+                },
+                "accountId": {
+                  "type": "string"
+                },
+                "accountName": {
+                  "type": "string"
+                },
+                "cycle": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                },
+                "amountPaise": {
+                  "type": "integer"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "pending_approval",
+                    "approved",
+                    "paid",
+                    "settled",
+                    "rejected"
+                  ]
+                },
+                "displayStatus": {
+                  "type": "string",
+                  "enum": [
+                    "pending_approval",
+                    "approved",
+                    "overdue",
+                    "paid",
+                    "settled",
+                    "rejected"
+                  ]
+                },
+                "version": {
+                  "type": "integer"
+                },
+                "dueDate": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "createdBy": {
+                  "type": "string"
+                },
+                "approvedAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "approvedBy": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "paidAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "paidRef": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "paidMethod": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "settledAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "rejectedBy": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "rejectedReason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "code",
+                "accountType",
+                "accountId",
+                "accountName",
+                "cycle",
+                "amountPaise",
+                "status",
+                "displayStatus",
+                "version",
+                "dueDate",
+                "createdAt",
+                "createdBy",
+                "approvedAt",
+                "approvedBy",
+                "paidAt",
+                "paidRef",
+                "paidMethod",
+                "settledAt",
+                "rejectedBy",
+                "rejectedReason"
+              ]
+            }
+          },
+          "remittances": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "cycle": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                },
+                "day": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "amountPaise": {
+                  "type": "integer"
+                },
+                "method": {
+                  "type": "string"
+                },
+                "receivedBy": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "cycle",
+                "day",
+                "amountPaise",
+                "method",
+                "receivedBy"
+              ]
+            }
+          }
+        },
+        "required": [
+          "accountType",
+          "id",
+          "name",
+          "bank",
+          "cycle",
+          "statement",
+          "planHistory",
+          "payouts",
+          "remittances"
+        ]
+      },
       "Product": {
         "type": "object",
         "properties": {
@@ -906,6 +2282,309 @@
           "status",
           "version",
           "updatedAt"
+        ]
+      },
+      "LedgerSummary": {
+        "type": "object",
+        "properties": {
+          "range": {
+            "type": "string",
+            "enum": [
+              "today",
+              "7d",
+              "30d",
+              "90d"
+            ]
+          },
+          "grossPaise": {
+            "type": "integer"
+          },
+          "commissionPaise": {
+            "type": "integer"
+          },
+          "deliveryFeesPaise": {
+            "type": "integer"
+          },
+          "refundsPaise": {
+            "type": "integer"
+          },
+          "netPaise": {
+            "type": "integer"
+          },
+          "methods": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "method": {
+                  "type": "string",
+                  "enum": [
+                    "upi",
+                    "card",
+                    "cod",
+                    "netbanking",
+                    "wallet",
+                    "bank_transfer"
+                  ]
+                },
+                "amountPaise": {
+                  "type": "integer"
+                },
+                "share": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "method",
+                "amountPaise",
+                "share"
+              ]
+            }
+          }
+        },
+        "required": [
+          "range",
+          "grossPaise",
+          "commissionPaise",
+          "deliveryFeesPaise",
+          "refundsPaise",
+          "netPaise",
+          "methods"
+        ]
+      },
+      "LedgerEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "business": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "food",
+              "mart",
+              null
+            ]
+          },
+          "reference": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "order_payment",
+              "cod_collection",
+              "refund",
+              "partner_payout",
+              "admin_payout",
+              "cash_remittance"
+            ]
+          },
+          "beneficiary": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "upi",
+              "card",
+              "cod",
+              "netbanking",
+              "wallet",
+              "bank_transfer"
+            ]
+          },
+          "grossPaise": {
+            "type": "integer"
+          },
+          "feesPaise": {
+            "type": "integer"
+          },
+          "netPaise": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "business",
+          "reference",
+          "type",
+          "beneficiary",
+          "method",
+          "grossPaise",
+          "feesPaise",
+          "netPaise",
+          "status",
+          "at"
+        ]
+      },
+      "Analytics": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly",
+              "monthly"
+            ]
+          },
+          "metrics": {
+            "type": "object",
+            "properties": {
+              "orders": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "integer"
+                  },
+                  "previous": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "value",
+                  "previous"
+                ]
+              },
+              "grossPaise": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "integer"
+                  },
+                  "previous": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "value",
+                  "previous"
+                ]
+              },
+              "platformPaise": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "integer"
+                  },
+                  "previous": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "value",
+                  "previous"
+                ]
+              },
+              "averageOrderPaise": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "integer"
+                  },
+                  "previous": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "value",
+                  "previous"
+                ]
+              }
+            },
+            "required": [
+              "orders",
+              "grossPaise",
+              "platformPaise",
+              "averageOrderPaise"
+            ]
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string"
+                },
+                "from": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "food": {
+                  "type": "integer"
+                },
+                "mart": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "label",
+                "from",
+                "food",
+                "mart"
+              ]
+            }
+          },
+          "topVendors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "business": {
+                  "type": "string",
+                  "enum": [
+                    "food",
+                    "mart"
+                  ]
+                },
+                "orders": {
+                  "type": "integer"
+                },
+                "grossPaise": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "id",
+                "code",
+                "name",
+                "business",
+                "orders",
+                "grossPaise"
+              ]
+            }
+          }
+        },
+        "required": [
+          "period",
+          "metrics",
+          "series",
+          "topVendors"
         ]
       },
       "DashboardOverview": {
@@ -6094,6 +7773,2158 @@
         }
       }
     },
+    "/finance/cycles": {
+      "get": {
+        "tags": [
+          "Finance & payouts"
+        ],
+        "summary": "The current pay cycle and the two before it",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "cycle": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                      },
+                      "label": {
+                        "type": "string"
+                      },
+                      "closed": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "cycle",
+                      "label",
+                      "closed"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finance/overview": {
+      "get": {
+        "tags": [
+          "Finance & payouts"
+        ],
+        "summary": "Every partner and admin account's statement and payout for a cycle",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            },
+            "required": false,
+            "name": "cycle",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceOverview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finance/accounts/{type}/{id}": {
+      "get": {
+        "tags": [
+          "Finance & payouts"
+        ],
+        "summary": "One account's calculation, plan history, payouts and remittances",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "partner",
+                "admin"
+              ]
+            },
+            "required": true,
+            "name": "type",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            },
+            "required": false,
+            "name": "cycle",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finance/payouts": {
+      "get": {
+        "tags": [
+          "Finance & payouts"
+        ],
+        "summary": "Payout records across cycles",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            },
+            "required": false,
+            "name": "cycle",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "partner",
+                "admin"
+              ]
+            },
+            "required": false,
+            "name": "accountType",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending_approval",
+                "approved",
+                "overdue",
+                "paid",
+                "settled",
+                "rejected"
+              ]
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PayoutSummary"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finance/payouts/{id}": {
+      "get": {
+        "tags": [
+          "Finance & payouts"
+        ],
+        "summary": "One payout with its frozen calculation",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayoutDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finance/payouts/generate": {
+      "post": {
+        "tags": [
+          "Finance & payouts"
+        ],
+        "summary": "Freeze each account's statement into a payout awaiting approval",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "cycle": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                  }
+                },
+                "required": [
+                  "cycle"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "created": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "created"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Changed by someone else; reload and retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finance/payouts/{id}/approve": {
+      "post": {
+        "tags": [
+          "Finance & payouts"
+        ],
+        "summary": "Approve a pending payout (version-checked, audited)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "version"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayoutDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Changed by someone else; reload and retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finance/payouts/{id}/reject": {
+      "post": {
+        "tags": [
+          "Finance & payouts"
+        ],
+        "summary": "Reject a pending or approved payout with a reason",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "integer"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "version",
+                  "reason"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayoutDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Changed by someone else; reload and retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finance/payouts/{id}/pay": {
+      "post": {
+        "tags": [
+          "Finance & payouts"
+        ],
+        "summary": "Record a payment made outside the panel; settles when nothing is owed back",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "integer"
+                  },
+                  "reference": {
+                    "type": "string",
+                    "minLength": 6,
+                    "maxLength": 60
+                  },
+                  "method": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 40
+                  }
+                },
+                "required": [
+                  "version",
+                  "reference",
+                  "method"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayoutDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Changed by someone else; reload and retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finance/payouts/{id}/recalculate": {
+      "post": {
+        "tags": [
+          "Finance & payouts"
+        ],
+        "summary": "Recalculate a rejected payout and send it for approval again",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "version"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayoutDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Changed by someone else; reload and retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finance/remittances": {
+      "post": {
+        "tags": [
+          "Finance & payouts"
+        ],
+        "summary": "Record cash on delivery handed back by a partner",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "partnerId": {
+                    "type": "string"
+                  },
+                  "cycle": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                  },
+                  "amountPaise": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "method": {
+                    "type": "string",
+                    "enum": [
+                      "Cash deposit",
+                      "UPI to GloAro",
+                      "Bank transfer"
+                    ]
+                  }
+                },
+                "required": [
+                  "partnerId",
+                  "cycle",
+                  "amountPaise",
+                  "method"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "No content"
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Changed by someone else; reload and retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finance/adjustments": {
+      "post": {
+        "tags": [
+          "Finance & payouts"
+        ],
+        "summary": "Add a bonus or deduction to the current cycle",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "accountType": {
+                    "type": "string",
+                    "enum": [
+                      "partner",
+                      "admin"
+                    ]
+                  },
+                  "accountId": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "bonus",
+                      "deduction"
+                    ]
+                  },
+                  "amountPaise": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 300
+                  }
+                },
+                "required": [
+                  "accountType",
+                  "accountId",
+                  "kind",
+                  "amountPaise",
+                  "reason"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "No content"
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Changed by someone else; reload and retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finance/plans/{type}/{id}": {
+      "put": {
+        "tags": [
+          "Finance & payouts"
+        ],
+        "summary": "Change an account's pay plan from today (earlier days keep their rates)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "partner",
+                "admin"
+              ]
+            },
+            "required": true,
+            "name": "type",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "plan": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "salaryPaise": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "fixedPaise": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "perDeliveryPaise": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "commissionPct": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 100
+                          }
+                        },
+                        "required": [
+                          "salaryPaise",
+                          "fixedPaise",
+                          "perDeliveryPaise",
+                          "commissionPct"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "salaryPaise": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "commissionPct": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 100
+                          },
+                          "targetOnTimePct": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 100
+                          },
+                          "incentivePaise": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "salaryPaise",
+                          "commissionPct",
+                          "targetOnTimePct",
+                          "incentivePaise"
+                        ]
+                      }
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 300
+                  }
+                },
+                "required": [
+                  "plan",
+                  "reason"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No content"
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finance/requests": {
+      "get": {
+        "tags": [
+          "Finance & payouts"
+        ],
+        "summary": "Pay change requests",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "accountType": {
+                        "type": "string",
+                        "enum": [
+                          "partner",
+                          "admin"
+                        ]
+                      },
+                      "accountId": {
+                        "type": "string"
+                      },
+                      "accountName": {
+                        "type": "string"
+                      },
+                      "currentPlan": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "salaryPaise": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "fixedPaise": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "perDeliveryPaise": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "commissionPct": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 100
+                              }
+                            },
+                            "required": [
+                              "salaryPaise",
+                              "fixedPaise",
+                              "perDeliveryPaise",
+                              "commissionPct"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "salaryPaise": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "commissionPct": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 100
+                              },
+                              "targetOnTimePct": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 100
+                              },
+                              "incentivePaise": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "required": [
+                              "salaryPaise",
+                              "commissionPct",
+                              "targetOnTimePct",
+                              "incentivePaise"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "plan": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "salaryPaise": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "fixedPaise": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "perDeliveryPaise": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "commissionPct": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 100
+                              }
+                            },
+                            "required": [
+                              "salaryPaise",
+                              "fixedPaise",
+                              "perDeliveryPaise",
+                              "commissionPct"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "salaryPaise": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "commissionPct": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 100
+                              },
+                              "targetOnTimePct": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 100
+                              },
+                              "incentivePaise": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "required": [
+                              "salaryPaise",
+                              "commissionPct",
+                              "targetOnTimePct",
+                              "incentivePaise"
+                            ]
+                          }
+                        ]
+                      },
+                      "reason": {
+                        "type": "string"
+                      },
+                      "requestedBy": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "pending",
+                          "approved",
+                          "rejected"
+                        ]
+                      },
+                      "decidedBy": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "code",
+                      "accountType",
+                      "accountId",
+                      "accountName",
+                      "currentPlan",
+                      "plan",
+                      "reason",
+                      "requestedBy",
+                      "status",
+                      "decidedBy",
+                      "createdAt"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Finance & payouts"
+        ],
+        "summary": "Propose a pay change (admins: only for partners they manage)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "accountType": {
+                    "type": "string",
+                    "enum": [
+                      "partner",
+                      "admin"
+                    ]
+                  },
+                  "accountId": {
+                    "type": "string"
+                  },
+                  "plan": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "salaryPaise": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "fixedPaise": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "perDeliveryPaise": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "commissionPct": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 100
+                          }
+                        },
+                        "required": [
+                          "salaryPaise",
+                          "fixedPaise",
+                          "perDeliveryPaise",
+                          "commissionPct"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "salaryPaise": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "commissionPct": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 100
+                          },
+                          "targetOnTimePct": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 100
+                          },
+                          "incentivePaise": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "salaryPaise",
+                          "commissionPct",
+                          "targetOnTimePct",
+                          "incentivePaise"
+                        ]
+                      }
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 300
+                  }
+                },
+                "required": [
+                  "accountType",
+                  "accountId",
+                  "plan",
+                  "reason"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "No content"
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Changed by someone else; reload and retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finance/requests/{id}/approve": {
+      "post": {
+        "tags": [
+          "Finance & payouts"
+        ],
+        "summary": "Approve a pay change request and apply it from today",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 300
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No content"
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Changed by someone else; reload and retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finance/requests/{id}/reject": {
+      "post": {
+        "tags": [
+          "Finance & payouts"
+        ],
+        "summary": "Reject a pay change request",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 300
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No content"
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Changed by someone else; reload and retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finance/movements": {
+      "get": {
+        "tags": [
+          "Finance & payouts"
+        ],
+        "summary": "Money paid out to partners and admins, and cash remitted to GloAro",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "day": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "reference": {
+                        "type": "string"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "partner_payout",
+                          "admin_payout",
+                          "cash_remittance"
+                        ]
+                      },
+                      "accountName": {
+                        "type": "string"
+                      },
+                      "detail": {
+                        "type": "string"
+                      },
+                      "amountPaise": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "day",
+                      "reference",
+                      "kind",
+                      "accountName",
+                      "detail",
+                      "amountPaise"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finance/report": {
+      "get": {
+        "tags": [
+          "Finance & payouts"
+        ],
+        "summary": "Daily, weekly or monthly finance report from daily accruals",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "daily",
+                "weekly",
+                "monthly"
+              ]
+            },
+            "required": false,
+            "name": "period",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "label": {
+                        "type": "string"
+                      },
+                      "from": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "to": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "collectionsPaise": {
+                        "type": "integer"
+                      },
+                      "revenuePaise": {
+                        "type": "integer"
+                      },
+                      "partnerCostPaise": {
+                        "type": "integer"
+                      },
+                      "adminCostPaise": {
+                        "type": "integer"
+                      },
+                      "netPaise": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "label",
+                      "from",
+                      "to",
+                      "collectionsPaise",
+                      "revenuePaise",
+                      "partnerCostPaise",
+                      "adminCostPaise",
+                      "netPaise"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finance/audit": {
+      "get": {
+        "tags": [
+          "Finance & payouts"
+        ],
+        "summary": "Finance audit trail",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "actor": {
+                        "type": "string"
+                      },
+                      "action": {
+                        "type": "string"
+                      },
+                      "detail": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "at",
+                      "actor",
+                      "action",
+                      "detail"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/inventory": {
       "get": {
         "tags": [
@@ -6957,6 +10788,373 @@
           },
           "401": {
             "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ledger/summary": {
+      "get": {
+        "tags": [
+          "Transaction ledger"
+        ],
+        "summary": "Gross value, commission, delivery fees, refunds and net revenue, with payment method shares",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "today",
+                "7d",
+                "30d",
+                "90d"
+              ],
+              "default": "30d"
+            },
+            "required": false,
+            "name": "range",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "food",
+                "mart"
+              ]
+            },
+            "required": false,
+            "name": "business",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "order_payment",
+                "cod_collection",
+                "refund",
+                "partner_payout",
+                "admin_payout",
+                "cash_remittance"
+              ]
+            },
+            "required": false,
+            "name": "type",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "upi",
+                "card",
+                "cod",
+                "netbanking",
+                "wallet",
+                "bank_transfer"
+              ]
+            },
+            "required": false,
+            "name": "method",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 60
+            },
+            "required": false,
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 12
+            },
+            "required": false,
+            "name": "pageSize",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LedgerSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ledger/transactions": {
+      "get": {
+        "tags": [
+          "Transaction ledger"
+        ],
+        "summary": "Order payments, COD collections, refunds, payouts and cash remittances, newest first",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "today",
+                "7d",
+                "30d",
+                "90d"
+              ],
+              "default": "30d"
+            },
+            "required": false,
+            "name": "range",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "food",
+                "mart"
+              ]
+            },
+            "required": false,
+            "name": "business",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "order_payment",
+                "cod_collection",
+                "refund",
+                "partner_payout",
+                "admin_payout",
+                "cash_remittance"
+              ]
+            },
+            "required": false,
+            "name": "type",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "upi",
+                "card",
+                "cod",
+                "netbanking",
+                "wallet",
+                "bank_transfer"
+              ]
+            },
+            "required": false,
+            "name": "method",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 60
+            },
+            "required": false,
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 12
+            },
+            "required": false,
+            "name": "pageSize",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of entries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/LedgerEntry"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "total",
+                    "page"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/analytics": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Totals vs the previous window, platform revenue per period per business, top vendors",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "daily",
+                "weekly",
+                "monthly"
+              ],
+              "default": "monthly"
+            },
+            "required": false,
+            "name": "period",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Analytics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Analytics"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
             "content": {
               "application/json": {
                 "schema": {

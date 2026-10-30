@@ -12,6 +12,7 @@ import {
 } from "@zoauro/shared"
 import type { Prisma } from "../src/generated/prisma/client"
 import { prisma } from "../src/lib/prisma"
+import * as finance from "../src/modules/finance/finance.service"
 import { syncZones } from "./sync-zones"
 
 if (process.env.NODE_ENV === "production") {
@@ -897,6 +898,20 @@ async function main() {
       ageMinutes: age,
     })
   }
+  // About two months of finished orders before that, so payouts, the ledger and monthly
+  // reports have history: four to eight a day, mostly delivered.
+  for (let d = 8; d <= 70; d++) {
+    const count = between(4, 9)
+    for (let i = 0; i < count; i++) {
+      const vendor = pick(live)
+      add({
+        business: vendor.business,
+        vendor,
+        status: finishedFor(),
+        ageMinutes: d * 1440 + between(0, 1380),
+      })
+    }
+  }
   for (const p of plans) await createOrder(p)
 
   // ---- complaints: one per refund request in the demo zones, at different stages ----
@@ -1126,6 +1141,189 @@ async function main() {
           readAt: n.read ? new Date(now - (n.ago - 5) * 60_000) : null,
         },
       })
+
+  // ---- finance: plans, cash remittances, payouts at every stage, adjustments, requests ----
+  // Uses the finance service itself, so seeded payouts match what the screens calculate.
+  const arjun = { id: superId, name: "Arjun Menon", role: "super_admin", source: "seed" }
+  await prisma.payPlanVersion.create({
+    data: {
+      accountType: "admin",
+      accountId: members["admin@gokart.in"]!,
+      effectiveFrom: new Date("2026-08-01"),
+      plan: {
+        salaryPaise: rs(52000),
+        commissionPct: 1.5,
+        targetOnTimePct: 90,
+        incentivePaise: rs(10000),
+      },
+      reason: "Employment contract",
+      createdById: superId,
+    },
+  })
+  // A mid-cycle raise, so statements show "plan changed mid-cycle, accrued per day".
+  const rahul = await prisma.partner.findUniqueOrThrow({ where: { code: "DP-2381" } })
+  await prisma.payPlanVersion.create({
+    data: {
+      accountType: "partner",
+      accountId: rahul.id,
+      effectiveFrom: new Date(
+        `${new Date(now - 10 * 86_400_000 + IST).toISOString().slice(0, 10)}T00:00:00Z`,
+      ),
+      plan: { salaryPaise: 0, fixedPaise: 0, perDeliveryPaise: rs(34), commissionPct: 0 },
+      reason: "Raised for peak-hour coverage in T. Nagar",
+      createdById: superId,
+    },
+  })
+
+  const [older, previous] = finance.cycles()
+  for (const [c, partial] of [
+    [older!.cycle, false],
+    [previous!.cycle, true],
+  ] as const) {
+    const ov = await finance.overview(c)
+    let short = 0
+    for (const p of ov.partners) {
+      const owed = p.statement.outstandingPaise
+      if (owed <= 0) continue
+      // Two partners in the last closed month still hold some cash.
+      const amount = partial && short < 2 ? Math.round(owed * 0.6) : owed
+      if (partial && short < 2) short++
+      await prisma.remittance.create({
+        data: {
+          partnerId: p.id,
+          cycle: c,
+          day: new Date(`${c}-${partial ? "28" : "25"}T00:00:00Z`),
+          amountPaise: amount,
+          method: pick(["Cash deposit", "UPI to GloAro", "Bank transfer"]),
+          receivedBy: superId,
+        },
+      })
+    }
+    await finance.generate(c, arjun)
+  }
+  const stamp = (cycle: string, day: number) =>
+    new Date(`${cycle}-${String(day).padStart(2, "0")}T10:30:00Z`)
+  const nextMonth = (cycle: string) => {
+    const [y, m] = cycle.split("-").map(Number) as [number, number]
+    return new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 7)
+  }
+  // Older month: approved, paid and settled.
+  for (const p of await prisma.payout.findMany({ where: { cycle: older!.cycle } }))
+    await prisma.payout.update({
+      where: { id: p.id },
+      data: {
+        status: "settled",
+        approvedById: superId,
+        approvedAt: stamp(nextMonth(older!.cycle), 2),
+        paidAt: stamp(nextMonth(older!.cycle), 4),
+        paidMethod: "Bank transfer (NEFT)",
+        paidRef: `UTR${String(482915000 + Math.floor(rand() * 99999))}`,
+        settledAt: stamp(nextMonth(older!.cycle), 4),
+      },
+    })
+  // Last month: some paid, some approved, the rest waiting (shown as overdue after the 5th).
+  const prev = await prisma.payout.findMany({
+    where: { cycle: previous!.cycle },
+    orderBy: { code: "asc" },
+  })
+  for (const [i, p] of prev.entries()) {
+    const stage =
+      i % 4 === 0 ? "paid" : i % 4 === 1 ? "approved" : i % 4 === 2 ? "paid" : "pending_approval"
+    if (stage === "pending_approval") continue
+    await prisma.payout.update({
+      where: { id: p.id },
+      data: {
+        status: stage,
+        approvedById: superId,
+        approvedAt: stamp(nextMonth(previous!.cycle), 2),
+        ...(stage === "paid" && {
+          paidAt: stamp(nextMonth(previous!.cycle), 4),
+          paidMethod: pick(["Bank transfer (NEFT)", "Bank transfer (IMPS)", "UPI"]),
+          paidRef: `UTR${String(482915000 + Math.floor(rand() * 99999))}`,
+        }),
+      },
+    })
+  }
+  // Paid partner payouts with no cash left to remit are settled.
+  const ovPrev = await finance.overview(previous!.cycle)
+  for (const p of await prisma.payout.findMany({
+    where: { cycle: previous!.cycle, status: "paid" },
+  })) {
+    const clear =
+      p.accountType === "admin" ||
+      (ovPrev.partners.find((x) => x.id === p.accountId)?.statement.outstandingPaise ?? 0) <= 0
+    if (clear)
+      await prisma.payout.update({
+        where: { id: p.id },
+        data: { status: "settled", settledAt: p.paidAt },
+      })
+  }
+  for (const [action, summary] of [
+    ["finance.payout_approved", `${previous!.label} payouts reviewed and approved in batches`],
+    ["finance.payout_paid", `${previous!.label} payouts paid by NEFT / IMPS / UPI`],
+    ["finance.payout_paid", `${older!.label} payouts paid and settled`],
+  ] as const)
+    await prisma.auditLog.create({
+      data: {
+        actorId: superId,
+        actorName: "Arjun Menon",
+        actorRole: "super_admin",
+        action,
+        entityType: "cycle",
+        entityId: previous!.cycle,
+        detail: { summary },
+      },
+    })
+
+  // This month: a bonus and a deduction, and pay change requests from admins.
+  const divya = await prisma.partner.findUniqueOrThrow({ where: { code: "DP-2387" } })
+  const imran = await prisma.partner.findUniqueOrThrow({ where: { code: "DP-2380" } })
+  await finance.adjust(
+    {
+      accountType: "partner",
+      accountId: divya.id,
+      kind: "bonus",
+      amountPaise: rs(500),
+      reason: "Festive peak-hour bonus",
+    },
+    arjun,
+  )
+  await finance.adjust(
+    {
+      accountType: "partner",
+      accountId: imran.id,
+      kind: "deduction",
+      amountPaise: rs(200),
+      reason: "Late return of COD cash",
+    },
+    arjun,
+  )
+  const priya = {
+    id: members["priya.shankar@gokart.in"]!,
+    name: "Priya Shankar",
+    role: "admin",
+    source: "seed",
+  }
+  await finance.requestChange(
+    {
+      accountType: "partner",
+      accountId: divya.id,
+      plan: { salaryPaise: 0, fixedPaise: 0, perDeliveryPaise: rs(35), commissionPct: 0 },
+      reason: "Consistently above 95% on-time for two months",
+    },
+    priya,
+    "admin",
+  )
+  await finance.requestChange(
+    {
+      accountType: "partner",
+      accountId: imran.id,
+      plan: { salaryPaise: rs(15000), fixedPaise: 0, perDeliveryPaise: rs(10), commissionPct: 0 },
+      reason: "Annual revision for Velachery night shifts",
+    },
+    priya,
+    "admin",
+  )
 
   await prisma.auditLog.create({
     data: {

@@ -51,6 +51,14 @@ async function signIn(email: string, password: string) {
   return { agent, me: verify.body }
 }
 
+/** One shared session per account, for tests that don't care about sign-in itself
+ *  (each sign-in counts against the per-account login rate limit). */
+const sessions = new Map<string, ReturnType<typeof signIn>>()
+const session = (email: string, password: string) => {
+  if (!sessions.has(email)) sessions.set(email, signIn(email, password))
+  return sessions.get(email)!
+}
+
 describe("system management permissions", () => {
   it("exposes the admin, area, fee and audit data only to the Super Admin", async (ctx) => {
     if (!ready) ctx.skip()
@@ -478,6 +486,136 @@ describe("dashboard and search", () => {
     const { agent } = await signIn("superadmin@gokart.in", "Gokart@12345")
     const res = await agent.get("/api/v1/search?q=ZOF-88219").expect(200)
     expect(res.body.orders[0].code).toBe("ZOF-88219")
+  })
+})
+
+describe("finance & payouts", () => {
+  it("is Super Admin only, and statements add up to their lines", async (ctx) => {
+    if (!ready) ctx.skip()
+    const admin = (await session("admin@gokart.in", "Admin@123")).agent
+    await admin.get("/api/v1/finance/overview").expect(403)
+    await admin.post("/api/v1/finance/payouts/generate").send({ cycle: "2026-10" }).expect(403)
+
+    const { agent } = await session("superadmin@gokart.in", "Gokart@12345")
+    const cycles = (await agent.get("/api/v1/finance/cycles").expect(200)).body
+    expect(cycles).toHaveLength(3)
+    const ov = (await agent.get(`/api/v1/finance/overview?cycle=${cycles[1].cycle}`).expect(200))
+      .body
+    expect(ov.partners.length).toBeGreaterThan(0)
+    for (const a of [...ov.partners, ...ov.admins]) {
+      const lines = a.statement.lines.reduce(
+        (t: number, l: { amountPaise: number }) => t + l.amountPaise,
+        0,
+      )
+      expect(a.statement.totalPaise).toBe(lines)
+    }
+    for (const p of ov.partners)
+      expect(p.statement.outstandingPaise).toBe(p.statement.codPaise - p.statement.remittedPaise)
+    // Cash remitted can't exceed what is owed.
+    const p = ov.partners[0]
+    await agent
+      .post("/api/v1/finance/remittances")
+      .send({
+        partnerId: p.id,
+        cycle: cycles[1].cycle,
+        amountPaise: p.statement.outstandingPaise + 100,
+        method: "Cash deposit",
+      })
+      .expect(400)
+  })
+
+  it("moves a payout through approve → pay → settled with version checks and audit", async (ctx) => {
+    if (!ready) ctx.skip()
+    const { agent } = await session("superadmin@gokart.in", "Gokart@12345")
+    const admin = await prisma.member.findUniqueOrThrow({
+      where: { email: "ravi.chandran@gokart.in" },
+    })
+    const owner = await prisma.member.findUniqueOrThrow({
+      where: { email: "superadmin@gokart.in" },
+    })
+    // Its own payout under a test cycle, so repeated runs don't touch seeded ones.
+    const p = await prisma.payout.create({
+      data: {
+        code: `APO-TEST-${Date.now()}`,
+        accountType: "admin",
+        accountId: admin.id,
+        cycle: `TEST-${Date.now()}`,
+        amountPaise: 123400,
+        dueDate: new Date("2099-01-05"),
+        createdById: owner.id,
+        lines: { create: [{ position: 0, label: "Salary", formula: "test", amountPaise: 123400 }] },
+      },
+    })
+    await agent
+      .post(`/api/v1/finance/payouts/${p.id}/approve`)
+      .send({ version: p.version + 1 })
+      .expect(409)
+    const approved = (
+      await agent
+        .post(`/api/v1/finance/payouts/${p.id}/approve`)
+        .send({ version: p.version })
+        .expect(200)
+    ).body
+    expect(approved.status).toBe("approved")
+    await agent
+      .post(`/api/v1/finance/payouts/${p.id}/pay`)
+      .send({ version: approved.version, reference: "ab", method: "UPI" })
+      .expect(400)
+    const paid = (
+      await agent
+        .post(`/api/v1/finance/payouts/${p.id}/pay`)
+        .send({ version: approved.version, reference: "UTR123456789", method: "UPI" })
+        .expect(200)
+    ).body
+    // Admin payouts have no cash to remit back, so paying settles them.
+    expect(paid.status).toBe("settled")
+    expect(paid.lines).toHaveLength(1)
+    expect(await prisma.auditLog.count({ where: { entityType: "payout", entityId: p.id } })).toBe(2)
+  })
+})
+
+describe("transaction ledger and reports", () => {
+  it("reconciles net revenue, filters by type and is Super Admin only", async (ctx) => {
+    if (!ready) ctx.skip()
+    const admin = (await session("admin@gokart.in", "Admin@123")).agent
+    await admin.get("/api/v1/ledger/summary").expect(403)
+
+    const { agent } = await session("superadmin@gokart.in", "Gokart@12345")
+    const s = (await agent.get("/api/v1/ledger/summary?range=90d").expect(200)).body
+    expect(s.netPaise).toBe(s.commissionPaise + s.deliveryFeesPaise - s.refundsPaise)
+    const share = s.methods.reduce((t: number, m: { share: number }) => t + m.share, 0)
+    expect(share).toBeCloseTo(1, 5)
+    const refunds = (
+      await agent.get("/api/v1/ledger/transactions?range=90d&type=refund&pageSize=100").expect(200)
+    ).body
+    expect(
+      refunds.items.every(
+        (r: { type: string; netPaise: number }) => r.type === "refund" && r.netPaise < 0,
+      ),
+    ).toBe(true)
+    const refundTotal = refunds.items.reduce(
+      (t: number, r: { grossPaise: number }) => t - r.grossPaise,
+      0,
+    )
+    expect(refundTotal).toBe(s.refundsPaise)
+  })
+
+  it("returns 14 days, 8 weeks or 6 months of analytics", async (ctx) => {
+    if (!ready) ctx.skip()
+    const { agent } = await session("superadmin@gokart.in", "Gokart@12345")
+    for (const [period, n] of [
+      ["daily", 14],
+      ["weekly", 8],
+      ["monthly", 6],
+    ] as const) {
+      const a = (await agent.get(`/api/v1/reports/analytics?period=${period}`).expect(200)).body
+      expect(a.series).toHaveLength(n)
+      const platform = a.series.reduce(
+        (t: number, x: { food: number; mart: number }) => t + x.food + x.mart,
+        0,
+      )
+      expect(platform).toBe(a.metrics.platformPaise.value)
+    }
   })
 })
 
