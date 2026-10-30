@@ -1,14 +1,17 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useWorkspace } from "@/providers/WorkspaceProvider"
-import { FOOD, MART } from "@/components/admin/AdministrationView"
+import { fetchDashboard } from "@/lib/dashboard-api"
 import "./workspace-selector.css"
 
-function liveMetric(workspace: typeof FOOD, label: string) {
-  return workspace.metrics.find(([metricLabel]) => metricLabel === label)?.[1] ?? "—"
+type WorkspaceStats = { orders: string; partners: string }
+
+function todayRange() {
+  const today = new Date().toISOString().slice(0, 10)
+  return { start: today, end: today }
 }
 
 function FoodIcon() {
@@ -98,8 +101,6 @@ function businessDetails(name: string) {
       description:
         "Restaurant orders, preparation, food delivery partners, revenue and customer issues.",
       kind: "food",
-      orders: liveMetric(FOOD, "Total orders"),
-      partners: liveMetric(FOOD, "Delivery partners"),
     }
   }
   if (normalized.includes("gloaro") || normalized.includes("mart")) {
@@ -107,16 +108,12 @@ function businessDetails(name: string) {
       title: "GLOARO MART",
       description: "Marketplace orders, sellers, inventory, parcel shipments, revenue and returns.",
       kind: "mart",
-      orders: liveMetric(MART, "Total orders"),
-      partners: liveMetric(MART, "Delivery partners"),
     }
   }
   return {
     title: name,
     description: "Open this business workspace to manage its operations.",
     kind: "mart",
-    orders: "—",
-    partners: "—",
   }
 }
 
@@ -125,6 +122,7 @@ export default function WorkspaceSelector() {
   const { workspaces, activeWorkspace, loading, error, switchWorkspace, refreshWorkspaces } =
     useWorkspace()
 
+  const [stats, setStats] = useState<Record<string, WorkspaceStats>>({})
   const [saving, setSaving] = useState(false)
   const [actionError, setActionError] = useState("")
 
@@ -143,6 +141,29 @@ export default function WorkspaceSelector() {
       setSaving(false)
     }
   }
+
+  useEffect(() => {
+    let cancelled = false
+    const range = todayRange()
+    for (const workspace of workspaces) {
+      fetchDashboard(workspace.slug, range)
+        .then((data) => {
+          if (cancelled) return
+          const value = (label: string) =>
+            data.metrics.find((metric) => metric.label === label)?.value ?? "—"
+          setStats((current) => ({
+            ...current,
+            [workspace.id]: { orders: value("Total orders"), partners: value("Delivery partners") },
+          }))
+        })
+        .catch(() => {
+          // Leave the placeholder dashes when live data cannot be loaded.
+        })
+    }
+    return () => {
+      cancelled = true
+    }
+  }, [workspaces])
 
   const selectedWorkspaceId = activeWorkspace?.id || ""
 
@@ -239,11 +260,11 @@ export default function WorkspaceSelector() {
 
                     <div className="m05-metrics">
                       <div>
-                        <strong>{details.orders}</strong>
+                        <strong>{stats[workspace.id]?.orders ?? "—"}</strong>
                         <span>orders today</span>
                       </div>
                       <div>
-                        <strong>{details.partners}</strong>
+                        <strong>{stats[workspace.id]?.partners ?? "—"}</strong>
                         <span>active partners</span>
                       </div>
                     </div>
