@@ -9,6 +9,7 @@ import TransactionLedger from "./TransactionLedger"
 import { RevenueTrendChart } from "./TrendChart"
 import RevenuePage from "./RevenuePage"
 import ReportsPage from "./ReportsPage"
+import NavIcon from "./NavIcon"
 
 export type AdminMenuSection = {
   title: string
@@ -581,6 +582,7 @@ export default function AdministrationView({
                   className={`admin-nav ${item === current ? "active" : ""}`}
                   key={item}
                 >
+                  <NavIcon item={item} />
                   {item}
                 </Link>
               ))}
