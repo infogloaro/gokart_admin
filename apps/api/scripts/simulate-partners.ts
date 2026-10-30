@@ -18,7 +18,10 @@ async function intake(path: string, body: unknown) {
       headers: { "content-type": "application/json", "x-intake-key": KEY },
       body: JSON.stringify(body),
     })
-    if (!res.ok && res.status !== 409) console.warn(`${path} → ${res.status} ${await res.text()}`)
+    // Off shift (after a re-seed, or the stale sweep): start shifts again next tick.
+    if (res.status === 400 && path.endsWith("/location")) shifted = false
+    else if (!res.ok && res.status !== 409)
+      console.warn(`${path} → ${res.status} ${await res.text()}`)
     return res.ok
   } catch {
     // The API restarts while you edit code (node --watch); keep going and retry next tick.
