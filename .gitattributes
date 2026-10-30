@@ -1,0 +1,14 @@
+# Keep LF line endings in the working copy on every OS. Prettier (and the pre-commit
+# hook) expects LF; Git for Windows would otherwise check files out with CRLF.
+* text=auto eol=lf
+
+# Binary files: never touch their bytes.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
