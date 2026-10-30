@@ -66,7 +66,10 @@ export async function api<P extends keyof paths, M extends MethodsOf<P>>(
   const res = await fetch(url, {
     method: method.toUpperCase(),
     credentials: "include",
-    headers: o.body === undefined ? undefined : { "Content-Type": "application/json" },
+    headers: {
+      "X-Client-Source": "web",
+      ...(o.body === undefined ? {} : { "Content-Type": "application/json" }),
+    },
     body: o.body === undefined ? undefined : JSON.stringify(o.body),
     signal: o.signal,
   })

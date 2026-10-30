@@ -28,6 +28,7 @@ import {
   UtensilsCrossed,
   X,
 } from "lucide-react"
+import { useSearchParams } from "next/navigation"
 import { useState, type InputHTMLAttributes, type ReactNode } from "react"
 import {
   initials,
@@ -43,15 +44,29 @@ import {
   type PartnerForm,
 } from "@/lib/partners"
 import { useMe, useZones } from "@/lib/session"
+import { useAreaPicker } from "@/lib/zones"
 import { activityLabel, dateLabel, dateTimeLabel } from "@/lib/vendors"
 import { AvailabilityControl } from "./availability"
+import { AdminDocuments, AdminUploadCard, AdminUploadSummary } from "./documents"
 import { AdminBadge, AdminBrand, AdminButton, PageHeader } from "./ui"
 
 type Filter = "" | PartnerAvailability | "pending_approval"
 
 export function AdminPartners({ business }: { business: Business }) {
+  // Global search links here with ?search=CODE; a new link starts the list over.
+  const linked = useSearchParams().get("search") ?? ""
+  return <PartnersScreen key={linked} business={business} initialSearch={linked} />
+}
+
+function PartnersScreen({
+  business,
+  initialSearch,
+}: {
+  business: Business
+  initialSearch: string
+}) {
   const me = useMe()
-  const [search, setSearch] = useState("")
+  const [search, setSearch] = useState(initialSearch)
   const [filter, setFilter] = useState<Filter>("")
   const [selected, setSelected] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
@@ -226,6 +241,7 @@ export function AdminPartners({ business }: { business: Business }) {
 
 function PartnerProfile({ id, close }: { id: string; close: () => void }) {
   const { data: p, isError, refetch } = usePartner(id)
+  const me = useMe()
   return (
     <Dialog.Root open onOpenChange={(open) => !open && close()}>
       <Dialog.Overlay className="drawer-backdrop">
@@ -314,6 +330,20 @@ function PartnerProfile({ id, close }: { id: string; close: () => void }) {
                   <p>{p.currentOrderCode ? `Carrying #${p.currentOrderCode}` : ""}</p>
                 </div>
               </section>
+              <AdminDocuments
+                owner="partners"
+                id={p.id}
+                kinds={[
+                  "aadhaar",
+                  "driving_licence",
+                  "vehicle_rc",
+                  "insurance",
+                  "bank_proof",
+                  "photo",
+                ]}
+                documents={p.documents}
+                canUpload={Boolean(me.data?.permissions.includes("partners.manage"))}
+              />
               {p.activity.length > 0 && (
                 <section className="drawer-section">
                   <h3>Activity</h3>
@@ -394,12 +424,27 @@ function Wizard({ business, close }: { business: Business; close: () => void }) 
   const zones = useZones()
   const w = usePartnerWizard(business, "")
   const { step, form, set, errors } = w
+  const area = useAreaPicker(zones.data, form.zoneId, set("zoneId"))
   const [consent, setConsent] = useState(true)
   const field = (k: keyof PartnerForm, errKey: string = k) => ({
     value: form[k],
     onChange: (e: { target: { value: string } }) => set(k)(e.target.value),
     error: errors[errKey],
   })
+  const cards = (list: [kind: string, title: string, subtitle: string][]) => (
+    <div className="upload-grid">
+      {list.map(([kind, title, subtitle]) => (
+        <AdminUploadCard
+          key={kind}
+          title={title}
+          subtitle={subtitle}
+          file={w.uploads.files[kind]}
+          error={w.uploads.errors[kind]}
+          onPick={(f) => w.uploads.choose(kind, f)}
+        />
+      ))}
+    </div>
+  )
 
   if (w.create.isSuccess)
     return (
@@ -411,6 +456,7 @@ function Wizard({ business, close }: { business: Business; close: () => void }) 
           <AdminBadge tone="success">SUBMITTED</AdminBadge>
           <h2>Delivery Partner Application Submitted</h2>
           <p>The application is queued for Super Admin review. The partner is not active yet.</p>
+          <AdminUploadSummary uploads={w.uploads} />
           <div className="confirm-details">
             <div>
               <small>APPLICATION ID</small>
@@ -561,16 +607,24 @@ function Wizard({ business, close }: { business: Business; close: () => void }) 
                   wide
                   {...field("address")}
                 />
+                <Choice label="Zone *" value={area.zone} onChange={area.setZone}>
+                  <option value="">Choose a zone</option>
+                  {area.zones.map((z) => (
+                    <option value={z.key} key={z.key}>
+                      {z.label}
+                    </option>
+                  ))}
+                </Choice>
                 <Choice
-                  label="Service area *"
+                  label="Area *"
                   value={form.zoneId}
                   onChange={set("zoneId")}
                   error={errors.zoneId}
                 >
-                  <option value="">Choose a service area</option>
-                  {zones.data?.map((z) => (
+                  <option value="">{area.zone ? "Choose an area" : "Choose a zone first"}</option>
+                  {area.areas.map((z) => (
                     <option value={z.id} key={z.id}>
-                      {z.location}, {z.city}
+                      {z.location}
                     </option>
                   ))}
                 </Choice>
@@ -612,11 +666,16 @@ function Wizard({ business, close }: { business: Business; close: () => void }) 
                 />
                 <Field label="Licence valid until" type="date" {...field("licenceValidUntil")} />
               </div>
+              {cards([
+                ["aadhaar", "Aadhaar card", "Front and back · PDF, JPG or PNG · Max 10 MB"],
+                ["driving_licence", "Driving licence", "Both sides · PDF, JPG or PNG · Max 10 MB"],
+                ["photo", "Profile photo", "JPG or PNG · Max 10 MB"],
+              ])}
               <div className="security-note">
                 <Lock className="icon" size={16} />
                 <span>
-                  Aadhaar and licence images are uploaded and verified by authorised reviewers. File
-                  upload arrives with document storage.
+                  Files upload when you submit. Authorised reviewers verify them; nothing is
+                  auto-verified.
                 </span>
               </div>
             </div>
@@ -642,6 +701,10 @@ function Wizard({ business, close }: { business: Business; close: () => void }) 
                 />
                 <Field label="Vehicle model" placeholder="Model name" {...field("vehicleModel")} />
               </div>
+              {cards([
+                ["vehicle_rc", "Registration certificate", "PDF, JPG or PNG · Max 10 MB"],
+                ["insurance", "Insurance document", "PDF, JPG or PNG · Max 10 MB"],
+              ])}
             </div>
           )}
           {step === 3 && (

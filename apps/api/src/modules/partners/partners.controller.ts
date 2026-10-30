@@ -1,5 +1,6 @@
 import {
   CreatePartnerRequest,
+  DocumentVerifyRequest,
   PartnerDecisionRequest,
   PartnerListQuery,
   UpdatePartnerRequest,
@@ -44,4 +45,43 @@ export async function decide(req: Request<{ id: string }>, res: Response) {
 export async function update(req: Request<{ id: string }>, res: Response) {
   const body = parse(UpdatePartnerRequest, req.body)
   res.json(await service.update(req.params.id, scope(req), body, actorOf(req)))
+}
+
+// ---- documents ----
+
+export async function uploadDocument(req: Request<{ id: string; kind: string }>, res: Response) {
+  res.status(201).json(
+    await service.uploadDocument(
+      req.params.id,
+      scope(req),
+      req.params.kind,
+      {
+        body: req.body,
+        contentType: req.headers["content-type"],
+        fileName: req.get("x-file-name"),
+      },
+      actorOf(req),
+    ),
+  )
+}
+
+export async function documentFile(req: Request<{ id: string; docId: string }>, res: Response) {
+  const f = await service.documentFile(req.params.id, req.params.docId, scope(req))
+  res.setHeader("Content-Type", f.contentType)
+  res.setHeader("Content-Disposition", `inline; filename*=UTF-8''${encodeURIComponent(f.fileName)}`)
+  res.setHeader("Cache-Control", "private, no-store")
+  res.send(f.body)
+}
+
+export async function verifyDocument(req: Request<{ id: string; docId: string }>, res: Response) {
+  const body = parse(DocumentVerifyRequest, req.body)
+  res.json(
+    await service.verifyDocument(
+      req.params.id,
+      req.params.docId,
+      scope(req),
+      body.verified,
+      actorOf(req),
+    ),
+  )
 }

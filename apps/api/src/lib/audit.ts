@@ -1,9 +1,16 @@
 import type { Prisma } from "../generated/prisma/client"
 import type { Db } from "./prisma"
 
-export type Actor = { id: string | null; name: string; ip?: string | undefined }
+export type Actor = {
+  id: string | null
+  name: string
+  role?: string | null | undefined
+  source?: string | undefined
+  userAgent?: string | undefined
+  ip?: string | undefined
+}
 
-export const systemActor: Actor = { id: null, name: "System" }
+export const systemActor: Actor = { id: null, name: "System", role: null, source: "system" }
 
 /** The audit trail for one record, newest first, as shown in detail drawers. */
 export async function activityFor(db: Db, entity: { type: string; id: string }, take = 20) {
@@ -35,9 +42,12 @@ export function audit(
     data: {
       actorId: actor.id,
       actorName: actor.name,
+      actorRole: actor.role ?? null,
       action,
       entityType: entity.type,
       entityId: entity.id,
+      source: actor.source ?? null,
+      userAgent: actor.userAgent ?? null,
       detail,
       ip: actor.ip ?? null,
     },

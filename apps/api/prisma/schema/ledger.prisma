@@ -1,0 +1,31 @@
+// Owner: Dev 3 (money). Append-only double-entry ledger. A transaction's entries
+// must balance (sum of debits = sum of credits); the ledger service enforces it.
+
+model LedgerTransaction {
+  id        String        @id @default(cuid())
+  /// order_payment, delivery_fee, vendor_payout, partner_payout, admin_payout, refund, credit_note, cod_remittance
+  kind      String
+  reference String // order code, payout code, remittance id …
+  business  Business?
+  memo      String?
+  at        DateTime
+  createdAt DateTime      @default(now())
+  entries   LedgerEntry[]
+
+  @@index([kind, at])
+  @@index([reference])
+  @@map("ledger_transactions")
+}
+
+model LedgerEntry {
+  id            String            @id @default(cuid())
+  transactionId String
+  /// Account path, e.g. "cash:customer_collections", "payable:vendor:VEN-1048", "revenue:commission"
+  account       String
+  debitPaise    Int               @default(0)
+  creditPaise   Int               @default(0)
+  transaction   LedgerTransaction @relation(fields: [transactionId], references: [id])
+
+  @@index([account])
+  @@map("ledger_entries")
+}

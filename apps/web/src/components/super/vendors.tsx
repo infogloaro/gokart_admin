@@ -36,23 +36,23 @@ import {
   FileText,
   ListOrdered,
   MoreHorizontal,
-  Package,
   Plus,
   RefreshCw,
   Search,
   ShieldCheck,
-  UploadCloud,
   Wallet,
   X,
+  type LucideIcon,
 } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useSearchParams } from "next/navigation"
+import { useWizardUploads } from "@/lib/documents"
 import { useSince } from "@/lib/motion"
 import { placedLabel, statusTone, useOrders } from "@/lib/orders"
 import { useMe, useZones } from "@/lib/session"
 import {
   activityLabel,
   dateTimeLabel,
-  documentLabel,
   fieldErrors,
   useCreateVendor,
   useUpdateVendor,
@@ -68,7 +68,9 @@ import {
 } from "@/lib/vendors"
 import { Count, HeadActions } from "./dashboard"
 import { DecisionDialog, type Decision } from "./decision"
+import { DocumentsPanel, UploadCard, UploadSummary } from "./documents"
 import { useCsvExport } from "./export"
+import { useRefreshToast } from "@/components/refresh-toast"
 import { useBusinessFilter } from "./shell"
 import {
   Badge,
@@ -85,6 +87,7 @@ import {
   Toast,
   Value,
 } from "./ui"
+import { AreaSelect } from "./area-select"
 
 const PAGE_SIZE = 10
 const REFRESH_MS = 30_000
@@ -107,9 +110,15 @@ const CHIPS: { key: Chip; label: string; count: keyof Counts }[] = [
 ]
 
 export function SuperVendors() {
+  // Global search links here with ?search=CODE; a new link starts the list over.
+  const linked = useSearchParams().get("search") ?? ""
+  return <VendorsScreen key={linked} initialSearch={linked} />
+}
+
+function VendorsScreen({ initialSearch }: { initialSearch: string }) {
   const business = useBusinessFilter()
   const me = useMe()
-  const [search, setSearch] = useState("")
+  const [search, setSearch] = useState(initialSearch)
   const [chip, setChip] = useState<Chip>("all")
   const [sort, setSort] = useState<"newest" | "orders">("newest")
   const [page, setPage] = useState(1)
@@ -117,6 +126,7 @@ export function SuperVendors() {
   const [adding, setAdding] = useState(false)
   const [flash, setFlash] = useState<string | null>(null)
   const csv = useCsvExport()
+  const runRefresh = useRefreshToast()
   const filters: Omit<VendorQuery, "page" | "pageSize"> = {
     business: business === "all" ? undefined : business,
     status: chip === "all" ? undefined : chip,
@@ -165,7 +175,12 @@ export function SuperVendors() {
           primary
           icon={RefreshCw}
           className={refreshing ? "spinning" : ""}
-          onClick={() => (void vendors.refetch(), void summary.refetch())}
+          onClick={() =>
+            void runRefresh(async () => {
+              const results = await Promise.all([vendors.refetch(), summary.refetch()])
+              if (results.some((result) => result.isError)) throw new Error("Refresh failed")
+            })
+          }
         >
           Refresh data
         </Button>
@@ -375,7 +390,6 @@ const TABS = [
   "Overview",
   "Business",
   "Documents",
-  "Products / Menu",
   "Orders",
   "Revenue",
   "Settlements",
@@ -607,6 +621,11 @@ export function VendorDrawer({
               form={form}
               setForm={setForm}
               errors={errors}
+              perms={{
+                manage: Boolean(me.data?.permissions.includes("vendors.manage")),
+                approve: canDecide,
+              }}
+              notify={setToast}
             />
           </main>
           <footer>
@@ -675,6 +694,8 @@ function VendorTab({
   form,
   setForm,
   errors,
+  perms,
+  notify,
 }: {
   tab: Tab
   v: VendorDetail
@@ -682,8 +703,9 @@ function VendorTab({
   form: EditForm | null
   setForm: (f: EditForm) => void
   errors: Record<string, string>
+  perms: { manage: boolean; approve: boolean }
+  notify: (message: string) => void
 }) {
-  const zones = useZones()
   const edit = editing && form
   const field = (k: Exclude<keyof EditForm, "zoneId">, label: string, type = "text") =>
     edit ? (
@@ -727,17 +749,7 @@ function VendorTab({
         {field("ownerName", "Owner full name *")}
         {field("phone", "Mobile number *")}
         {field("email", "Email address *", "email")}
-        <Select
-          label="Service area *"
-          value={form.zoneId}
-          onChange={(z) => setForm({ ...form, zoneId: z })}
-        >
-          {zones.data?.map((z) => (
-            <option value={z.id} key={z.id}>
-              {z.location}, {z.city}
-            </option>
-          ))}
-        </Select>
+        <AreaSelect value={form.zoneId} onChange={(z) => setForm({ ...form, zoneId: z })} />
         {field("address", "Address *")}
         {field("gstin", "GSTIN")}
         {field("fssai", v.business === "food" ? "FSSAI licence number *" : "FSSAI licence number")}
@@ -810,36 +822,20 @@ function VendorTab({
 
   if (tab === "Documents")
     return (
-      <Panel title="Documents" subtitle="Uploaded files and their verification">
-        <div className="eligibility">
-          {v.documents.length === 0 && (
-            <span>
-              <FileText />
-              <b>No documents uploaded yet</b>
-            </span>
-          )}
-          {v.documents.map((d) => (
-            <span key={d.kind + d.fileName}>
-              <FileText />
-              <b>
-                {documentLabel[d.kind] ?? d.kind}
-                <small className="doc-file">{d.fileName}</small>
-              </b>
-              <Badge tone={d.verified ? "success" : "warning"}>
-                {d.verified ? "Verified" : "Pending verification"}
-              </Badge>
-            </span>
-          ))}
-        </div>
-      </Panel>
-    )
-
-  if (tab === "Products / Menu")
-    return (
-      <Coming
-        icon={Package}
-        title={v.business === "food" ? "Menu" : "Products and stock"}
-        text={`The ${v.business === "food" ? "menu" : "catalogue"} appears here once the Products & inventory module is built.`}
+      <DocumentsPanel
+        owner="vendors"
+        id={v.id}
+        kinds={[
+          "gst_certificate",
+          v.business === "food" ? "fssai_licence" : "trade_licence",
+          "pan",
+          "bank_proof",
+          "storefront_photo",
+        ]}
+        documents={v.documents}
+        canUpload={perms.manage}
+        canVerify={perms.approve}
+        onChanged={notify}
       />
     )
 
@@ -982,15 +978,7 @@ function VendorOrders({ v }: { v: VendorDetail }) {
   )
 }
 
-function Coming({
-  icon: Icon,
-  title,
-  text,
-}: {
-  icon: typeof Package
-  title: string
-  text: string
-}) {
+function Coming({ icon: Icon, title, text }: { icon: LucideIcon; title: string; text: string }) {
   return (
     <Panel title={title} subtitle="Not available yet">
       <div className="coming-soon">
@@ -1109,6 +1097,7 @@ function AddVendor({
   const [step, setStep] = useState(0)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [notice, setNotice] = useState<string | null>(null)
+  const uploads = useWizardUploads("vendors")
   const [form, setForm] = useState<VendorForm>(() => {
     const draft = loadDraft()
     return draft ? { ...emptyForm(defaultBusiness), ...draft } : emptyForm(defaultBusiness)
@@ -1187,12 +1176,13 @@ function AddVendor({
     if (first >= 0 || keys.length) return setStep(Math.max(first, 0))
     if (!parsed.success) return
     create.mutate(parsed.data, {
-      onSuccess: () => {
+      onSuccess: (vendor) => {
         try {
           localStorage.removeItem(DRAFT_KEY)
         } catch {
           // Storage blocked: nothing to clear.
         }
+        void uploads.uploadAll(vendor.id)
       },
       // Server field errors (e.g. a GSTIN rejected by the API) go on the field.
       onError: (e) => {
@@ -1230,6 +1220,7 @@ function AddVendor({
           <CheckCircle2 />
           <strong>Vendor application received</strong>
           <p>Uploads remain pending verification. No account has been activated automatically.</p>
+          <UploadSummary uploads={uploads} owner="vendor" />
           <div>
             <span>
               APPLICATION ID<b>{create.data.code}</b>
@@ -1248,10 +1239,14 @@ function AddVendor({
       </Modal>
     )
 
-  const docs: [string, string][] = [
-    ["GST certificate", "Primary document"],
-    [food ? "FSSAI licence" : "Trade licence", "Supporting document"],
-    ["Cancelled cheque or bank statement", "Bank proof"],
+  const docs: [kind: string, title: string, hint: string][] = [
+    ["gst_certificate", "GST certificate", "Primary document"],
+    [
+      food ? "fssai_licence" : "trade_licence",
+      food ? "FSSAI licence" : "Trade licence",
+      "Supporting document",
+    ],
+    ["bank_proof", "Cancelled cheque or bank statement", "Bank proof"],
   ]
   const review: [string, string, number][] = [
     [
@@ -1273,9 +1268,15 @@ function AddVendor({
     ],
     [
       "Documents",
-      [form.gstin && `GSTIN ${form.gstin}`, form.fssai && `FSSAI ${form.fssai}`]
+      [
+        form.gstin && `GSTIN ${form.gstin}`,
+        form.fssai && `FSSAI ${form.fssai}`,
+        uploads.count
+          ? `${uploads.count} ${uploads.count === 1 ? "file" : "files"} attached`
+          : "No files attached",
+      ]
         .filter(Boolean)
-        .join(" · ") || "Numbers not entered · files pending",
+        .join(" · "),
       3,
     ],
     [
@@ -1386,19 +1387,7 @@ function AddVendor({
 
         {step === 2 && (
           <div className="form-grid">
-            <Select label="Service area *" value={form.zoneId} onChange={set("zoneId")}>
-              <option value="">Choose a service area</option>
-              {zones.data?.map((z) => (
-                <option value={z.id} key={z.id}>
-                  {z.location}, {z.city}
-                </option>
-              ))}
-            </Select>
-            <Input
-              label="Address *"
-              placeholder="Door no., street, locality"
-              {...field("address")}
-            />
+            <AreaSelect value={form.zoneId} onChange={set("zoneId")} showDistrict />
             <Input
               label="PIN code"
               inputMode="numeric"
@@ -1406,10 +1395,9 @@ function AddVendor({
               {...field("pinCode")}
             />
             <Input
-              label="City"
-              value={zone ? `${zone.city}, ${zone.district}` : ""}
-              readOnly
-              placeholder="Set by the service area"
+              label="Address *"
+              placeholder="Door no., street, locality"
+              {...field("address")}
             />
             {errors.zoneId && <em className="rejection-error">{errors.zoneId}</em>}
           </div>
@@ -1418,18 +1406,21 @@ function AddVendor({
         {step === 3 && (
           <>
             <div className="uploads">
-              {docs.map(([doc, kind]) => (
-                <div className="upload-card" key={doc}>
-                  <UploadCloud />
-                  <b>{doc}</b>
-                  <small>{kind} · PDF, JPG or PNG · Max 10MB</small>
-                  <Badge tone="neutral">Not uploaded</Badge>
-                </div>
+              {docs.map(([kind, title, hint]) => (
+                <UploadCard
+                  key={kind}
+                  title={title}
+                  hint={hint}
+                  file={uploads.files[kind]}
+                  error={uploads.errors[kind]}
+                  onPick={(f) => uploads.choose(kind, f)}
+                  onRemove={() => uploads.remove(kind)}
+                />
               ))}
             </div>
             <p className="wizard-note">
-              File upload is switched on once document storage is set up. Enter the registration
-              numbers now; the files can be added from the vendor&apos;s Documents tab later.
+              Files upload when you submit, then wait for verification. You can add or replace them
+              later from the vendor&apos;s Documents tab. Drafts don&apos;t keep files.
             </p>
             <div className="form-grid">
               <Input label="GSTIN" placeholder="33ABCDE1234F1Z5" {...field("gstin")} />

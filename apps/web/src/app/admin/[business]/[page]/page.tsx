@@ -1,12 +1,21 @@
 import { Business } from "@zoauro/shared"
 import { notFound } from "next/navigation"
+import { AdminComplaints } from "@/components/admin/complaints"
+import {
+  AdminDashboard,
+  AdminFinance,
+  AdminNotifications,
+  AdminOverview,
+  AdminReports,
+} from "@/components/admin/dashboard"
+import { AdminInventory } from "@/components/admin/inventory"
 import { AdminOrders } from "@/components/admin/orders"
+import { AdminProfile } from "@/components/admin/profile"
 import { AdminPartners } from "@/components/admin/partners"
 import { AdminTracking } from "@/components/admin/tracking"
 import { AdminVendors } from "@/components/admin/vendors"
 import { PageHeader } from "@/components/admin/ui"
 import { ScreenPlaceholder } from "@/components/placeholder"
-import { TwoStepSettings } from "@/components/two-step-settings"
 import { adminScreens } from "@/lib/navigation"
 
 export default async function AdminPage({
@@ -18,20 +27,18 @@ export default async function AdminPage({
   const b = Business.parse(business)
   const screen = adminScreens.find((s) => s.key === page)
   if (!screen) notFound()
+  if (page === "dashboard") return <AdminDashboard business={b} key={b} />
+  if (page === "overview") return <AdminOverview business={b} key={b} />
+  if (page === "finance") return <AdminFinance business={b} key={b} />
+  if (page === "reports") return <AdminReports business={b} key={b} />
+  if (page === "notifications") return <AdminNotifications business={b} key={b} />
+  if (page === "inventory") return b === "mart" ? <AdminInventory /> : notFound()
   if (page === "orders") return <AdminOrders business={b} />
+  if (page === "complaints") return <AdminComplaints business={b} />
   if (page === "vendors") return <AdminVendors business={b} />
   if (page === "partners") return <AdminPartners business={b} />
   if (page === "tracking") return <AdminTracking business={b} />
-  if (page === "profile")
-    return (
-      <>
-        <PageHeader title={screen.title} subtitle={screen.subtitle} />
-        <section className="panel" style={{ padding: 22, maxWidth: 760 }}>
-          <h2 style={{ margin: "0 0 12px", fontSize: 17 }}>Two-step verification</h2>
-          <TwoStepSettings />
-        </section>
-      </>
-    )
+  if (page === "profile") return <AdminProfile />
   return (
     <>
       <PageHeader title={screen.title} subtitle={screen.subtitle} />

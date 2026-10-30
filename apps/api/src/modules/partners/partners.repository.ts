@@ -256,3 +256,62 @@ export function decide(
     return tx.partner.findUniqueOrThrow({ where: { id: partner.id }, include: withDetail })
   })
 }
+
+// ---- documents ----
+
+type NewDocument = {
+  kind: string
+  s3Key: string
+  fileName: string
+  contentType: string
+  sizeBytes: number
+}
+
+/** Stores a document, replacing any earlier one of the same kind. Returns the old keys. */
+export function replaceDocument(
+  partner: { id: string; code: string },
+  file: NewDocument,
+  actor: Actor,
+) {
+  return prisma.$transaction(async (tx) => {
+    const old = await tx.partnerDocument.findMany({
+      where: { partnerId: partner.id, kind: file.kind },
+      select: { s3Key: true },
+    })
+    await tx.partnerDocument.deleteMany({ where: { partnerId: partner.id, kind: file.kind } })
+    const doc = await tx.partnerDocument.create({ data: { partnerId: partner.id, ...file } })
+    await audit(
+      tx,
+      actor,
+      "partner.document_uploaded",
+      { type: "partner", id: partner.id },
+      { code: partner.code, kind: file.kind, fileName: file.fileName },
+    )
+    return { doc, oldKeys: old.map((o) => o.s3Key) }
+  })
+}
+
+export const findDocument = (partnerId: string, documentId: string) =>
+  prisma.partnerDocument.findFirst({ where: { id: documentId, partnerId } })
+
+export function setDocumentVerified(
+  partner: { id: string; code: string },
+  doc: { id: string; kind: string },
+  verified: boolean,
+  actor: Actor,
+) {
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.partnerDocument.update({
+      where: { id: doc.id },
+      data: { verifiedAt: verified ? new Date() : null },
+    })
+    await audit(
+      tx,
+      actor,
+      verified ? "partner.document_verified" : "partner.document_unverified",
+      { type: "partner", id: partner.id },
+      { code: partner.code, kind: doc.kind },
+    )
+    return updated
+  })
+}

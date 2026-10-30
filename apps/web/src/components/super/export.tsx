@@ -18,10 +18,13 @@ export function useCsvExport() {
   }, [toast])
 
   /** `build` returns the whole file; an empty result shows a warning instead of a download. */
-  async function run(name: string, build: () => Promise<{ csv: string; count: number }>) {
+  async function run(
+    name: string,
+    build: () => Promise<{ csv: string; count: number; limited?: boolean }>,
+  ) {
     setExporting(true)
     try {
-      const { csv, count } = await build()
+      const { csv, count, limited } = await build()
       if (count === 0)
         return setToast({
           tone: "warning",
@@ -29,7 +32,13 @@ export function useCsvExport() {
           message: "No records match the current filters.",
         })
       download(`${name}-${new Date().toISOString().slice(0, 10)}.csv`, csv)
-      setToast({ tone: "success", title: "Done", message: "Your CSV export is being prepared." })
+      setToast({
+        tone: "success",
+        title: "Done",
+        message: limited
+          ? `Exported the newest ${count.toLocaleString("en-IN")} records; the 10,000-row limit was reached.`
+          : "Your CSV export is being prepared.",
+      })
     } catch (e) {
       setToast({
         tone: "error",

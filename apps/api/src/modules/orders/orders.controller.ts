@@ -1,4 +1,4 @@
-import { ChangeOrderStatusRequest, OrderListQuery } from "@zoauro/shared"
+import { AssignPartnerRequest, ChangeOrderStatusRequest, OrderListQuery } from "@zoauro/shared"
 import type { Request, Response } from "express"
 import { parse } from "../../lib/errors"
 import { actorOf, scope } from "../../middleware/auth"
@@ -9,7 +9,14 @@ export async function list(req: Request, res: Response) {
   const s = scope(req, q.business)
   res.json(
     await service.list(
-      { ...s, status: q.status, search: q.search, partnerId: q.partnerId, vendorId: q.vendorId },
+      {
+        ...s,
+        status: q.status,
+        search: q.search,
+        partnerId: q.partnerId,
+        vendorId: q.vendorId,
+        delayed: q.delayed,
+      },
       q.page,
       q.pageSize,
     ),
@@ -27,4 +34,13 @@ export async function get(req: Request<{ id: string }>, res: Response) {
 export async function changeStatus(req: Request<{ id: string }>, res: Response) {
   const body = parse(ChangeOrderStatusRequest, req.body)
   res.json(await service.changeStatus(req.params.id, scope(req), body, actorOf(req)))
+}
+
+export async function candidates(req: Request<{ id: string }>, res: Response) {
+  res.json(await service.candidates(req.params.id, scope(req)))
+}
+
+export async function assign(req: Request<{ id: string }>, res: Response) {
+  const body = parse(AssignPartnerRequest, req.body)
+  res.json(await service.assign(req.params.id, scope(req), body, actorOf(req)))
 }

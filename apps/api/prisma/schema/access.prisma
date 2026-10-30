@@ -1,0 +1,96 @@
+// Owner: Dev 1 (platform). Members, roles, permissions and zone access.
+
+enum Role {
+  super_admin
+  admin
+}
+
+enum MemberStatus {
+  active
+  disabled
+}
+
+/// How a member receives the second sign-in step.
+enum MfaMethod {
+  email
+  sms
+  totp
+}
+
+model Member {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  name          String
+  /// Mobile number as +91XXXXXXXXXX. Members can sign in with it instead of email.
+  phone         String?      @unique
+  /// SMS codes are only sent to a verified number.
+  phoneVerified Boolean      @default(false)
+  passwordHash  String
+  role          Role
+  status        MemberStatus @default(active)
+  /// Authenticator-app secret, encrypted with AES-256-GCM ("v1:…", see lib/crypto.ts).
+  totpSecret    String?
+  totpEnabled   Boolean      @default(false)
+  /// Time step of the last accepted authenticator code, so a code can't be used twice.
+  totpLastStep  Int?
+  /// Last method used; preselected on the next sign-in.
+  preferredMfa  MfaMethod    @default(email)
+  /// Notification preferences (see MemberPreferences in packages/shared).
+  preferences   Json?
+  lastLoginAt   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  businesses    MemberBusiness[]
+  zones         MemberZone[]
+  permissions   MemberPermission[]
+  recoveryCodes MemberRecoveryCode[]
+  /// Delivery partners this admin manages (drives admin commission).
+  partners      Partner[]            @relation("PartnerManager")
+
+  @@map("members")
+}
+
+model MemberBusiness {
+  memberId String
+  business Business
+  member   Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@id([memberId, business])
+  @@map("member_businesses")
+}
+
+/// Zones an admin may see. Super Admins have no rows here and see every zone.
+model MemberZone {
+  memberId String
+  zoneId   String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  zone     Zone   @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+
+  @@id([memberId, zoneId])
+  @@map("member_zones")
+}
+
+/// One-time backup codes for signing in without the authenticator app. Stored only as
+/// hashes; each works once. A new set replaces the old one.
+model MemberRecoveryCode {
+  id        String    @id @default(cuid())
+  memberId  String
+  codeHash  String
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  member    Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, codeHash])
+  @@map("member_recovery_codes")
+}
+
+/// Permission keys from packages/shared (e.g. "finance.approve").
+model MemberPermission {
+  memberId   String
+  permission String
+  member     Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@id([memberId, permission])
+  @@map("member_permissions")
+}

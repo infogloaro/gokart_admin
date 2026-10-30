@@ -42,7 +42,7 @@ import {
   UtensilsCrossed,
   X,
 } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { useSince } from "@/lib/motion"
 import { placedLabel, statusTone, useOrders } from "@/lib/orders"
@@ -63,11 +63,13 @@ import {
   type PartnerQuery,
 } from "@/lib/partners"
 import { useMe, useZones } from "@/lib/session"
-import { activityLabel, dateLabel, dateTimeLabel, documentLabel, fieldErrors } from "@/lib/vendors"
+import { activityLabel, dateLabel, dateTimeLabel, fieldErrors } from "@/lib/vendors"
 import { AvailabilityButton } from "./availability"
 import { Count, HeadActions } from "./dashboard"
 import { DecisionDialog, type Decision } from "./decision"
+import { DocumentsPanel, UploadCard, UploadSummary } from "./documents"
 import { useCsvExport } from "./export"
+import { useRefreshToast } from "@/components/refresh-toast"
 import { useBusinessFilter } from "./shell"
 import {
   Badge,
@@ -84,6 +86,7 @@ import {
   Toast,
   Value,
 } from "./ui"
+import { AreaSelect } from "./area-select"
 
 const PAGE_SIZE = 10
 const REFRESH_MS = 30_000
@@ -113,9 +116,15 @@ function chipQuery(chip: Chip): Pick<PartnerQuery, "status" | "availability"> {
 }
 
 export function SuperPartners() {
+  // Global search links here with ?search=CODE; a new link starts the list over.
+  const linked = useSearchParams().get("search") ?? ""
+  return <PartnersScreen key={linked} initialSearch={linked} />
+}
+
+function PartnersScreen({ initialSearch }: { initialSearch: string }) {
   const business = useBusinessFilter()
   const me = useMe()
-  const [search, setSearch] = useState("")
+  const [search, setSearch] = useState(initialSearch)
   const [chip, setChip] = useState<Chip>("all")
   const [sort, setSort] = useState<"newest" | "performance">("newest")
   const [page, setPage] = useState(1)
@@ -123,6 +132,7 @@ export function SuperPartners() {
   const [adding, setAdding] = useState(false)
   const [flash, setFlash] = useState<string | null>(null)
   const csv = useCsvExport()
+  const runRefresh = useRefreshToast()
   const filters = {
     business: business === "all" ? undefined : business,
     ...chipQuery(chip),
@@ -158,7 +168,12 @@ export function SuperPartners() {
           primary
           icon={RefreshCw}
           className={refreshing ? "spinning" : ""}
-          onClick={() => (void partners.refetch(), void summary.refetch())}
+          onClick={() =>
+            void runRefresh(async () => {
+              const results = await Promise.all([partners.refetch(), summary.refetch()])
+              if (results.some((result) => result.isError)) throw new Error("Refresh failed")
+            })
+          }
         >
           Refresh data
         </Button>
@@ -619,6 +634,11 @@ export function PartnerDrawer({
               form={form}
               setForm={setForm}
               errors={errors}
+              perms={{
+                manage: Boolean(me.data?.permissions.includes("partners.manage")),
+                approve: canDecide,
+              }}
+              notify={setToast}
             />
           </main>
           <footer>
@@ -708,6 +728,8 @@ function DrawerTab({
   form,
   setForm,
   errors,
+  perms,
+  notify,
 }: {
   tab: Tab
   p: PartnerDetail
@@ -715,8 +737,22 @@ function DrawerTab({
   form: EditForm | null
   setForm: (f: EditForm) => void
   errors: Record<string, string>
+  perms: { manage: boolean; approve: boolean }
+  notify: (message: string) => void
 }) {
-  const zones = useZones()
+  // A plain function, not a component: a component defined here would remount (and lose
+  // an upload in progress) on every render.
+  const documents = (kinds: string[]) => (
+    <DocumentsPanel
+      owner="partners"
+      id={p.id}
+      kinds={kinds}
+      documents={p.documents.filter((d) => kinds.includes(d.kind))}
+      canUpload={perms.manage}
+      canVerify={perms.approve}
+      onChanged={notify}
+    />
+  )
   const edit = editing && form
   const field = (k: Exclude<keyof EditForm, "businesses">, label: string, type = "text") =>
     edit ? (
@@ -831,7 +867,7 @@ function DrawerTab({
             <Value label="Aadhaar" value={docStatus("aadhaar")} />
           </Section>
         )}
-        <Documents p={p} kinds={["aadhaar", "driving_licence", "photo"]} />
+        {documents(["aadhaar", "driving_licence", "photo", "bank_proof"])}
       </>
     )
 
@@ -862,7 +898,7 @@ function DrawerTab({
             <Value label="Insurance / RC" value={docStatus("vehicle_rc")} />
           </Section>
         )}
-        <Documents p={p} kinds={["vehicle_rc", "insurance"]} />
+        {documents(["vehicle_rc", "insurance"])}
       </>
     )
 
@@ -896,17 +932,7 @@ function DrawerTab({
           {errors.businesses && <p className="rejection-error">{errors.businesses}</p>}
         </Panel>
         <div className="form-grid edit-grid">
-          <Select
-            label="Service area *"
-            value={form.zoneId}
-            onChange={(v) => setForm({ ...form, zoneId: v })}
-          >
-            {zones.data?.map((z) => (
-              <option value={z.id} key={z.id}>
-                {z.location}, {z.city}
-              </option>
-            ))}
-          </Select>
+          <AreaSelect value={form.zoneId} onChange={(v) => setForm({ ...form, zoneId: v })} />
         </div>
       </>
     ) : (
@@ -952,34 +978,6 @@ function Eligibility({ p }: { p: PartnerDetail }) {
             <b>{businessName[b]}</b>
             <Badge tone={p.businesses.includes(b) ? "success" : "neutral"}>
               {p.businesses.includes(b) ? "Eligible" : "Not eligible"}
-            </Badge>
-          </span>
-        ))}
-      </div>
-    </Panel>
-  )
-}
-
-function Documents({ p, kinds }: { p: PartnerDetail; kinds: string[] }) {
-  const docs = p.documents.filter((d) => kinds.includes(d.kind))
-  return (
-    <Panel title="Documents" subtitle="Uploaded files and their verification">
-      <div className="eligibility">
-        {docs.length === 0 && (
-          <span>
-            <FileText />
-            <b>No documents uploaded</b>
-          </span>
-        )}
-        {docs.map((d) => (
-          <span key={d.kind + d.fileName}>
-            <FileText />
-            <b>
-              {documentLabel[d.kind] ?? d.kind}
-              <small className="doc-file">{d.fileName}</small>
-            </b>
-            <Badge tone={d.verified ? "success" : "warning"}>
-              {d.verified ? "Verified" : "Pending verification"}
             </Badge>
           </span>
         ))}
@@ -1106,6 +1104,21 @@ function PartnerWizard({
     onChange: (e: { target: { value: string } }) => set(k)(e.target.value),
     error: errors[errKey],
   })
+  const cards = (list: [kind: string, title: string, hint: string][]) => (
+    <div className="uploads">
+      {list.map(([kind, title, hint]) => (
+        <UploadCard
+          key={kind}
+          title={title}
+          hint={hint}
+          file={w.uploads.files[kind]}
+          error={w.uploads.errors[kind]}
+          onPick={(f) => w.uploads.choose(kind, f)}
+          onRemove={() => w.uploads.remove(kind)}
+        />
+      ))}
+    </div>
+  )
 
   if (w.create.isSuccess)
     return (
@@ -1117,6 +1130,7 @@ function PartnerWizard({
             Application {w.create.data.code} is under review. The partner is not active until
             verification is complete.
           </p>
+          <UploadSummary uploads={w.uploads} owner="partner" />
           <Badge tone="warning">Under Review</Badge>
           <Button primary onClick={close}>
             Return to delivery partners
@@ -1200,15 +1214,8 @@ function PartnerWizard({
                   ))}
                 </Select>
                 <Input label="PIN code" inputMode="numeric" {...field("pinCode")} />
+                <AreaSelect value={form.zoneId} onChange={set("zoneId")} />
                 <Input label="Residential address" {...field("address")} />
-                <Select label="Service area *" value={form.zoneId} onChange={set("zoneId")}>
-                  <option value="">Choose a service area</option>
-                  {zones.data?.map((z) => (
-                    <option value={z.id} key={z.id}>
-                      {z.location}, {z.city}
-                    </option>
-                  ))}
-                </Select>
                 <Select
                   label="Service eligibility *"
                   value={form.service}
@@ -1222,10 +1229,17 @@ function PartnerWizard({
               </div>
             )}
             {step === 1 && (
-              <div className="form-grid">
-                <Input label="Driving licence number *" {...field("drivingLicence")} />
-                <Input label="Licence valid until" type="date" {...field("licenceValidUntil")} />
-              </div>
+              <>
+                <div className="form-grid">
+                  <Input label="Driving licence number *" {...field("drivingLicence")} />
+                  <Input label="Licence valid until" type="date" {...field("licenceValidUntil")} />
+                </div>
+                {cards([
+                  ["aadhaar", "Aadhaar card", "Front and back"],
+                  ["driving_licence", "Driving licence", "Both sides"],
+                  ["photo", "Profile photo", "Clear face photo"],
+                ])}
+              </>
             )}
             {step === 2 && (
               <div className="form-grid">
@@ -1252,6 +1266,11 @@ function PartnerWizard({
                 />
               </div>
             )}
+            {step === 2 &&
+              cards([
+                ["vehicle_rc", "Registration certificate", "Vehicle RC"],
+                ["insurance", "Insurance", "Current policy"],
+              ])}
             {step === 3 && (
               <div className="form-grid">
                 <Input label="Account holder name" {...field("holderName", "bank.holderName")} />

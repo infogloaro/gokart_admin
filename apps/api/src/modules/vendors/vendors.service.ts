@@ -1,4 +1,5 @@
 import {
+  VENDOR_DOCUMENT_KINDS,
   vendorDecisions,
   vendorStatusLabel,
   type Business,
@@ -10,8 +11,10 @@ import {
   type VendorStatus,
 } from "@zoauro/shared"
 import { activityFor, type Actor } from "../../lib/audit"
+import { checkUpload, toStoredDocument } from "../../lib/documents"
 import { badRequest, conflict, forbidden, notFound } from "../../lib/errors"
 import { prisma } from "../../lib/prisma"
+import { deleteObject, getObject, putObject } from "../../lib/storage"
 import * as repo from "./vendors.repository"
 
 type Scope = { businesses: Business[]; zoneIds: string[] | null }
@@ -66,12 +69,7 @@ async function toDetail(v: repo.VendorDetailRow): Promise<VendorDetail> {
     fssai: v.fssai,
     decisionReason: v.decisionReason,
     decidedAt: v.decidedAt?.toISOString() ?? null,
-    documents: v.documents.map((d) => ({
-      kind: d.kind,
-      fileName: d.fileName,
-      uploadedAt: d.uploadedAt.toISOString(),
-      verified: Boolean(d.verifiedAt),
-    })),
+    documents: v.documents.map(toStoredDocument),
     activity,
     updatedAt: v.updatedAt.toISOString(),
   }
@@ -206,4 +204,61 @@ export async function decide(
   const updated = await repo.decide(v, o, o.action, actor, input.reason)
   if (!updated) throw conflict("This vendor was updated by someone else. Reload to see the latest.")
   return toDetail(updated)
+}
+
+// ---- documents ----
+
+export async function uploadDocument(
+  id: string,
+  scope: Scope,
+  kind: string,
+  upload: { body: unknown; contentType: string | undefined; fileName: string | undefined },
+  actor: Actor,
+) {
+  if (!(VENDOR_DOCUMENT_KINDS as readonly string[]).includes(kind))
+    throw badRequest("Unknown document type.", { kind: ["Unknown"] })
+  const v = await loadInScope(id, scope)
+  const file = checkUpload(upload.body, upload.contentType, upload.fileName, kind)
+  const s3Key = `vendors/${v.code}/${kind}-${Date.now()}.${file.ext}`
+  await putObject(s3Key, file.buffer, file.contentType)
+  const { doc, oldKeys } = await repo.replaceDocument(
+    v,
+    {
+      kind,
+      s3Key,
+      fileName: file.fileName,
+      contentType: file.contentType,
+      sizeBytes: file.buffer.length,
+    },
+    actor,
+  )
+  // Old files are only removed once the new record is saved.
+  await Promise.allSettled(oldKeys.map((k) => deleteObject(k)))
+  return toStoredDocument(doc)
+}
+
+export async function documentFile(id: string, documentId: string, scope: Scope) {
+  const v = await loadInScope(id, scope)
+  const doc = await repo.findDocument(v.id, documentId)
+  if (!doc) throw notFound("Document")
+  const body = await getObject(doc.s3Key)
+  if (!body) throw notFound("Stored file")
+  return {
+    body,
+    fileName: doc.fileName,
+    contentType: doc.contentType ?? "application/octet-stream",
+  }
+}
+
+export async function verifyDocument(
+  id: string,
+  documentId: string,
+  scope: Scope,
+  verified: boolean,
+  actor: Actor,
+) {
+  const v = await loadInScope(id, scope)
+  const doc = await repo.findDocument(v.id, documentId)
+  if (!doc) throw notFound("Document")
+  return toStoredDocument(await repo.setDocumentVerified(v, doc, verified, actor))
 }

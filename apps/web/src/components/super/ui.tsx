@@ -128,8 +128,7 @@ export function Logo({ compact }: { compact?: boolean }) {
   )
 }
 
-/** Radix Dialog with the prototype's markup. Rendered in place (no portal) so the
- *  portal's scoped styles (.super-ui …) still apply. */
+/** Keep the portal scoped to the dashboard so shared dialog styles and tokens apply. */
 export function Modal({
   title,
   subtitle,
@@ -145,22 +144,26 @@ export function Modal({
 }) {
   return (
     <Dialog.Root open onOpenChange={(open) => !open && close()}>
-      <Dialog.Overlay className="overlay">
-        <Dialog.Content className={`modal ${wide ? "wide" : ""}`} aria-describedby={undefined}>
-          <header>
-            <div>
-              <Dialog.Title asChild>
-                <strong>{title}</strong>
-              </Dialog.Title>
-              {subtitle && <span>{subtitle}</span>}
-            </div>
-            <Dialog.Close asChild>
-              <IconButton icon={X} label="Close" />
-            </Dialog.Close>
-          </header>
-          {children}
-        </Dialog.Content>
-      </Dialog.Overlay>
+      <Dialog.Portal>
+        <div className="super-ui super-dialog-portal">
+          <Dialog.Overlay className="overlay">
+            <Dialog.Content className={`modal ${wide ? "wide" : ""}`} aria-describedby={undefined}>
+              <header>
+                <div>
+                  <Dialog.Title asChild>
+                    <strong>{title}</strong>
+                  </Dialog.Title>
+                  {subtitle && <span>{subtitle}</span>}
+                </div>
+                <Dialog.Close asChild>
+                  <IconButton icon={X} label="Close" />
+                </Dialog.Close>
+              </header>
+              {children}
+            </Dialog.Content>
+          </Dialog.Overlay>
+        </div>
+      </Dialog.Portal>
     </Dialog.Root>
   )
 }

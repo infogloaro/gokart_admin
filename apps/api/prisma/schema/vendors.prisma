@@ -53,14 +53,16 @@ model Vendor {
 }
 
 model VendorDocument {
-  id         String    @id @default(cuid())
-  vendorId   String
-  kind       String // gst_certificate, fssai_licence, pan, bank_proof, storefront_photo
-  s3Key      String
-  fileName   String
-  uploadedAt DateTime  @default(now())
-  verifiedAt DateTime?
-  vendor     Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  vendorId    String
+  kind        String // see VENDOR_DOCUMENT_KINDS in packages/shared
+  s3Key       String
+  fileName    String
+  contentType String?
+  sizeBytes   Int?
+  uploadedAt  DateTime  @default(now())
+  verifiedAt  DateTime?
+  vendor      Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
   @@map("vendor_documents")
 }

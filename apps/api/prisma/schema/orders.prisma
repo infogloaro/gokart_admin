@@ -1,0 +1,89 @@
+// Owner: Dev 2 (operations). Orders move only through the state machine in
+// packages/shared/src/orders/status.ts, with a `version` check on each change.
+
+enum OrderStatus {
+  placed
+  accepted
+  preparing
+  packed
+  ready
+  assigned
+  picked_up
+  out_for_delivery
+  delivered
+  cancelled
+  refund_requested
+  refunded
+}
+
+enum PaymentMethod {
+  upi
+  card
+  cod
+  wallet
+  netbanking
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  refunded
+}
+
+model Order {
+  id               String        @id @default(cuid())
+  code             String        @unique
+  business         Business
+  status           OrderStatus   @default(placed)
+  version          Int           @default(0)
+  customerName     String
+  customerPhone    String
+  vendorId         String
+  partnerId        String?
+  zoneId           String
+  paymentMethod    PaymentMethod
+  paymentStatus    PaymentStatus @default(pending)
+  itemsTotalPaise  Int
+  deliveryFeePaise Int
+  totalPaise       Int
+  placedAt         DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  vendor  Vendor       @relation(fields: [vendorId], references: [id])
+  partner Partner?     @relation(fields: [partnerId], references: [id])
+  zone    Zone         @relation(fields: [zoneId], references: [id])
+  items   OrderItem[]
+  events  OrderEvent[]
+
+  @@index([business, status])
+  @@index([zoneId, placedAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id             String @id @default(cuid())
+  orderId        String
+  name           String
+  quantity       Int
+  unitPricePaise Int
+  order          Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+
+model OrderEvent {
+  id        String       @id @default(cuid())
+  orderId   String
+  from      OrderStatus?
+  to        OrderStatus
+  /// member, system or app (customer / vendor / partner app via intake)
+  actorType String
+  actorId   String?
+  reason    String?
+  at        DateTime     @default(now())
+  order     Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, at])
+  @@map("order_events")
+}

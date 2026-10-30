@@ -1,0 +1,29 @@
+// GLOARO MART products and stock. Each product belongs to one seller; stock changes go
+// through the inventory module with a version check and an audit entry.
+
+enum ProductStatus {
+  active
+  paused
+}
+
+model Product {
+  id                String        @id @default(cuid())
+  /// UN-402
+  sku               String        @unique
+  vendorId          String
+  zoneId            String
+  name              String
+  category          String
+  pricePaise        Int
+  stock             Int
+  /// Show "Low stock" at or below this many units.
+  lowStockThreshold Int           @default(10)
+  status            ProductStatus @default(active)
+  version           Int           @default(0)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([vendorId])
+  @@index([zoneId, stock])
+  @@map("products")
+}

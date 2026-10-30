@@ -10,16 +10,52 @@ export type OrderQuery = {
   search?: string | undefined
   partnerId?: string | undefined
   vendorId?: string | undefined
+  /** "true" for orders past their time limit (sent as a query string). */
+  delayed?: "true" | undefined
   page: number
   pageSize: number
 }
 
-export const useOrders = (q: OrderQuery) =>
+export const useOrders = (q: OrderQuery, enabled = true, refetchInterval?: number) =>
   useQuery({
     queryKey: ["orders", "list", q],
     queryFn: () => api("get", "/orders", { query: q }),
     placeholderData: keepPreviousData,
+    enabled,
+    refetchInterval,
   })
+
+/** One order with its status history. */
+export const useOrder = (id: string | null) =>
+  useQuery({
+    queryKey: ["orders", "detail", id],
+    queryFn: () => api("get", "/orders/{id}", { params: { id: id! } }),
+    enabled: Boolean(id),
+  })
+
+/** Partners who could take the order (same business and area, on shift). */
+export const useOrderCandidates = (id: string | null, enabled: boolean) =>
+  useQuery({
+    queryKey: ["orders", "candidates", id],
+    queryFn: () => api("get", "/orders/{id}/partners", { params: { id: id! } }),
+    enabled: Boolean(id) && enabled,
+  })
+
+export function useAssignPartner() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (v: { order: Order; partnerId: string }) =>
+      api("post", "/orders/{id}/assign", {
+        params: { id: v.order.id },
+        body: { partnerId: v.partnerId, version: v.order.version },
+      }),
+    onSettled: () => {
+      void client.invalidateQueries({ queryKey: ["orders"] })
+      void client.invalidateQueries({ queryKey: ["partners"] })
+      void client.invalidateQueries({ queryKey: ["tracking"] })
+    },
+  })
+}
 
 export function useChangeOrderStatus() {
   const client = useQueryClient()

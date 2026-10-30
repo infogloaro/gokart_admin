@@ -5,6 +5,7 @@ import { env } from "./config/env"
 import { prisma } from "./lib/prisma"
 import { attachRealtime, closeRealtime } from "./lib/realtime"
 import { redis } from "./lib/redis"
+import { relayOutbox } from "./modules/notifications/notifications"
 import { sweepStale } from "./modules/tracking/tracking.service"
 
 const server = createServer(createApp())
@@ -19,8 +20,15 @@ const sweeper = setInterval(() => {
 }, 30_000)
 sweeper.unref()
 
+// Business events become notifications a few seconds after they are committed.
+const relay = setInterval(() => {
+  relayOutbox().catch((e: unknown) => console.error("Outbox relay failed", e))
+}, 5_000)
+relay.unref()
+
 async function shutdown() {
   clearInterval(sweeper)
+  clearInterval(relay)
   await closeRealtime()
   server.close()
   await Promise.allSettled([prisma.$disconnect(), redis.quit()])

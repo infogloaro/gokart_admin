@@ -158,6 +158,7 @@ export async function zones(scope: Scope) {
     .map((z) => ({
       id: z.id,
       name: `${z.location}, ${z.city}`,
+      zone: z.city,
       district: z.district,
       lat: z.lat!,
       lng: z.lng!,

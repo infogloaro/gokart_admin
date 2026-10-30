@@ -1,0 +1,66 @@
+// Customer complaints: raised from the customer app (intake) or by support, worked by admins
+// in the complaint's business and zone, escalated to the Super Admin when needed.
+
+enum ComplaintStatus {
+  open
+  in_review
+  escalated
+  resolved
+}
+
+enum ComplaintPriority {
+  low
+  medium
+  high
+  urgent
+}
+
+model Complaint {
+  id           String            @id @default(cuid())
+  /// CMP-2041
+  code         String            @unique
+  business     Business
+  zoneId       String
+  orderId      String?
+  orderCode    String?
+  vendorName   String?
+  /// see COMPLAINT_CATEGORIES in packages/shared
+  category     String
+  priority     ComplaintPriority @default(medium)
+  status       ComplaintStatus   @default(open)
+  customerName String
+  summary      String
+  details      String
+  /// Short descriptions of what the customer attached, e.g. "3 photos of the parcel".
+  evidence     String[]
+  /// Amount the customer is asking back, if any.
+  claimPaise   Int?
+  assigneeId   String?
+  assigneeName String?
+  escalatedAt  DateTime?
+  resolvedAt   DateTime?
+  resolution   String?
+  version      Int               @default(0)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  notes        ComplaintNote[]
+
+  @@index([business, status])
+  @@index([zoneId, createdAt])
+  @@map("complaints")
+}
+
+model ComplaintNote {
+  id          String    @id @default(cuid())
+  complaintId String
+  /// note | assigned | escalated | resolved | reopened | created
+  kind        String
+  authorId    String?
+  authorName  String
+  body        String
+  at          DateTime  @default(now())
+  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+
+  @@index([complaintId, at])
+  @@map("complaint_notes")
+}

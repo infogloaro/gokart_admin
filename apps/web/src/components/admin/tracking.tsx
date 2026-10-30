@@ -21,6 +21,8 @@ import {
   useTrackingSocket,
   useTrackingZones,
   useTrail,
+  hasValidLocation,
+  isStaleLocation,
   type Connection,
 } from "@/lib/tracking"
 import { AvailabilityControl } from "./availability"
@@ -66,20 +68,26 @@ export function AdminTracking({ business }: { business: Business }) {
     const q = search.trim().toLowerCase()
     return (partners.data ?? []).filter(
       (p) =>
+        p.id === selected ||
         !q ||
         p.name.toLowerCase().includes(q) ||
         p.code.toLowerCase().includes(q) ||
         p.currentOrder?.code.toLowerCase().includes(q),
     )
-  }, [partners.data, search])
+  }, [partners.data, search, selected])
   // Default to whoever is carrying an order, then anyone on the map.
-  const current =
-    partners.data?.find((p) => p.id === selected) ??
-    list.find((p) => p.currentOrder && p.location) ??
-    list.find((p) => p.location) ??
-    list[0] ??
-    null
-  const onMap = list.filter((p) => p.location).length
+  const current = selected
+    ? (list.find((p) => p.id === selected) ?? null)
+    : (list.find((p) => p.currentOrder && hasValidLocation(p.location)) ??
+      list.find((p) => hasValidLocation(p.location)) ??
+      list[0] ??
+      null)
+  const onMap = list.filter((p) => hasValidLocation(p.location)).length
+  const online = list.filter((p) => p.availability !== "offline").length
+  const delivering = list.filter((p) => p.availability === "on_delivery").length
+  const stale = list.filter(
+    (p) => hasValidLocation(p.location) && isStaleLocation(p.location, now),
+  ).length
 
   return (
     <>
@@ -113,17 +121,59 @@ export function AdminTracking({ business }: { business: Business }) {
               trail={trail.data}
               height={620}
             />
-            {partners.data && onMap === 0 && (
+            {partners.isError && (
+              <div className="map-empty" role="alert">
+                <span>
+                  <b>Could not load delivery partners</b>
+                  {partners.error.message}{" "}
+                  <button type="button" onClick={() => void partners.refetch()}>
+                    Retry
+                  </button>
+                </span>
+              </div>
+            )}
+            {partners.data && list.length === 0 && (
               <div className="map-empty">
                 <MapPin size={18} />
                 <span>
-                  <b>No live locations yet</b>
-                  Pins appear when partners start a shift in the partner app.
+                  <b>No delivery partners match</b>
+                  Try another name, partner ID, or order reference.
+                </span>
+              </div>
+            )}
+            {partners.data && list.length > 0 && onMap === 0 && (
+              <div className="map-empty">
+                <MapPin size={18} />
+                <span>
+                  <b>No partner locations available</b>
+                  Partners remain in the list until the app reports valid GPS coordinates.
                 </span>
               </div>
             )}
           </div>
+          <div className="partner-summary">
+            <div>
+              <b>{partners.data?.length ?? 0}</b> eligible · {list.length} shown
+            </div>
+            <div>
+              <i className="online" />
+              <b>{online}</b> online
+            </div>
+            <div>
+              <i className="busy" />
+              <b>{delivering}</b> delivering
+            </div>
+            <div>
+              <b>{onMap}</b> located · {list.length - onMap} unavailable · {stale} stale
+            </div>
+          </div>
           <div className="partner-strip" role="group" aria-label="Partners in your zones">
+            {partners.isPending && <p className="track-empty">Loading delivery partners…</p>}
+            {partners.isError && (
+              <p className="track-empty" role="alert">
+                Retry loading partners using the map message above.
+              </p>
+            )}
             {list.map((p) => (
               <button
                 type="button"
@@ -133,14 +183,24 @@ export function AdminTracking({ business }: { business: Business }) {
                 onClick={() => setSelected(p.id)}
               >
                 <i className={`dot ${p.availability}`} />
-                <strong>{p.name}</strong>
-                <small>{p.location ? ago(p.location.at, now) : "No location"}</small>
+                <strong>
+                  {p.name} · {p.code}
+                </strong>
+                <small>
+                  {!hasValidLocation(p.location)
+                    ? "Location unavailable"
+                    : `${isStaleLocation(p.location, now) ? "Stale · " : ""}${ago(p.location.at, now)}`}
+                  {" · "}
+                  {availabilityLabel[p.availability]}
+                </small>
               </button>
             ))}
           </div>
         </section>
         <aside className="panel tracking-detail">
-          {!current ? (
+          {partners.isPending ? (
+            <p>Loading delivery partners…</p>
+          ) : !current ? (
             <p>No partners in your zones yet.</p>
           ) : (
             <Detail p={current} now={now} food={food} done={setToast} />
@@ -184,10 +244,16 @@ function Detail({
       <div className="eta">
         <div>
           <small>LAST LOCATION UPDATE</small>
-          <strong>{p.location ? ago(p.location.at, now) : "Not reported"}</strong>
+          <strong>
+            {!hasValidLocation(p.location)
+              ? "Location unavailable"
+              : `${isStaleLocation(p.location, now) ? "Stale · " : p.availability === "offline" ? "Last known · " : ""}${ago(p.location.at, now)}`}
+          </strong>
           <span>
-            {p.location?.speedKmh != null
-              ? `${Math.round(p.location.speedKmh)} km/h`
+            {hasValidLocation(p.location)
+              ? `${p.location.lat.toFixed(5)}, ${p.location.lng.toFixed(5)}${
+                  p.location.speedKmh == null ? "" : ` · ${Math.round(p.location.speedKmh)} km/h`
+                }`
               : p.availability === "offline"
                 ? "Not on shift"
                 : "Waiting for GPS"}

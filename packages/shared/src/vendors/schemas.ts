@@ -26,11 +26,55 @@ export const verificationLabel: Record<VerificationStatus, string> = {
 
 /** One uploaded file. Contents stay in object storage; only the listing is shown. */
 export const StoredDocument = z.object({
+  id: z.string(),
   kind: z.string(),
   fileName: z.string(),
+  contentType: z.string().nullable(),
+  sizeBytes: z.number().int().nullable(),
   uploadedAt: z.iso.datetime(),
   verified: z.boolean(),
 })
+export type StoredDocument = z.infer<typeof StoredDocument>
+
+/** Files a document upload accepts, checked against the bytes too, not just the header. */
+export const DOCUMENT_TYPES = ["application/pdf", "image/jpeg", "image/png"] as const
+export const DOCUMENT_MAX_BYTES = 10 * 1024 * 1024
+
+export const DocumentVerifyRequest = z.object({ verified: z.boolean() })
+
+export const VENDOR_DOCUMENT_KINDS = [
+  "gst_certificate",
+  "fssai_licence",
+  "trade_licence",
+  "pan",
+  "bank_proof",
+  "storefront_photo",
+] as const
+export const PARTNER_DOCUMENT_KINDS = [
+  "aadhaar",
+  "driving_licence",
+  "vehicle_rc",
+  "insurance",
+  "bank_proof",
+  "photo",
+] as const
+
+export const documentKindLabel: Record<
+  (typeof VENDOR_DOCUMENT_KINDS)[number] | (typeof PARTNER_DOCUMENT_KINDS)[number],
+  string
+> = {
+  gst_certificate: "GST certificate",
+  fssai_licence: "FSSAI licence",
+  trade_licence: "Trade licence",
+  pan: "PAN card",
+  bank_proof: "Bank proof",
+  storefront_photo: "Storefront photo",
+  aadhaar: "Aadhaar card",
+  driving_licence: "Driving licence",
+  vehicle_rc: "Registration certificate",
+  insurance: "Insurance",
+  photo: "Photo",
+}
 
 /** An audit log line about one record, newest first. */
 export const ActivityEntry = z.object({

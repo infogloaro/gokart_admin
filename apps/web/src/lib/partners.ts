@@ -17,6 +17,7 @@ import {
   type VehicleType,
 } from "@zoauro/shared"
 import { useState } from "react"
+import { useWizardUploads } from "./documents"
 import { fieldErrors, withoutBlanks } from "./vendors"
 
 export type PartnerQuery = {
@@ -30,12 +31,13 @@ export type PartnerQuery = {
 }
 
 /** Pass `refetchInterval` (ms) to keep a dashboard current. */
-export const usePartners = (q: PartnerQuery, refetchInterval?: number) =>
+export const usePartners = (q: PartnerQuery, refetchInterval?: number, enabled = true) =>
   useQuery({
     queryKey: ["partners", "list", q],
     queryFn: () => api("get", "/partners", { query: q }),
     placeholderData: keepPreviousData,
     refetchInterval,
+    enabled,
   })
 
 export const usePartnerSummary = (business?: Business, refetchInterval?: number) =>
@@ -221,6 +223,8 @@ export function usePartnerWizard(defaultService: PartnerForm["service"], default
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const create = useCreatePartner()
+  // Identity and vehicle documents, uploaded once the application exists.
+  const uploads = useWizardUploads("partners")
 
   const set = (k: keyof PartnerForm) => (v: string) => setForm((f) => ({ ...f, [k]: v }))
   const hasBank = Boolean(form.holderName || form.bankName || form.accountNumber || form.ifsc)
@@ -271,6 +275,7 @@ export function usePartnerWizard(defaultService: PartnerForm["service"], default
       return
     }
     create.mutate(parsed.data, {
+      onSuccess: (p) => void uploads.uploadAll(p.id),
       // Server-side field errors (e.g. a mobile number already registered) go on the
       // field itself, and the wizard jumps back to that step.
       onError: (e) => {
@@ -285,5 +290,5 @@ export function usePartnerWizard(defaultService: PartnerForm["service"], default
     })
   }
 
-  return { step, form, set, errors, next, back, goTo, submit, create }
+  return { step, form, set, errors, next, back, goTo, submit, create, uploads }
 }

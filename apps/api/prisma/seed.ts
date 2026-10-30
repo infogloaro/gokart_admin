@@ -2,6 +2,7 @@
 // Safe to re-run (it clears the tables it owns first). Refuses to run in production.
 import { hash } from "@node-rs/argon2"
 import {
+  ORDER_SLA_MINUTES,
   rolePermissions,
   rupeesToPaise,
   type AdminPlan,
@@ -11,6 +12,7 @@ import {
 } from "@zoauro/shared"
 import type { Prisma } from "../src/generated/prisma/client"
 import { prisma } from "../src/lib/prisma"
+import { syncZones } from "./sync-zones"
 
 if (process.env.NODE_ENV === "production") {
   console.error("Refusing to seed a production database.")
@@ -28,6 +30,9 @@ const pick = <T>(a: readonly T[]) => a[Math.floor(rand() * a.length)]!
 async function clear() {
   // Children first. Audit and ledger tables are append-only in the app; the seed may clear them.
   await prisma.$transaction([
+    prisma.complaintNote.deleteMany(),
+    prisma.complaint.deleteMany(),
+    prisma.product.deleteMany(),
     prisma.partnerLocation.deleteMany(),
     prisma.payoutLine.deleteMany(),
     prisma.payout.deleteMany(),
@@ -59,41 +64,11 @@ async function clear() {
   ])
 }
 
-const zoneSeed: [district: string, city: string, locations: string[]][] = [
-  ["Chennai", "Chennai", ["T. Nagar", "Velachery", "Anna Nagar", "Adyar", "Egmore"]],
-  ["Coimbatore", "Coimbatore", ["Gandhipuram", "RS Puram", "Peelamedu"]],
-  ["Madurai", "Madurai", ["Periyar Bus Stand", "Anna Nagar", "KK Nagar"]],
-  ["Tiruchirappalli", "Tiruchirappalli", ["Central Bus Stand", "Srirangam"]],
-]
-
-/** Approximate centres for live tracking maps. */
-const zoneCentre: Record<string, [lat: number, lng: number]> = {
-  "Chennai/T. Nagar": [13.0418, 80.2341],
-  "Chennai/Velachery": [12.9791, 80.2209],
-  "Chennai/Anna Nagar": [13.085, 80.2101],
-  "Chennai/Adyar": [13.0012, 80.2565],
-  "Chennai/Egmore": [13.0732, 80.2609],
-  "Coimbatore/Gandhipuram": [11.0168, 76.9658],
-  "Coimbatore/RS Puram": [11.0089, 76.95],
-  "Coimbatore/Peelamedu": [11.03, 77.027],
-  "Madurai/Periyar Bus Stand": [9.9177, 78.1148],
-  "Madurai/Anna Nagar": [9.929, 78.146],
-  "Madurai/KK Nagar": [9.9369, 78.1428],
-  "Tiruchirappalli/Central Bus Stand": [10.7996, 78.6826],
-  "Tiruchirappalli/Srirangam": [10.8628, 78.6926],
-}
-
 async function main() {
   await clear()
 
-  // ---- zones ----
-  const zones: Record<string, string> = {}
-  for (const [district, city, locations] of zoneSeed)
-    for (const location of locations) {
-      const [lat, lng] = zoneCentre[`${city}/${location}`] ?? [null, null]
-      const z = await prisma.zone.create({ data: { district, city, location, lat, lng } })
-      zones[`${city}/${location}`] = z.id
-    }
+  // ---- zones: every Tamil Nadu district (tamil-nadu.ts), keyed "District/Area" ----
+  const zones = await syncZones()
   const chennai = Object.entries(zones)
     .filter(([k]) => k.startsWith("Chennai/"))
     .map(([, v]) => v)
@@ -141,7 +116,7 @@ async function main() {
       name: "Priya Shankar",
       password: "Admin@123",
       role: "admin",
-      businesses: ["food"],
+      businesses: ["food", "mart"],
       zoneIds: chennai,
     },
     {
@@ -150,7 +125,7 @@ async function main() {
       name: "Ravi Chandran",
       password: "Admin@123",
       role: "admin",
-      businesses: ["mart"],
+      businesses: ["food", "mart"],
       zoneIds: mdu,
     },
     {
@@ -158,7 +133,7 @@ async function main() {
       name: "Fathima Begum",
       password: "Admin@123",
       role: "admin",
-      businesses: ["food"],
+      businesses: ["food", "mart"],
       zoneIds: cbe,
     },
   ]
@@ -245,6 +220,25 @@ async function main() {
     ["VEN-1032", "mart", "Techverse India", "Aditya Jain", "Chennai/T. Nagar", "active", 1000],
     ["VEN-1031", "mart", "Everyday Living", "Sneha Pillai", "Chennai/Velachery", "active", 1200],
     ["VEN-1030", "mart", "Mode Studio", "Tara Menon", "Chennai/Anna Nagar", "active", 1500],
+    // Waiting for approval in the demo admins' zones, so both workspaces have one to review.
+    [
+      "VEN-1029",
+      "mart",
+      "Kanchi Silks & Home",
+      "Revathi Narayanan",
+      "Chennai/Adyar",
+      "pending_review",
+      1300,
+    ],
+    [
+      "VEN-1028",
+      "food",
+      "Chettinad Spice Co.",
+      "Muthu Raman",
+      "Chennai/Anna Nagar",
+      "pending_review",
+      1750,
+    ],
   ]
   const vendors: {
     id: string
@@ -611,34 +605,6 @@ async function main() {
     ["Stainless Steel Kadai", 1290],
     ["Bedsheet Set", 990],
   ]
-  const flow: Record<Business, OrderStatus[]> = {
-    food: [
-      "placed",
-      "accepted",
-      "preparing",
-      "ready",
-      "assigned",
-      "picked_up",
-      "out_for_delivery",
-      "delivered",
-      "delivered",
-      "delivered",
-      "cancelled",
-      "refund_requested",
-    ],
-    mart: [
-      "placed",
-      "accepted",
-      "packed",
-      "ready",
-      "assigned",
-      "out_for_delivery",
-      "delivered",
-      "delivered",
-      "delivered",
-      "cancelled",
-    ],
-  }
   const withPartner = new Set<OrderStatus>([
     "assigned",
     "picked_up",
@@ -646,34 +612,51 @@ async function main() {
     "delivered",
     "refund_requested",
   ])
+  // Orders are placed relative to when the seed runs, and each order's status matches its
+  // age: recent ones are still moving, older ones are finished. A few are deliberately late,
+  // a few are close to the limit, and each business has six refund complaints.
   const now = Date.now()
+  const IST = 330 * 60_000
+  const startOfToday =
+    Date.parse(`${new Date(now + IST).toISOString().slice(0, 10)}T00:00:00Z`) - IST
+  // Spread "today" over at least two hours, even when seeding just after midnight.
+  const minutesToday = Math.max(120, Math.floor((now - startOfToday) / 60_000))
+  const sla = ORDER_SLA_MINUTES
+  const steps: Record<Business, OrderStatus[]> = {
+    food: ["accepted", "preparing", "ready", "assigned", "picked_up", "out_for_delivery"],
+    mart: ["accepted", "packed", "ready", "assigned", "out_for_delivery"],
+  }
+  const minutes = (m: number) => m * 60_000
+  const between = (a: number, b: number) => Math.floor(a + rand() * (b - a))
 
-  // The prototype's five orders first, then generated ones.
-  const fixed: [
-    code: string,
-    business: Business,
-    customer: string,
-    vendor: string,
-    status: OrderStatus,
-    method: "upi" | "cod" | "card",
-    total: number,
-  ][] = [
-    ["ZOF-88219", "food", "Ananya S.", "Saffron Table", "out_for_delivery", "upi", 1240],
-    ["GLM-46093", "mart", "Siddharth M.", "Meenakshi Mart", "out_for_delivery", "upi", 3890],
-    ["ZOF-88218", "food", "Tanya R.", "The Wok District", "preparing", "cod", 860],
-    ["GLM-46092", "mart", "Kunal A.", "Meenakshi Mart", "packed", "card", 6490],
-    ["ZOF-88217", "food", "Isha P.", "Madras Pantry", "refund_requested", "upi", 720],
-  ]
+  type Plan = {
+    code: string
+    business: Business
+    customer: string
+    vendor: (typeof vendors)[number]
+    status: OrderStatus
+    method: "upi" | "cod" | "card"
+    ageMinutes: number
+    totalRupees?: number
+    /** Why the customer complained or the order was cancelled. */
+    reason?: string
+  }
+
+  /** In-progress status for an order this far through its time limit. */
+  function progressFor(business: Business, ageMinutes: number): OrderStatus {
+    if (ageMinutes < 8) return "placed"
+    const s = steps[business]
+    const frac = Math.min(0.999, ageMinutes / (sla[business] * 0.75))
+    return s[Math.floor(frac * s.length)]!
+  }
+  function finishedFor(): OrderStatus {
+    const r = rand()
+    return r < 0.84 ? "delivered" : r < 0.95 ? "cancelled" : "refunded"
+  }
+
   let n = 0
-  async function createOrder(
-    code: string,
-    business: Business,
-    customer: string,
-    vendor: (typeof vendors)[number],
-    status: OrderStatus,
-    method: "upi" | "cod" | "card",
-    totalRupees?: number,
-  ) {
+  async function createOrder(o: Plan) {
+    const { business, vendor, status, method } = o
     const menu = business === "food" ? foodItems : martItems
     const items = Array.from({ length: 1 + Math.floor(rand() * 3) }, () => {
       const [name, price] = pick(menu)
@@ -681,25 +664,86 @@ async function main() {
     })
     let itemsTotal = items.reduce((t, i) => t + i.quantity * i.unitPricePaise, 0)
     const fee = business === "food" ? rs(38) : rs(49)
-    if (totalRupees) {
+    if (o.totalRupees) {
       // Keep the prototype's totals: one line item carrying the whole amount.
       items.splice(0, items.length, {
         name: `${business === "food" ? "Meal" : "Basket"} order`,
         quantity: 1,
-        unitPricePaise: rs(totalRupees) - fee,
+        unitPricePaise: rs(o.totalRupees) - fee,
       })
-      itemsTotal = rs(totalRupees) - fee
+      itemsTotal = rs(o.totalRupees) - fee
     }
-    const partner = withPartner.has(status)
-      ? (partners.find((p) => p.businesses.includes(business) && p.zoneId === vendor.zoneId) ??
-        partners.find((p) => p.businesses.includes(business)))
-      : undefined
-    const placedAt = new Date(now - (n++ * 47 + Math.floor(rand() * 40)) * 60_000)
+    const partner =
+      withPartner.has(status) || status === "refunded"
+        ? (partners.find((p) => p.businesses.includes(business) && p.zoneId === vendor.zoneId) ??
+          partners.find((p) => p.businesses.includes(business)))
+        : undefined
+    n++
+    const placedAt = new Date(now - minutes(o.ageMinutes))
+    const at = (m: number) => new Date(Math.min(now, placedAt.getTime() + minutes(m)))
+    const limit = sla[business]
+    // Most deliveries land inside the time limit; about one in seven runs late.
+    const deliveredAfter =
+      rand() < 0.86 ? between(limit * 0.55, limit * 0.95) : between(limit + 5, limit * 1.5)
+    type Ev = {
+      from?: OrderStatus
+      to: OrderStatus
+      actorType: string
+      at: Date
+      reason?: string
+    }
+    const events: Ev[] = [{ to: "placed", actorType: "app", at: placedAt }]
+    const delivered = (): Ev => ({
+      from: "out_for_delivery",
+      to: "delivered",
+      actorType: "app",
+      at: at(deliveredAfter),
+    })
+    if (status === "delivered")
+      events.push({ from: "placed", to: "accepted", actorType: "app", at: at(3) }, delivered())
+    else if (status === "cancelled") {
+      // Half are turned down by the vendor straight away; the rest are cancelled later.
+      const early = rand() < 0.5
+      events.push({
+        from: early ? "placed" : "accepted",
+        to: "cancelled",
+        actorType: early ? "app" : "member",
+        at: at(early ? 6 : 18),
+        reason:
+          o.reason ??
+          (early
+            ? `${business === "food" ? "Restaurant" : "Seller"} could not accept the order`
+            : "Customer cancelled before dispatch"),
+      })
+    } else if (status === "refund_requested" || status === "refunded") {
+      events.push({ from: "placed", to: "accepted", actorType: "app", at: at(3) }, delivered(), {
+        from: "delivered",
+        to: "refund_requested",
+        actorType: "app",
+        at: at(deliveredAfter + 20),
+        reason: o.reason ?? "Customer requested a refund",
+      })
+      if (status === "refunded")
+        events.push({
+          from: "refund_requested",
+          to: "refunded",
+          actorType: "member",
+          at: at(deliveredAfter + 180),
+          reason: "Refund approved",
+        })
+    } else if (status !== "placed")
+      events.push({
+        from: "placed",
+        to: status,
+        actorType: "app",
+        at: at(Math.min(o.ageMinutes * 0.6, 20)),
+      })
+
     const data: Prisma.OrderCreateInput = {
-      code,
+      code: o.code,
       business,
       status,
-      customerName: customer,
+      customerName: o.customer,
       customerPhone: `+9199${String(40000000 + n * 7919).slice(0, 8)}`,
       vendor: { connect: { id: vendor.id } },
       zone: { connect: { id: vendor.zoneId } },
@@ -708,58 +752,380 @@ async function main() {
       paymentStatus:
         status === "cancelled"
           ? "failed"
-          : method === "cod" && status !== "delivered"
-            ? "pending"
-            : "paid",
+          : status === "refunded"
+            ? "refunded"
+            : method === "cod" && status !== "delivered"
+              ? "pending"
+              : "paid",
       itemsTotalPaise: itemsTotal,
       deliveryFeePaise: fee,
       totalPaise: itemsTotal + fee,
       placedAt,
       items: { create: items },
-      events: {
-        create: [
-          { to: "placed", actorType: "app", at: placedAt },
-          ...(status !== "placed"
-            ? [
-                {
-                  from: "placed" as const,
-                  to: status,
-                  actorType: "seed",
-                  at: new Date(placedAt.getTime() + 20 * 60_000),
-                },
-              ]
-            : []),
-        ],
-      },
+      events: { create: events },
     }
     await prisma.order.create({ data })
   }
-  for (const [code, business, customer, vendorName, status, method, total] of fixed)
-    await createOrder(
-      code,
-      business,
-      customer,
-      vendors.find((v) => v.name === vendorName)!,
-      status,
-      method,
-      total,
-    )
-  // Generated orders go to live vendors only, so pending and suspended ones show none.
+
   const live = vendors.filter((v) => v.status === "active")
-  const GENERATED = 120
+  const chennaiZones = new Set(chennai)
+  // Hand-picked cases go to Chennai vendors so the demo admins (Chennai zones) see them.
+  const localLive = (b: Business) =>
+    live.filter((v) => v.business === b && chennaiZones.has(v.zoneId))
+  const byName = (name: string) => vendors.find((v) => v.name === name)!
+  const plans: Plan[] = []
+  const codes = { food: 88219, mart: 46093 }
+  const nextCode = (b: Business) => (b === "food" ? `ZOF-${codes.food--}` : `GLM-${codes.mart--}`)
+  const add = (p: Omit<Plan, "code" | "method" | "customer"> & Partial<Plan>) =>
+    plans.push({
+      code: nextCode(p.business),
+      method: pick(["upi", "upi", "card", "cod"] as const),
+      customer: pick(customers),
+      ...p,
+    })
+
+  // The prototype's five orders, kept recent so their statuses still make sense.
+  add({
+    business: "food",
+    customer: "Ananya S.",
+    vendor: byName("Saffron Table"),
+    status: "out_for_delivery",
+    method: "upi",
+    ageMinutes: 28,
+    totalRupees: 1240,
+  })
+  add({
+    business: "mart",
+    customer: "Siddharth M.",
+    vendor: byName("Meenakshi Mart"),
+    status: "out_for_delivery",
+    method: "upi",
+    ageMinutes: 150,
+    totalRupees: 3890,
+  })
+  add({
+    business: "food",
+    customer: "Tanya R.",
+    vendor: byName("The Wok District"),
+    status: "preparing",
+    method: "cod",
+    ageMinutes: 12,
+    totalRupees: 860,
+  })
+  add({
+    business: "mart",
+    customer: "Kunal A.",
+    vendor: byName("Meenakshi Mart"),
+    status: "packed",
+    method: "card",
+    ageMinutes: 70,
+    totalRupees: 6490,
+  })
+  add({
+    business: "food",
+    customer: "Isha P.",
+    vendor: byName("Madras Pantry"),
+    status: "refund_requested",
+    method: "upi",
+    ageMinutes: 190,
+    totalRupees: 720,
+    reason: "Order arrived 35 minutes late and the food was cold",
+  })
+
+  // Six refund complaints per business, each a different problem (food's first is above).
+  const complaints: Record<Business, string[]> = {
+    food: [
+      "Missing item: Gulab Jamun (2) was not in the bag",
+      "Wrong item delivered: received Veg Fried Rice instead of Chicken Biryani",
+      "Food spilled in transit; the container lid was broken",
+      "Delivered to the wrong address; partner left it with a neighbour",
+      "Charged twice for the same order on UPI",
+    ],
+    mart: [
+      "Parcel arrived damaged: Stainless Steel Kadai is dented",
+      "Missing item: Toor Dal 1 kg not in the box",
+      "Wrong size: Bedsheet Set is single, ordered double",
+      "Sunflower Oil 1 L is past its best-before date",
+      "Marked delivered but never received",
+      "Seal broken on Detergent 2 kg; powder leaked into the box",
+    ],
+  }
+  for (const b of ["food", "mart"] as const) {
+    const local = localLive(b)
+    for (const reason of complaints[b])
+      add({
+        business: b,
+        vendor: pick(local),
+        status: "refund_requested",
+        ageMinutes: between(sla[b] * 2, 36 * 60),
+        reason,
+      })
+    // Live work: a steady line of orders inside the time limit.
+    for (let i = 0; i < 7; i++) {
+      const age = between(2, sla[b] * 0.72)
+      add({ business: b, vendor: pick(local), status: progressFor(b, age), ageMinutes: age })
+    }
+    // Close to the time limit, and past it.
+    for (let i = 0; i < 2; i++)
+      add({
+        business: b,
+        vendor: pick(local),
+        status: b === "food" ? "picked_up" : "assigned",
+        ageMinutes: between(sla[b] * 0.78, sla[b] * 0.97),
+      })
+    for (let i = 0; i < 3; i++)
+      add({
+        business: b,
+        vendor: pick(local),
+        status: pick(steps[b].slice(1)),
+        ageMinutes: between(sla[b] + 8, sla[b] + (b === "food" ? 40 : 120)),
+      })
+  }
+  // Everything else: about 40% today, the rest over the previous six days. They're finished
+  // unless they're still well inside their time limit.
+  const GENERATED = 150
   for (let i = 0; i < GENERATED; i++) {
     const vendor = pick(live)
-    const prefix = vendor.business === "food" ? "ZOF" : "GLM"
-    const code = `${prefix}-${vendor.business === "food" ? 88216 - i : 46091 - i}`
-    await createOrder(
-      code,
-      vendor.business,
-      pick(customers),
+    const b = vendor.business
+    const age =
+      rand() < 0.4 ? between(1, minutesToday) : between(minutesToday, minutesToday + 6 * 1440)
+    const inside = age < sla[b] * 0.75
+    add({
+      business: b,
       vendor,
-      pick(flow[vendor.business]),
-      pick(["upi", "upi", "card", "cod"] as const),
-    )
+      status: inside ? progressFor(b, age) : finishedFor(),
+      ageMinutes: age,
+    })
   }
+  for (const p of plans) await createOrder(p)
+
+  // ---- complaints: one per refund request in the demo zones, at different stages ----
+  const people = {
+    ananya: { id: members["admin@gokart.in"]!, name: "Ananya Kapoor" },
+    priya: { id: members["priya.shankar@gokart.in"]!, name: "Priya Shankar" },
+    arjun: { id: superId, name: "Arjun Menon" },
+  }
+  const categoryOf = (reason: string) =>
+    /late|cold/i.test(reason)
+      ? "late_delivery"
+      : /missing/i.test(reason)
+        ? "missing_item"
+        : /wrong/i.test(reason)
+          ? "wrong_item"
+          : /damaged|dented|spilled|seal|leak/i.test(reason)
+            ? "damaged"
+            : /best-before|expired|quality/i.test(reason)
+              ? "quality"
+              : /never received|wrong address/i.test(reason)
+                ? "not_delivered"
+                : /charged|upi|payment/i.test(reason)
+                  ? "payment"
+                  : "quality"
+  const evidenceFor: Record<string, string[]> = {
+    late_delivery: ["Delivery timeline from the app", "Photo of the cold food"],
+    missing_item: ["Photo of the bag contents", "Copy of the bill"],
+    wrong_item: ["Photo of the item received"],
+    damaged: ["3 photos of the parcel", "Unboxing video (42 s)"],
+    quality: ["Photo of the label showing the date"],
+    not_delivered: ["Partner's delivery photo", "Customer's call recording note"],
+    payment: ["UPI statement screenshot (2 debits)"],
+  }
+  // Six stages per business so every filter and action has something to show.
+  const stages = [
+    { status: "open", priority: "urgent", assignee: null },
+    { status: "open", priority: "medium", assignee: null },
+    { status: "in_review", priority: "high", assignee: "ananya" },
+    { status: "in_review", priority: "medium", assignee: "priya" },
+    { status: "escalated", priority: "high", assignee: "ananya" },
+    { status: "resolved", priority: "low", assignee: "ananya" },
+  ] as const
+  let complaintNo = 2041
+  for (const b of ["food", "mart"] as const) {
+    const refunds = await prisma.order.findMany({
+      where: { business: b, status: "refund_requested", zoneId: { in: chennai } },
+      include: {
+        vendor: { select: { name: true } },
+        events: { where: { reason: { not: null } }, orderBy: { at: "desc" }, take: 1 },
+      },
+      orderBy: { placedAt: "desc" },
+      take: stages.length,
+    })
+    for (const [i, o] of refunds.entries()) {
+      const stage = stages[i]!
+      const reason = o.events[0]?.reason ?? "Customer requested a refund"
+      const category = categoryOf(reason)
+      const who = stage.assignee
+        ? b === "mart" && stage.assignee === "priya"
+          ? people.arjun
+          : people[stage.assignee]
+        : null
+      const raised = new Date(o.placedAt.getTime() + 75 * 60_000)
+      const later = (min: number) => new Date(Math.min(now, raised.getTime() + min * 60_000))
+      const notes: {
+        kind: string
+        authorName: string
+        authorId?: string
+        body: string
+        at: Date
+      }[] = [{ kind: "created", authorName: "Customer app", body: reason, at: raised }]
+      if (who)
+        notes.push({
+          kind: "assigned",
+          authorName: people.ananya.name,
+          authorId: people.ananya.id,
+          body: `Assigned to ${who.name}`,
+          at: later(12),
+        })
+      if (stage.status !== "open" && who)
+        notes.push({
+          kind: "note",
+          authorName: who.name,
+          authorId: who.id,
+          body:
+            b === "food"
+              ? `Called the customer and ${o.vendor.name}; waiting on the kitchen's packing log.`
+              : `Asked ${o.vendor.name} for the packing photos and dispatch weight.`,
+          at: later(40),
+        })
+      if (stage.status === "escalated")
+        notes.push({
+          kind: "escalated",
+          authorName: people.ananya.name,
+          authorId: people.ananya.id,
+          body: "Refund is above the admin approval limit and the vendor disputes the claim.",
+          at: later(90),
+        })
+      const resolution = `Refund of ${(o.totalPaise / 100).toLocaleString("en-IN")} rupees approved; ${o.vendor.name} warned about packing.`
+      if (stage.status === "resolved")
+        notes.push({
+          kind: "resolved",
+          authorName: people.ananya.name,
+          authorId: people.ananya.id,
+          body: resolution,
+          at: later(150),
+        })
+      await prisma.complaint.create({
+        data: {
+          code: `CMP-${complaintNo++}`,
+          business: b,
+          zoneId: o.zoneId,
+          orderId: o.id,
+          orderCode: o.code,
+          vendorName: o.vendor.name,
+          category,
+          priority: stage.priority,
+          status: stage.status,
+          customerName: o.customerName,
+          summary: reason,
+          details: `${o.customerName} reported this ${Math.round((raised.getTime() - o.placedAt.getTime()) / 60_000)} minutes after ordering. Order total ${(o.totalPaise / 100).toLocaleString("en-IN")} rupees, paid by ${o.paymentMethod.toUpperCase()}.`,
+          evidence: evidenceFor[category] ?? [],
+          claimPaise: o.totalPaise,
+          assigneeId: who?.id ?? null,
+          assigneeName: who?.name ?? null,
+          escalatedAt: stage.status === "escalated" ? later(90) : null,
+          resolvedAt: stage.status === "resolved" ? later(150) : null,
+          resolution: stage.status === "resolved" ? resolution : null,
+          createdAt: raised,
+          notes: { create: notes },
+        },
+      })
+    }
+  }
+
+  // ---- GLOARO MART products for the Chennai sellers ----
+  const catalogue: [name: string, category: string, price: number][] = [
+    ["Basmati Rice 5 kg", "Groceries", 640],
+    ["Sunflower Oil 1 L", "Groceries", 165],
+    ["Toor Dal 1 kg", "Groceries", 180],
+    ["Detergent 2 kg", "Home care", 420],
+    ["Stainless Steel Kadai", "Kitchen", 1290],
+    ["Ceramic Cookware Set", "Kitchen", 2499],
+    ["Bedsheet Set (Double)", "Home", 990],
+    ["Cotton Towels (4)", "Home", 649],
+    ["Wireless Keyboard", "Electronics", 1499],
+    ["USB-C Charger 25 W", "Electronics", 899],
+    ["Linen Co-ord Set", "Fashion", 2199],
+    ["Kanchi Cotton Saree", "Fashion", 3450],
+  ]
+  const sellers = live.filter((v) => v.business === "mart" && chennaiZones.has(v.zoneId))
+  // A few deliberately low or out of stock.
+  const stockPlan = [42, 18, 6, 0, 25, 3, 31, 14, 8, 0, 22, 5]
+  for (const [i, [name, category, price]] of catalogue.entries()) {
+    const seller = sellers[i % sellers.length]!
+    const prefix = seller.name.replace(/[^A-Z]/g, "").slice(0, 2) || "GM"
+    await prisma.product.create({
+      data: {
+        sku: `${prefix}-${400 + i * 7}`,
+        vendorId: seller.id,
+        zoneId: seller.zoneId,
+        name,
+        category,
+        pricePaise: rs(price),
+        stock: stockPlan[i]!,
+        lowStockThreshold: price > 1000 ? 5 : 10,
+        status: i === 7 ? "paused" : "active",
+      },
+    })
+  }
+
+  // ---- stored notifications: a few recent updates for each demo account ----
+  const notes = [
+    {
+      to: ["admin@gokart.in", "priya.shankar@gokart.in"],
+      title: "Complaint assigned to you",
+      body: "CMP-2043 · Wrong item — customer received the wrong dish.",
+      link: "/admin/food/complaints",
+      ago: 12,
+      read: false,
+    },
+    {
+      to: ["superadmin@gokart.in"],
+      title: "Complaint escalated",
+      body: "CMP-2045 · Refund above the admin limit; vendor disputes the claim.",
+      link: "/super/complaints",
+      ago: 25,
+      read: false,
+    },
+    {
+      to: ["admin@gokart.in"],
+      title: "Techverse India is low on stock",
+      body: "Wireless Keyboard and USB-C Charger need restocking.",
+      link: "/admin/mart/inventory?stock=low",
+      ago: 48,
+      read: false,
+    },
+    {
+      to: ["admin@gokart.in", "superadmin@gokart.in"],
+      title: "Chettinad Spice Co. applied",
+      body: "New restaurant waiting for review in Anna Nagar.",
+      link: "/admin/food/vendors",
+      ago: 95,
+      read: true,
+    },
+    {
+      to: ["admin@gokart.in", "priya.shankar@gokart.in"],
+      title: "Daily operations report ready",
+      body: "Yesterday's orders, delays and refunds for your zones.",
+      link: "/admin/food/reports",
+      ago: 600,
+      read: true,
+    },
+  ]
+  for (const n of notes)
+    for (const email of n.to)
+      await prisma.notification.create({
+        data: {
+          memberId: members[email]!,
+          title: n.title,
+          body: n.body,
+          link:
+            email === "superadmin@gokart.in"
+              ? n.link.replace(/^\/admin\/(food|mart)\//, "/super/")
+              : n.link,
+          createdAt: new Date(now - n.ago * 60_000),
+          readAt: n.read ? new Date(now - (n.ago - 5) * 60_000) : null,
+        },
+      })
 
   await prisma.auditLog.create({
     data: {
@@ -767,11 +1133,11 @@ async function main() {
       action: "seed.loaded",
       entityType: "system",
       entityId: "seed",
-      detail: { orders: fixed.length + GENERATED },
+      detail: { orders: plans.length },
     },
   })
   console.info(
-    `Seeded ${Object.keys(zones).length} zones, ${memberSeed.length} members, ${vendors.length} vendors, ${partners.length + 1} partners, ${fixed.length + GENERATED} orders.`,
+    `Seeded ${Object.keys(zones).length} zones, ${memberSeed.length} members, ${vendors.length} vendors, ${partners.length + 1} partners, ${plans.length} orders.`,
   )
 }
 

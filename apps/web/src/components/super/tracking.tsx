@@ -6,6 +6,7 @@ import {
   orderStatusLabel,
   vehicleLabel,
   type TrackedPartner,
+  type TrackingZone,
 } from "@zoauro/shared"
 import { CheckCircle2, ExternalLink, Gauge, LocateFixed, MapPin, Radio, Search } from "lucide-react"
 import dynamic from "next/dynamic"
@@ -19,6 +20,8 @@ import {
   useTrackingSocket,
   useTrackingZones,
   useTrail,
+  hasValidLocation,
+  isStaleLocation,
   type Connection,
 } from "@/lib/tracking"
 import { servicesLabel } from "@/lib/partners"
@@ -43,7 +46,7 @@ export function SuperTracking() {
   const partners = useTrackedPartners(business === "all" ? undefined : business)
   const [zoneId, setZoneId] = useState("")
   const [search, setSearch] = useState("")
-  const [show, setShow] = useState<Show>("active")
+  const [show, setShow] = useState<Show>("all")
   const [selected, setSelected] = useState<string | null>(params.get("partner"))
   const [profile, setProfile] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
@@ -55,27 +58,42 @@ export function SuperTracking() {
     return () => clearTimeout(t)
   }, [toast])
 
+  // Areas grouped under their zone for the filter (Chennai North, Ranipet, â€¦).
+  const byZone = useMemo(() => {
+    const groups = new Map<string, TrackingZone[]>()
+    for (const z of zones.data ?? []) groups.set(z.zone, [...(groups.get(z.zone) ?? []), z])
+    return groups
+  }, [zones.data])
+  const scoped = useMemo(
+    () => (partners.data ?? []).filter((p) => !zoneId || p.zoneId === zoneId),
+    [partners.data, zoneId],
+  )
+  const counts = scoped.reduce(
+    (c, p) => {
+      c[p.availability] += 1
+      return c
+    },
+    { available: 0, on_delivery: 0, offline: 0 },
+  )
   const list = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return (partners.data ?? []).filter(
+    return scoped.filter(
       (p) =>
         // The partner you opened (e.g. from "View live tracking") always stays listed.
         p.id === selected ||
-        ((!zoneId || p.zoneId === zoneId) &&
-          (show === "all" ||
-            (show === "active" ? p.availability !== "offline" : p.availability === show)) &&
+        ((show === "all" ||
+          (show === "active" ? p.availability !== "offline" : p.availability === show)) &&
           (!q ||
             p.name.toLowerCase().includes(q) ||
             p.code.toLowerCase().includes(q) ||
             p.currentOrder?.code.toLowerCase().includes(q))),
     )
-  }, [partners.data, zoneId, show, search, selected])
-  const current = partners.data?.find((p) => p.id === selected) ?? null
-  const counts = (partners.data ?? []).reduce(
-    (c, p) => ({ ...c, [p.availability]: c[p.availability] + 1 }),
-    { available: 0, on_delivery: 0, offline: 0 },
-  )
-  const onMap = list.filter((p) => p.location).length
+  }, [scoped, show, search, selected])
+  const current = list.find((p) => p.id === selected) ?? null
+  const onMap = list.filter((p) => hasValidLocation(p.location)).length
+  const stale = list.filter(
+    (p) => hasValidLocation(p.location) && isStaleLocation(p.location, now),
+  ).length
 
   return (
     <>
@@ -84,51 +102,80 @@ export function SuperTracking() {
           icon={Search}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search partner, ID or order…"
+          placeholder="Search partner, ID or orderâ€¦"
           aria-label="Search partners or orders"
         />
         <Select value={zoneId} onChange={setZoneId}>
           <option value="">All service areas</option>
-          {zones.data?.map((z) => (
-            <option value={z.id} key={z.id}>
-              {z.name}
-            </option>
-          ))}
+          {[...byZone.entries()]
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([zone, areas]) => (
+              <optgroup label={zone} key={zone}>
+                {areas.map((z) => (
+                  <option value={z.id} key={z.id}>
+                    {z.name}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
         </Select>
         <Select value={show} onChange={(v) => setShow(v as Show)}>
           <option value="active">Active only ({counts.available + counts.on_delivery})</option>
           <option value="available">Online ({counts.available})</option>
           <option value="on_delivery">On delivery ({counts.on_delivery})</option>
           <option value="offline">Offline ({counts.offline})</option>
-          <option value="all">Everyone</option>
+          <option value="all">Everyone ({scoped.length})</option>
         </Select>
         <ConnectionBadge state={connection} />
       </div>
       <div className="tracking">
         <aside className="partner-track-list">
           <Panel
-            title={show === "offline" ? "Offline partners" : "Active partners"}
-            subtitle={`${list.length} listed · ${onMap} on the map`}
+            title={
+              show === "all"
+                ? "All eligible partners"
+                : show === "offline"
+                  ? "Offline partners"
+                  : show === "on_delivery"
+                    ? "Partners on delivery"
+                    : show === "available"
+                      ? "Online partners"
+                      : "Active partners"
+            }
+            subtitle={`${scoped.length} eligible Â· ${list.length} shown Â· ${onMap} located Â· ${list.length - onMap} unavailable Â· ${stale} stale`}
           >
-            {list.map((p) => (
-              <button
-                type="button"
-                className={selected === p.id ? "active" : ""}
-                onClick={() => setSelected(p.id)}
-                key={p.id}
-              >
-                <b>{p.name.slice(0, 2).toUpperCase()}</b>
-                <span>
-                  <strong>{p.name}</strong>
-                  <small>
-                    {p.code} · {p.location ? ago(p.location.at, now) : "No location yet"}
-                  </small>
-                </span>
-                <Badge tone={availabilityTone(p.availability)}>
-                  {availabilityLabel[p.availability]}
-                </Badge>
-              </button>
-            ))}
+            {partners.isPending && <p className="track-empty">Loading delivery partnersâ€¦</p>}
+            {partners.isError && (
+              <p className="track-empty" role="alert">
+                Could not load delivery partners. {partners.error.message}{" "}
+                <button type="button" onClick={() => void partners.refetch()}>
+                  Retry
+                </button>
+              </p>
+            )}
+            {partners.data &&
+              list.map((p) => (
+                <button
+                  type="button"
+                  className={selected === p.id ? "active" : ""}
+                  onClick={() => setSelected(p.id)}
+                  key={p.id}
+                >
+                  <b>{p.name.slice(0, 2).toUpperCase()}</b>
+                  <span>
+                    <strong>{p.name}</strong>
+                    <small>
+                      {p.code} Â·{" "}
+                      {!hasValidLocation(p.location)
+                        ? "Location unavailable"
+                        : `${isStaleLocation(p.location, now) ? "Stale Â· " : ""}${ago(p.location.at, now)}`}
+                    </small>
+                  </span>
+                  <Badge tone={availabilityTone(p.availability)}>
+                    {availabilityLabel[p.availability]}
+                  </Badge>
+                </button>
+              ))}
             {partners.data && list.length === 0 && (
               <p className="track-empty">No partners match these filters.</p>
             )}
@@ -144,7 +191,7 @@ export function SuperTracking() {
             focusZoneId={zoneId || undefined}
             cardOffset={current ? 150 : 0}
           />
-          {partners.data && onMap === 0 && (
+          {partners.data && list.length > 0 && onMap === 0 && (
             <div className="map-empty">
               <Radio size={20} />
               <span>
@@ -191,7 +238,7 @@ function TrackCard({
         <span>
           <strong>{p.name}</strong>
           <small>
-            {p.code} · {servicesLabel(p.businesses)}
+            {p.code} Â· {servicesLabel(p.businesses)}
           </small>
         </span>
       </div>
@@ -210,17 +257,21 @@ function TrackCard({
       <ul className="track-facts">
         <li>
           <LocateFixed size={14} />
-          {p.location ? `Location updated ${ago(p.location.at, now)}` : "No location reported"}
+          {!hasValidLocation(p.location)
+            ? "Location unavailable"
+            : `${isStaleLocation(p.location, now) ? "Stale location Â· " : p.availability === "offline" ? "Last known Â· " : "Updated "}${ago(p.location.at, now)}`}
         </li>
         <li>
           <Gauge size={14} />
-          {p.location?.speedKmh != null
-            ? `${Math.round(p.location.speedKmh)} km/h`
+          {hasValidLocation(p.location) && p.location.speedKmh != null
+            ? `${Math.round(p.location.speedKmh)} km/h${isStaleLocation(p.location, now) ? " (last reported)" : ""}`
             : "Speed unknown"}
         </li>
         <li>
           <MapPin size={14} />
-          {p.zoneName} · {vehicleLabel[p.vehicleType]} {p.vehicleNumber}
+          {p.zoneName} Â· {vehicleLabel[p.vehicleType]} {p.vehicleNumber}
+          {hasValidLocation(p.location) &&
+            ` Â· ${p.location.lat.toFixed(5)}, ${p.location.lng.toFixed(5)}`}
         </li>
       </ul>
       <div className="track-actions">
@@ -237,7 +288,7 @@ export function ConnectionBadge({ state }: { state: Connection }) {
   return (
     <span className={`live-badge ${state}`} aria-live="polite">
       <i />
-      {state === "live" ? "Live" : state === "connecting" ? "Connecting…" : "Reconnecting…"}
+      {state === "live" ? "Live" : state === "connecting" ? "Connectingâ€¦" : "Reconnectingâ€¦"}
     </span>
   )
 }

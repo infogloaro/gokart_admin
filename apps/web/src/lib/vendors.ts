@@ -26,12 +26,13 @@ export type VendorQuery = {
 }
 
 /** Pass `refetchInterval` (ms) to keep a dashboard current. */
-export const useVendors = (q: VendorQuery, refetchInterval?: number) =>
+export const useVendors = (q: VendorQuery, refetchInterval?: number, enabled = true) =>
   useQuery({
     queryKey: ["vendors", "list", q],
     queryFn: () => api("get", "/vendors", { query: q }),
     placeholderData: keepPreviousData,
     refetchInterval,
+    enabled,
   })
 
 export const useVendorSummary = (refetchInterval?: number) =>

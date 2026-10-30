@@ -20,18 +20,22 @@ services:
     ports: ["6379:6379"]
     volumes: [redis:/data]
 
-  # File storage isn't used yet. MinIO no longer publishes public images on Docker Hub
-  # or quay.io, so this stays off until the team picks an image (needs owner approval).
-  # Start it with: docker compose -f docker-compose.dev.yml --profile storage up -d
+  # Document storage (S3 API). MinIO stopped publishing public images on Docker Hub and
+  # quay.io, so development uses Bitnami's archived MinIO build, pinned. It creates the
+  # bucket on start. Console: http://localhost:9001 (gokart / gokart-minio).
+  # Production uses real S3 (STORAGE_DRIVER=s3 with the bucket's own credentials).
   minio:
-    profiles: ["storage"]
-    image: minio/minio:latest
-    command: server /data --console-address ":9001"
+    image: bitnamilegacy/minio:2025.7.23
     environment:
       MINIO_ROOT_USER: gokart
       MINIO_ROOT_PASSWORD: gokart-minio
+      MINIO_DEFAULT_BUCKETS: gokart-dev
     ports: ["9000:9000", "9001:9001"]
-    volumes: [minio:/data]
+    volumes: [minio:/bitnami/minio/data]
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      retries: 10
 
   mailpit:
     image: axllent/mailpit:v1.21

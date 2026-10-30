@@ -55,6 +55,8 @@ export type TrackedPartner = z.infer<typeof TrackedPartner>
 export const TrackingZone = Coordinates.extend({
   id: z.string(),
   name: z.string(),
+  /** The zone the area belongs to, e.g. "Chennai North", or the district itself. */
+  zone: z.string(),
   district: z.string(),
 })
 export type TrackingZone = z.infer<typeof TrackingZone>

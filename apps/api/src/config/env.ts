@@ -14,6 +14,11 @@ const Env = z.object({
   SMS_PROVIDER: z.enum(["dev", "msg91"]).default("dev"),
   MSG91_AUTH_KEY: z.string().optional(),
   MSG91_TEMPLATE_ID: z.string().optional(),
+  // 32 random bytes, base64 (`openssl rand -base64 32`). Encrypts authenticator-app secrets.
+  TOTP_ENCRYPTION_KEY: z.string().optional(),
+  // Where documents are stored: "local" (apps/api/.storage) or "s3" (S3 or MinIO, below).
+  // Defaults to s3 in production and local everywhere else.
+  STORAGE_DRIVER: z.enum(["local", "s3"]).optional(),
   S3_ENDPOINT: z.string().optional(),
   S3_REGION: z.string().default("ap-south-1"),
   S3_BUCKET: z.string().default("gokart-dev"),
@@ -31,6 +36,10 @@ if (!parsed.success) {
 
 export const env = parsed.data
 export const isProd = env.NODE_ENV === "production"
+if (isProd && !env.TOTP_ENCRYPTION_KEY) {
+  console.error("TOTP_ENCRYPTION_KEY is required in production.")
+  process.exit(1)
+}
 if (isProd && !env.INTAKE_KEY) {
   console.error("INTAKE_KEY is required in production.")
   process.exit(1)

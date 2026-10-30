@@ -1,6 +1,15 @@
-import { canTransition, orderStatusLabel, type Order, type OrderStatus } from "@zoauro/shared"
+import {
+  canTransition,
+  FULFILMENT_STATUSES,
+  ORDER_SLA_MINUTES,
+  orderStatusLabel,
+  type AssignablePartner,
+  type Order,
+  type OrderDetail,
+  type OrderStatus,
+} from "@zoauro/shared"
 import type { Actor } from "../../lib/audit"
-import { badRequest, notFound } from "../../lib/errors"
+import { badRequest, forbidden, notFound } from "../../lib/errors"
 import { refreshAvailability } from "../tracking/tracking.service"
 import * as repo from "./orders.repository"
 
@@ -31,6 +40,10 @@ export function toDto(o: repo.OrderRow): Order {
       unitPricePaise: i.unitPricePaise,
     })),
     placedAt: o.placedAt.toISOString(),
+    issue: [...o.events].reverse().find((e) => e.reason)?.reason ?? null,
+    delayed:
+      (FULFILMENT_STATUSES as readonly string[]).includes(o.status) &&
+      Date.now() - o.placedAt.getTime() > ORDER_SLA_MINUTES[o.business] * 60_000,
   }
 }
 
@@ -54,8 +67,67 @@ async function loadInScope(id: string, scope: Scope) {
   return o
 }
 
-export async function get(id: string, scope: Scope) {
-  return toDto(await loadInScope(id, scope))
+/** One order with its status history. */
+export async function get(id: string, scope: Scope): Promise<OrderDetail> {
+  const o = await loadInScope(id, scope)
+  const detail = (await repo.findDetail(o.id))!
+  const names = await repo.actorNames(
+    detail.events.map((e) => e.actorId).filter((x): x is string => Boolean(x)),
+  )
+  return {
+    ...toDto(detail),
+    events: detail.events.map((e) => ({
+      from: e.from,
+      to: e.to,
+      at: e.at.toISOString(),
+      actorType: e.actorType,
+      actorName: (e.actorId && names.get(e.actorId)) || null,
+      reason: e.reason,
+    })),
+  }
+}
+
+/** Partners who could take a ready order: same business and area, on shift. */
+export async function candidates(id: string, scope: Scope): Promise<AssignablePartner[]> {
+  const o = await loadInScope(id, scope)
+  const rows = await repo.candidatePartners(o.business, o.zoneId)
+  return rows.map((p) => ({
+    id: p.id,
+    code: p.code,
+    name: p.name,
+    availability: p.availability,
+    carrying: p._count.orders,
+    vehicleType: p.vehicleType,
+  }))
+}
+
+/** Gives a ready order to a partner, or moves an assigned order to someone else. */
+export async function assign(
+  id: string,
+  scope: Scope,
+  input: { partnerId: string; version: number },
+  actor: Actor,
+) {
+  const o = await loadInScope(id, scope)
+  if (o.status !== "ready" && o.status !== "assigned")
+    throw badRequest(
+      `Only orders that are ready or assigned can be given to a partner. This one is “${orderStatusLabel(o.business, o.status)}”.`,
+    )
+  if (o.partnerId === input.partnerId)
+    throw badRequest("This order is already assigned to that partner.")
+  const partner = (await repo.candidatePartners(o.business, o.zoneId)).find(
+    (p) => p.id === input.partnerId,
+  )
+  if (!partner)
+    throw forbidden(
+      "That partner can't take this order: they must be approved, on shift, and serve this business and area.",
+    )
+  if (partner.availability !== "available")
+    throw badRequest(`${partner.name} is on another delivery. Choose someone who is free.`)
+  const updated = await repo.assignPartner(o, input.version, partner, actor)
+  await refreshAvailability(partner.id)
+  if (o.partnerId) await refreshAvailability(o.partnerId)
+  return toDto(updated)
 }
 
 export async function changeStatus(

@@ -1,7 +1,14 @@
 /* Live map, shared by both portals. Class names are prefixed so they can't collide
    with either portal's design CSS. */
+.gk-map-shell {
+  position: relative;
+  width: 100%;
+  min-height: 24rem;
+  background: #e9efed;
+}
 .gk-map {
   width: 100%;
+  height: 100%;
   min-height: 24rem;
   background: #e9efed;
   z-index: 0;
@@ -18,54 +25,226 @@
   transition: none;
 }
 .gk-pin-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  overflow: visible;
+}
+.gk-pin-wrap,
+.gk-cluster-wrap {
   background: none;
   border: 0;
 }
-.gk-pin {
+
+/* ---- Rider pin (Rapido style): rider image in a white bubble, status ring, pointer tip ---- */
+.gk-rider {
+  --ring: #64748b;
+  flex: none;
   position: relative;
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  border: 3px solid #fff;
-  box-shadow: 0 6px 16px rgba(6, 26, 56, 0.28);
-  background: #64748b;
-  color: #fff;
-  font:
-    700 11px/1 Inter,
-    system-ui,
-    sans-serif;
+  width: 56px;
+  height: 68px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   cursor: pointer;
+  filter: drop-shadow(0 6px 10px rgba(6, 26, 56, 0.28));
+  transform-origin: 50% 100%;
   transition:
     transform 0.2s ease,
-    box-shadow 0.2s ease;
+    opacity 0.2s ease,
+    filter 0.2s ease;
 }
-.gk-pin b {
+.gk-rider.available {
+  --ring: #16a34a;
+}
+.gk-rider.on_delivery {
+  --ring: #2563eb;
+}
+.gk-rider.offline,
+.gk-rider.stale {
+  --ring: #64748b;
+}
+.gk-rider-bubble {
   position: relative;
-  z-index: 1;
-}
-.gk-pin.available {
-  background: #16a34a;
-}
-.gk-pin.on_delivery {
-  background: #2563eb;
-}
-.gk-pin.offline {
-  background: #94a3b8;
-}
-.gk-pin.selected {
-  transform: scale(1.18);
-  box-shadow:
-    0 0 0 4px #cb9002,
-    0 8px 20px rgba(6, 26, 56, 0.35);
-}
-.gk-pin-pulse {
-  position: absolute;
-  inset: -3px;
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border: 3px solid var(--ring);
   border-radius: 50%;
-  border: 2px solid #16a34a;
+  background: #fff;
+}
+/* Beats Leaflet's `.leaflet-container .leaflet-marker-pane img { width: auto }`. */
+.gk-map .leaflet-marker-pane .gk-rider-bubble img {
+  width: 46px;
+  max-width: 46px !important;
+  height: auto;
+  user-select: none;
+  pointer-events: none;
+}
+.gk-map .leaflet-marker-pane .gk-rider-bubble img.west {
+  transform: scaleX(-1);
+}
+/* The pointer tip: its bottom point is the marker anchor, i.e. the exact location. */
+.gk-rider-tip {
+  width: 0;
+  height: 0;
+  margin-top: -2px;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 12px solid var(--ring);
+}
+.gk-map .gk-rider.stale .gk-rider-bubble img,
+.gk-map .gk-rider.offline .gk-rider-bubble img {
+  filter: grayscale(0.7);
+  opacity: 0.85;
+}
+.gk-rider-pulse {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid var(--ring);
   animation: gk-map-pulse 1.8s ease-out infinite;
+}
+.gk-rider:hover {
+  transform: translateY(-2px) scale(1.06);
+}
+.gk-rider.selected {
+  transform: scale(1.15);
+  filter: drop-shadow(0 0 0 #cb9002) drop-shadow(0 10px 16px rgba(6, 26, 56, 0.35));
+}
+.gk-rider.selected .gk-rider-bubble {
+  box-shadow: 0 0 0 4px #cb9002;
+}
+.gk-rider.dimmed {
+  opacity: 0.45;
+  filter: grayscale(0.4) drop-shadow(0 4px 8px rgba(6, 26, 56, 0.18));
+}
+.gk-rider.dimmed:hover {
+  opacity: 0.9;
+}
+/* No GPS yet: placed at the service-area centre, so it must not look like a real fix. */
+.gk-rider.approximate .gk-rider-bubble {
+  border-style: dashed;
+  border-color: #a86806;
+  background: #fffbf0;
+}
+.gk-rider.approximate .gk-rider-tip {
+  border-top-color: #a86806;
+}
+.gk-rider-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  max-width: 210px;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border: 1px solid rgba(6, 26, 56, 0.12);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(6, 26, 56, 0.2);
+  color: #061a38;
+  font:
+    700 12px/1.2 Inter,
+    system-ui,
+    sans-serif;
+  white-space: nowrap;
+}
+.gk-rider-name small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #64748b;
+  font:
+    600 10px/1.2 Inter,
+    system-ui,
+    sans-serif;
+}
+
+.gk-cluster {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #061a38;
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(6, 26, 56, 0.3);
+  font:
+    700 12px/1 Inter,
+    system-ui,
+    sans-serif;
+}
+.gk-map-legend {
+  position: absolute;
+  z-index: 1001;
+  left: 12px;
+  bottom: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  max-width: min(32rem, calc(100% - 24px));
+  padding: 8px 10px;
+  border: 1px solid rgba(6, 26, 56, 0.1);
+  border-radius: 9px;
+  background: #fffffff2;
+  box-shadow: 0 4px 14px rgba(6, 26, 56, 0.14);
+  color: #334155;
+  font:
+    600 10px/1.2 Inter,
+    system-ui,
+    sans-serif;
+}
+.gk-map-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.gk-map-legend i {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #64748b;
+  border-radius: 50%;
+  background: #fff;
+}
+.gk-map-legend i.available {
+  border-color: #16a34a;
+}
+.gk-map-legend i.on_delivery {
+  border-color: #2563eb;
+}
+.gk-map-legend i.approximate {
+  border-style: dashed;
+  border-color: #a86806;
+}
+.gk-map-legend i.cluster {
+  border-color: #061a38;
+  background: #061a38;
+}
+.gk-map-selected-unavailable {
+  position: absolute;
+  z-index: 1001;
+  top: 12px;
+  left: 56px;
+  display: grid;
+  gap: 4px;
+  max-width: min(25rem, calc(100% - 68px));
+  padding: 10px 12px;
+  border: 1px solid #f2d3a0;
+  border-radius: 9px;
+  background: #fff9ebf2;
+  box-shadow: 0 4px 14px rgba(6, 26, 56, 0.14);
+  color: #7a4b11;
+  font:
+    500 11px/1.35 Inter,
+    system-ui,
+    sans-serif;
+}
+.gk-map-selected-unavailable strong {
+  color: #59360d;
+  font-size: 12px;
 }
 
 .gk-zone {
@@ -97,15 +276,16 @@
     opacity: 0.8;
   }
   to {
-    transform: scale(1.9);
+    transform: scale(1.35);
     opacity: 0;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .gk-map .leaflet-marker-icon.gk-pin-wrap {
+  .gk-map .leaflet-marker-icon.gk-pin-wrap,
+  .gk-rider {
     transition: none;
   }
-  .gk-pin-pulse {
+  .gk-rider-pulse {
     animation: none;
   }
 }

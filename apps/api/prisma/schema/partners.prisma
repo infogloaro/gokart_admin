@@ -71,14 +71,16 @@ model PartnerBusiness {
 }
 
 model PartnerDocument {
-  id         String    @id @default(cuid())
-  partnerId  String
-  kind       String // aadhaar, driving_licence, vehicle_rc, insurance, bank_proof, photo
-  s3Key      String
-  fileName   String
-  uploadedAt DateTime  @default(now())
-  verifiedAt DateTime?
-  partner    Partner   @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  partnerId   String
+  kind        String // see PARTNER_DOCUMENT_KINDS in packages/shared
+  s3Key       String
+  fileName    String
+  contentType String?
+  sizeBytes   Int?
+  uploadedAt  DateTime  @default(now())
+  verifiedAt  DateTime?
+  partner     Partner   @relation(fields: [partnerId], references: [id], onDelete: Cascade)
 
   @@map("partner_documents")
 }

@@ -9,21 +9,29 @@ import {
   type Business,
   type VendorStatus,
 } from "@zoauro/shared"
-import { ChevronRight, FileText, Search, Store, X } from "lucide-react"
+import { ChevronRight, Search, Store, X } from "lucide-react"
+import { useSearchParams } from "next/navigation"
 import { useState } from "react"
 import {
   activityLabel,
   dateTimeLabel,
-  documentLabel,
   useVendor,
   useVendors,
   vendorStatusTone,
   verificationTone,
 } from "@/lib/vendors"
+import { useMe } from "@/lib/session"
+import { AdminDocuments } from "./documents"
 import { AdminBadge, PageHeader } from "./ui"
 
 export function AdminVendors({ business }: { business: Business }) {
-  const [search, setSearch] = useState("")
+  // Global search links here with ?search=CODE; a new link starts the list over.
+  const linked = useSearchParams().get("search") ?? ""
+  return <VendorsScreen key={linked} business={business} initialSearch={linked} />
+}
+
+function VendorsScreen({ business, initialSearch }: { business: Business; initialSearch: string }) {
+  const [search, setSearch] = useState(initialSearch)
   const [status, setStatus] = useState<VendorStatus | "">("")
   const [selected, setSelected] = useState<string | null>(null)
   const vendors = useVendors({
@@ -113,6 +121,8 @@ export function AdminVendors({ business }: { business: Business }) {
 
 function VendorDrawer({ id, close }: { id: string; close: () => void }) {
   const { data: v, isError } = useVendor(id)
+  const me = useMe()
+  const canUpload = Boolean(me.data?.permissions.includes("vendors.manage"))
   return (
     <Dialog.Root open onOpenChange={(open) => !open && close()}>
       <Dialog.Overlay className="drawer-backdrop">
@@ -162,24 +172,19 @@ function VendorDrawer({ id, close }: { id: string; close: () => void }) {
                   <p>{v.address}</p>
                 </div>
               </section>
-              <section className="drawer-section">
-                <h3>Documents</h3>
-                {v.documents.map((d) => (
-                  <div className="item-row" key={d.kind + d.fileName}>
-                    <span className="item-thumb">
-                      <FileText className="icon" size={20} />
-                    </span>
-                    <div>
-                      <strong>{documentLabel[d.kind] ?? d.kind}</strong>
-                      <small>{d.fileName}</small>
-                    </div>
-                    <AdminBadge tone={d.verified ? "success" : "warning"}>
-                      {d.verified ? "Verified" : "Pending"}
-                    </AdminBadge>
-                  </div>
-                ))}
-                {v.documents.length === 0 && <p>No documents uploaded yet.</p>}
-              </section>
+              <AdminDocuments
+                owner="vendors"
+                id={v.id}
+                kinds={[
+                  "gst_certificate",
+                  v.business === "food" ? "fssai_licence" : "trade_licence",
+                  "pan",
+                  "bank_proof",
+                  "storefront_photo",
+                ]}
+                documents={v.documents}
+                canUpload={canUpload}
+              />
               {v.activity.length > 0 && (
                 <section className="drawer-section">
                   <h3>Activity</h3>

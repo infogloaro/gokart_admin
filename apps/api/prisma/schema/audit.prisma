@@ -1,0 +1,46 @@
+// Owner: Dev 1 (platform). Audit trail, notifications and the event outbox.
+
+/// Written inside the same transaction as every write.
+model AuditLog {
+  id         String   @id @default(cuid())
+  at         DateTime @default(now())
+  actorId    String?
+  actorName  String
+  actorRole  String?
+  action     String
+  entityType String
+  entityId   String
+  source     String?
+  userAgent  String?
+  detail     Json?
+  ip         String?
+
+  @@index([entityType, entityId])
+  @@index([at])
+  @@map("audit_logs")
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  memberId  String
+  title     String
+  body      String
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([memberId, readAt])
+  @@map("notifications")
+}
+
+/// Events for other apps, published after commit by a worker.
+model OutboxEvent {
+  id          String    @id @default(cuid())
+  topic       String
+  payload     Json
+  createdAt   DateTime  @default(now())
+  publishedAt DateTime?
+
+  @@index([publishedAt])
+  @@map("outbox_events")
+}

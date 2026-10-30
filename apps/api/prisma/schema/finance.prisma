@@ -1,0 +1,145 @@
+// Owner: Dev 3 (money). Pay plans, daily accruals, adjustments, cash remittances
+// and payouts for delivery partners and admins. All amounts are integer paise.
+
+enum PayoutStatus {
+  pending_approval
+  approved
+  paid
+  settled
+  rejected
+}
+
+enum AdjustmentKind {
+  bonus
+  deduction
+}
+
+enum ChangeRequestStatus {
+  pending
+  approved
+  rejected
+}
+
+/// A pay plan that applies from `effectiveFrom` until the next version.
+/// `plan` matches PartnerPlan or AdminPlan in packages/shared.
+model PayPlanVersion {
+  id            String      @id @default(cuid())
+  accountType   AccountType
+  accountId     String
+  effectiveFrom DateTime    @db.Date
+  plan          Json
+  reason        String
+  createdById   String
+  createdAt     DateTime    @default(now())
+
+  @@index([accountType, accountId, effectiveFrom])
+  @@map("pay_plan_versions")
+}
+
+/// One row per account per day, written by the nightly accrual job.
+/// Statements and reports sum these rows, so they always reconcile.
+model DailyAccrual {
+  id              String      @id @default(cuid())
+  accountType     AccountType
+  accountId       String
+  day             DateTime    @db.Date
+  salaryPaise     Int         @default(0)
+  fixedPaise      Int         @default(0)
+  incentivePaise  Int         @default(0)
+  commissionPaise Int         @default(0)
+  deliveries      Int         @default(0)
+  onTime          Int         @default(0)
+  codPaise        Int         @default(0)
+  feesPaise       Int         @default(0)
+  revenuePaise    Int         @default(0)
+
+  @@unique([accountType, accountId, day])
+  @@map("daily_accruals")
+}
+
+model Adjustment {
+  id          String         @id @default(cuid())
+  accountType AccountType
+  accountId   String
+  cycle       String // YYYY-MM
+  day         DateTime       @db.Date
+  kind        AdjustmentKind
+  amountPaise Int
+  reason      String
+  createdById String
+  createdAt   DateTime       @default(now())
+
+  @@index([accountType, accountId, cycle])
+  @@map("adjustments")
+}
+
+/// Cash on delivery handed back to GloAro by a partner.
+model Remittance {
+  id          String   @id @default(cuid())
+  partnerId   String
+  cycle       String
+  day         DateTime @db.Date
+  amountPaise Int
+  method      String
+  receivedBy  String
+  createdAt   DateTime @default(now())
+
+  @@index([partnerId, cycle])
+  @@map("remittances")
+}
+
+model Payout {
+  id             String       @id @default(cuid())
+  code           String       @unique // PPO-202610-DP2381 / APO-202610-ADM01
+  accountType    AccountType
+  accountId      String
+  cycle          String
+  amountPaise    Int
+  status         PayoutStatus @default(pending_approval)
+  version        Int          @default(0)
+  dueDate        DateTime     @db.Date
+  createdById    String
+  createdAt      DateTime     @default(now())
+  approvedById   String?
+  approvedAt     DateTime?
+  paidAt         DateTime?
+  paidRef        String?
+  paidMethod     String?
+  settledAt      DateTime?
+  rejectedById   String?
+  rejectedReason String?
+  lines          PayoutLine[]
+
+  @@unique([accountType, accountId, cycle])
+  @@index([status, dueDate])
+  @@map("payouts")
+}
+
+model PayoutLine {
+  id          String @id @default(cuid())
+  payoutId    String
+  position    Int
+  label       String
+  formula     String
+  amountPaise Int
+  payout      Payout @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+
+  @@map("payout_lines")
+}
+
+/// An admin's request to change someone's pay; a finance approver decides.
+model PayChangeRequest {
+  id            String              @id @default(cuid())
+  accountType   AccountType
+  accountId     String
+  plan          Json
+  reason        String
+  requestedById String
+  status        ChangeRequestStatus @default(pending)
+  decidedById   String?
+  decidedAt     DateTime?
+  createdAt     DateTime            @default(now())
+
+  @@index([status])
+  @@map("pay_change_requests")
+}

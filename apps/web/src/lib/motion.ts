@@ -12,8 +12,15 @@ export function prefersReducedMotion() {
 export function useCountUp(target: number | undefined, duration = 600) {
   const [value, setValue] = useState(0)
   const from = useRef(0)
+  const initialized = useRef(false)
   useEffect(() => {
     if (target === undefined) return
+    if (!initialized.current) {
+      initialized.current = true
+      from.current = target
+      setValue(target)
+      return
+    }
     if (prefersReducedMotion()) {
       from.current = target
       setValue(target)
@@ -32,7 +39,7 @@ export function useCountUp(target: number | undefined, duration = 600) {
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
   }, [target, duration])
-  return target === undefined ? undefined : value
+  return target === undefined ? undefined : initialized.current ? value : target
 }
 
 /** "just now", "12s ago", "3 min ago" — re-rendered every few seconds. */

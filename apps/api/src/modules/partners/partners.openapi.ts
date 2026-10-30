@@ -1,5 +1,8 @@
 import {
   CreatePartnerRequest,
+  DOCUMENT_TYPES,
+  DocumentVerifyRequest,
+  StoredDocument,
   paged,
   Partner,
   PartnerDecisionRequest,
@@ -69,4 +72,46 @@ registry.registerPath({
     200: json(PartnerDetailRef, "Updated partner"),
     ...errors(400, 401, 403, 404, 409),
   },
+})
+
+const StoredDocumentRef = registry.register("PartnerDocument", StoredDocument)
+const binary = Object.fromEntries(
+  DOCUMENT_TYPES.map((t) => [t, { schema: z.string().openapi({ format: "binary" }) }]),
+)
+registry.registerPath({
+  method: "put",
+  path: "/partners/{id}/documents/{kind}",
+  tags,
+  summary: "Upload a partner document (PDF, JPG or PNG, up to 10 MB); replaces the same kind",
+  request: {
+    params: z.object({ id: z.string(), kind: z.string() }),
+    headers: z.object({ "x-file-name": z.string().optional() }),
+    body: { content: binary, required: true },
+  },
+  responses: {
+    201: json(StoredDocumentRef, "The stored document"),
+    ...errors(400, 401, 403, 404),
+  },
+})
+registry.registerPath({
+  method: "get",
+  path: "/partners/{id}/documents/{docId}/file",
+  tags,
+  summary: "Download or view a partner document",
+  request: { params: z.object({ id: z.string(), docId: z.string() }) },
+  responses: {
+    200: { description: "The file", content: binary },
+    ...errors(401, 403, 404),
+  },
+})
+registry.registerPath({
+  method: "post",
+  path: "/partners/{id}/documents/{docId}/verify",
+  tags,
+  summary: "Mark a partner document verified or not verified",
+  request: {
+    params: z.object({ id: z.string(), docId: z.string() }),
+    body: json(DocumentVerifyRequest),
+  },
+  responses: { 200: json(StoredDocumentRef, "Updated document"), ...errors(400, 401, 403, 404) },
 })

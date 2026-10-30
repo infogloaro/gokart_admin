@@ -202,3 +202,62 @@ export function update(
     return tx.vendor.findUniqueOrThrow({ where: { id: vendor.id }, include: withDetail })
   })
 }
+
+// ---- documents ----
+
+type NewDocument = {
+  kind: string
+  s3Key: string
+  fileName: string
+  contentType: string
+  sizeBytes: number
+}
+
+/** Stores a document, replacing any earlier one of the same kind. Returns the old keys. */
+export function replaceDocument(
+  vendor: { id: string; code: string },
+  file: NewDocument,
+  actor: Actor,
+) {
+  return prisma.$transaction(async (tx) => {
+    const old = await tx.vendorDocument.findMany({
+      where: { vendorId: vendor.id, kind: file.kind },
+      select: { s3Key: true },
+    })
+    await tx.vendorDocument.deleteMany({ where: { vendorId: vendor.id, kind: file.kind } })
+    const doc = await tx.vendorDocument.create({ data: { vendorId: vendor.id, ...file } })
+    await audit(
+      tx,
+      actor,
+      "vendor.document_uploaded",
+      { type: "vendor", id: vendor.id },
+      { code: vendor.code, kind: file.kind, fileName: file.fileName },
+    )
+    return { doc, oldKeys: old.map((o) => o.s3Key) }
+  })
+}
+
+export const findDocument = (vendorId: string, documentId: string) =>
+  prisma.vendorDocument.findFirst({ where: { id: documentId, vendorId } })
+
+export function setDocumentVerified(
+  vendor: { id: string; code: string },
+  doc: { id: string; kind: string },
+  verified: boolean,
+  actor: Actor,
+) {
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.vendorDocument.update({
+      where: { id: doc.id },
+      data: { verifiedAt: verified ? new Date() : null },
+    })
+    await audit(
+      tx,
+      actor,
+      verified ? "vendor.document_verified" : "vendor.document_unverified",
+      { type: "vendor", id: vendor.id },
+      { code: vendor.code, kind: doc.kind },
+    )
+    return updated
+  })
+}

@@ -12,7 +12,6 @@ import {
   LocateFixed,
   MapPin,
   MessageSquareWarning,
-  Package,
   PackageCheck,
   PieChart,
   ReceiptText,
@@ -55,6 +54,7 @@ export const superNav: { group: string; items: Screen[] }[] = [
         owner: "Dev 3",
         module: "Reports & dashboards",
         permission: "dashboard.view",
+        live: true,
       },
       {
         key: "overview",
@@ -65,6 +65,7 @@ export const superNav: { group: string; items: Screen[] }[] = [
         owner: "Dev 3",
         module: "Reports & dashboards",
         permission: "dashboard.view",
+        live: true,
       },
       {
         key: "foodRevenue",
@@ -75,6 +76,7 @@ export const superNav: { group: string; items: Screen[] }[] = [
         owner: "Dev 3",
         module: "Reports & dashboards",
         permission: "finance.view",
+        live: true,
       },
       {
         key: "martRevenue",
@@ -85,6 +87,7 @@ export const superNav: { group: string; items: Screen[] }[] = [
         owner: "Dev 3",
         module: "Reports & dashboards",
         permission: "finance.view",
+        live: true,
       },
     ],
   },
@@ -123,16 +126,6 @@ export const superNav: { group: string; items: Screen[] }[] = [
         module: "Orders",
         permission: "orders.view",
         live: true,
-      },
-      {
-        key: "inventory",
-        label: "Products & inventory",
-        icon: Boxes,
-        title: "Products & Inventory",
-        subtitle: "Operational visibility for marketplace products and stock levels.",
-        owner: "Dev 2",
-        module: "Inventory",
-        permission: "inventory.view",
       },
       {
         key: "complaints",
@@ -241,6 +234,7 @@ export const adminNav: Screen[] = [
     owner: "Dev 3",
     module: "Reports & dashboards",
     permission: "dashboard.view",
+    live: true,
   },
   {
     key: "overview",
@@ -251,6 +245,7 @@ export const adminNav: Screen[] = [
     owner: "Dev 3",
     module: "Reports & dashboards",
     permission: "dashboard.view",
+    live: true,
   },
   {
     key: "orders",
@@ -299,12 +294,13 @@ export const adminNav: Screen[] = [
   {
     key: "inventory",
     label: "Products & inventory",
-    icon: Package,
+    icon: Boxes,
     title: "Products & inventory",
-    subtitle: "Stock levels for marketplace sellers.",
+    subtitle: "Stock for GLOARO MART sellers in your zones.",
     owner: "Dev 2",
     module: "Inventory",
     permission: "inventory.view",
+    live: true,
   },
   {
     key: "complaints",
@@ -325,6 +321,7 @@ export const adminNav: Screen[] = [
     owner: "Dev 3",
     module: "Finance & payouts",
     permission: "finance.view",
+    live: true,
   },
   {
     key: "reports",
@@ -335,6 +332,7 @@ export const adminNav: Screen[] = [
     owner: "Dev 3",
     module: "Reports & dashboards",
     permission: "reports.view",
+    live: true,
   },
 ]
 
@@ -348,6 +346,7 @@ export const adminAccountNav: Screen[] = [
     owner: "Dev 1",
     module: "Notifications",
     permission: "dashboard.view",
+    live: true,
   },
   {
     key: "profile",
