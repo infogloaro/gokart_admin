@@ -89,7 +89,10 @@ export function useNotificationFeed(
         title: vendor.name,
         detail: `${vendor.code} · ${businessName[vendor.business]} · Awaiting review`,
         createdAt: vendor.createdAt,
-        href: portal === "admin" ? `/admin/${business}/vendors` : "/super/vendors",
+        href:
+          portal === "admin"
+            ? `/admin/${business}/vendors?search=${encodeURIComponent(vendor.code)}`
+            : `/super/vendors?business=${vendor.business}&search=${encodeURIComponent(vendor.code)}`,
       })
     }
     for (const partner of partners.data?.items ?? []) {
@@ -99,7 +102,10 @@ export function useNotificationFeed(
         title: partner.name,
         detail: `${partner.code} · Delivery partner application`,
         createdAt: partner.createdAt,
-        href: portal === "admin" ? `/admin/${business}/partners` : "/super/partners",
+        href:
+          portal === "admin"
+            ? `/admin/${business}/partners?search=${encodeURIComponent(partner.code)}`
+            : `/super/partners?search=${encodeURIComponent(partner.code)}`,
       })
     }
     for (const order of orders.data?.items ?? []) {
