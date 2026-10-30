@@ -4,6 +4,8 @@ import type {
   DateRangeInput,
   OverviewData,
   OverviewResponse,
+  RevenueData,
+  RevenueResponse,
 } from "@/types/dashboard"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
@@ -48,6 +50,18 @@ export async function fetchOverview(
 ): Promise<OverviewData> {
   const result = await request<OverviewResponse>(
     `/api/workspaces/${encodeURIComponent(workspaceId)}/overview${rangeQuery(range)}`,
+  )
+  return result.data
+}
+
+export async function fetchRevenue(
+  workspaceId: string,
+  businessSlug: string,
+  range: DateRangeInput,
+): Promise<RevenueData> {
+  const params = new URLSearchParams({ start: range.start, end: range.end, business: businessSlug })
+  const result = await request<RevenueResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/revenue?${params.toString()}`,
   )
   return result.data
 }

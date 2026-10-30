@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction, RequestHandler } from "express"
-import { parseDashboardQuery } from "./dashboard.validation.js"
+import { parseDashboardQuery, parseRevenueQuery } from "./dashboard.validation.js"
 import type { createDashboardService } from "./dashboard.service.js"
 import type { WorkspacePrincipal } from "./dashboard.types.js"
 
@@ -33,6 +33,14 @@ export function createDashboardController(
         req.query as Record<string, unknown>,
       )
       return service.getDashboard(principal, workspaceSlug, range)
+    }),
+
+    getRevenue: handle((req, principal) => {
+      const { workspaceSlug, businessSlug, range } = parseRevenueQuery(
+        req.params as Record<string, unknown>,
+        req.query as Record<string, unknown>,
+      )
+      return service.getRevenue(principal, workspaceSlug, businessSlug, range)
     }),
 
     getOverview: handle((req, principal) => {

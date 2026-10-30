@@ -105,6 +105,54 @@ export function createDashboardRepository(prisma: PrismaClient) {
       })
     },
 
+    aggregateRevenue(workspaceIds: string[], range: DateRange) {
+      return prisma.order.aggregate({
+        where: {
+          workspaceId: { in: workspaceIds },
+          placedAt: { gte: range.start, lte: range.end },
+        },
+        _count: { _all: true },
+        _sum: {
+          grossValue: true,
+          platformRevenue: true,
+          commissionAmount: true,
+          deliveryFeeAmount: true,
+        },
+      })
+    },
+
+    listOrdersForSales(workspaceIds: string[], range: DateRange) {
+      return prisma.order.findMany({
+        where: {
+          workspaceId: { in: workspaceIds },
+          placedAt: { gte: range.start, lte: range.end },
+        },
+        select: { placedAt: true, grossValue: true, platformRevenue: true },
+      })
+    },
+
+    listRecentRevenueOrders(workspaceIds: string[], range: DateRange, limit: number) {
+      return prisma.order.findMany({
+        where: {
+          workspaceId: { in: workspaceIds },
+          placedAt: { gte: range.start, lte: range.end },
+        },
+        orderBy: { placedAt: "desc" },
+        take: limit,
+        select: {
+          id: true,
+          orderNumber: true,
+          customerName: true,
+          status: true,
+          paymentStatus: true,
+          grossValue: true,
+          workspace: { select: { name: true } },
+          vendor: { select: { name: true } },
+          deliveryPartner: { select: { name: true } },
+        },
+      })
+    },
+
     listPendingVendorApprovals(workspaceIds: string[]) {
       return prisma.vendor.findMany({
         where: { workspaceId: { in: workspaceIds }, approvalStatus: "PENDING" },

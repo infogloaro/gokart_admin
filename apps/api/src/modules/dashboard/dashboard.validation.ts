@@ -1,4 +1,4 @@
-import type { DashboardQuery } from "./dashboard.types.js"
+import type { DashboardQuery, RevenueQuery } from "./dashboard.types.js"
 
 const DEFAULT_RANGE_DAYS = 30
 
@@ -50,4 +50,16 @@ export function parseDashboardQuery(
   }
 
   return { workspaceSlug: workspaceSlug.trim(), range }
+}
+
+export function parseRevenueQuery(
+  params: Record<string, unknown>,
+  query: Record<string, unknown>,
+): RevenueQuery {
+  const base = parseDashboardQuery(params, query)
+  const { business } = query
+  if (typeof business !== "string" || business.trim().length === 0) {
+    fail("business is required")
+  }
+  return { ...base, businessSlug: business.trim() }
 }

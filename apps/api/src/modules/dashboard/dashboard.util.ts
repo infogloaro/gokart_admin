@@ -27,6 +27,13 @@ export function distributionBucket(status: string): keyof typeof DISTRIBUTION_LA
   return "IN_PROGRESS"
 }
 
+export function titleCase(value: string): string {
+  return value
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
 export function formatInr(value: number): string {
   const sign = value < 0 ? "-" : ""
   const abs = Math.abs(value)

@@ -9,6 +9,7 @@ import {
   formatChange,
   formatInr,
   previousRange,
+  titleCase,
 } from "./dashboard.util.js"
 import type {
   AttentionItem,
@@ -17,6 +18,7 @@ import type {
   OverviewResponse,
   ResolveAccessibleWorkspaceIds,
   ResolvedWorkspace,
+  RevenueResponse,
   TransactionRow,
   TrendSeries,
   WorkspacePrincipal,
@@ -26,6 +28,8 @@ const PREP_SLA_MINUTES = 25
 const DELIVERY_SLA_MINUTES = 45
 const PARTNER_DOC_WINDOW_DAYS = 30
 const RECENT_TRANSACTIONS_LIMIT = 5
+const REVENUE_TRANSACTIONS_LIMIT = 10
+const REVENUE_CHART_BUCKETS = 11
 
 function fail(message: string, status: number): never {
   throw Object.assign(new Error(message), { status })
@@ -245,7 +249,157 @@ export function createDashboardService(
     return attention
   }
 
+  async function buildRevenueMetrics(workspaceIds: string[], range: DateRange) {
+    const [current, previous] = await Promise.all([
+      repository.aggregateRevenue(workspaceIds, range),
+      repository.aggregateRevenue(workspaceIds, previousRange(range)),
+    ])
+
+    const read = (aggregate: typeof current) => {
+      const orders = aggregate._count._all
+      const gross = toNumber(aggregate._sum.grossValue)
+      return {
+        orders,
+        gross,
+        platformRevenue: toNumber(aggregate._sum.platformRevenue),
+        commission: toNumber(aggregate._sum.commissionAmount),
+        deliveryFees: toNumber(aggregate._sum.deliveryFeeAmount),
+        averageOrder: orders > 0 ? gross / orders : 0,
+      }
+    }
+    const now = read(current)
+    const before = read(previous)
+
+    const metrics = [
+      {
+        label: "Gross order value",
+        value: formatInr(now.gross),
+        change: formatChange(now.gross, before.gross),
+      },
+      {
+        label: "Platform revenue",
+        value: formatInr(now.platformRevenue),
+        change: formatChange(now.platformRevenue, before.platformRevenue),
+      },
+      {
+        label: "Orders",
+        value: now.orders.toLocaleString("en-IN"),
+        change: formatChange(now.orders, before.orders),
+      },
+      {
+        label: "Avg order value",
+        value: formatInr(now.averageOrder),
+        change: formatChange(now.averageOrder, before.averageOrder),
+      },
+      {
+        label: "Commission earned",
+        value: formatInr(now.commission),
+        change: formatChange(now.commission, before.commission),
+      },
+      {
+        label: "Delivery fees",
+        value: formatInr(now.deliveryFees),
+        change: formatChange(now.deliveryFees, before.deliveryFees),
+      },
+    ]
+
+    const total = now.platformRevenue
+    const commissionShare = total > 0 ? Math.round((now.commission / total) * 100) : 0
+    const deliveryShare = total > 0 ? Math.round((now.deliveryFees / total) * 100) : 0
+    const composition = [
+      { label: "Commission", value: commissionShare },
+      { label: "Delivery fees", value: deliveryShare },
+      {
+        label: "Other fees",
+        value: total > 0 ? Math.max(0, 100 - commissionShare - deliveryShare) : 0,
+      },
+    ]
+
+    return { metrics, composition }
+  }
+
+  async function buildRevenueSales(workspaceIds: string[], range: DateRange) {
+    const orders = await repository.listOrdersForSales(workspaceIds, range)
+    const buckets = buildTrendBuckets(range, REVENUE_CHART_BUCKETS)
+
+    const sums = buckets.map((bucket) => {
+      const inBucket = orders.filter(
+        (order) => order.placedAt >= bucket.start && order.placedAt <= bucket.end,
+      )
+      return {
+        gross: inBucket.reduce((total, order) => total + toNumber(order.grossValue), 0),
+        platformRevenue: inBucket.reduce(
+          (total, order) => total + toNumber(order.platformRevenue),
+          0,
+        ),
+      }
+    })
+
+    const series: TrendSeries[] = [
+      {
+        label: "Gross value",
+        color: "#08224b",
+        points: sums.map((sum) => sum.gross / 1_00_000),
+        values: sums.map((sum) => formatInr(sum.gross)),
+      },
+      {
+        label: "Platform revenue",
+        color: "#d99700",
+        points: sums.map((sum) => sum.platformRevenue / 1_00_000),
+        values: sums.map((sum) => formatInr(sum.platformRevenue)),
+      },
+    ]
+
+    return { days: buckets.map((bucket) => bucket.label), series }
+  }
+
+  async function buildRevenueTransactions(workspaceIds: string[], range: DateRange) {
+    const orders = await repository.listRecentRevenueOrders(
+      workspaceIds,
+      range,
+      REVENUE_TRANSACTIONS_LIMIT,
+    )
+    return orders.map((order) => ({
+      id: order.orderNumber,
+      customer: order.customerName,
+      business: order.workspace.name,
+      vendor: order.vendor?.name ?? "Unknown vendor",
+      partner: order.deliveryPartner?.name ?? "Unassigned",
+      payment: titleCase(order.paymentStatus),
+      status: titleCase(order.status),
+      amount: formatInr(toNumber(order.grossValue)),
+    }))
+  }
+
   return {
+    async getRevenue(
+      principal: WorkspacePrincipal,
+      workspaceSlug: string,
+      businessSlug: string,
+      range: DateRange,
+    ): Promise<RevenueResponse> {
+      const workspaces = await resolveWorkspaces(principal, workspaceSlug)
+      const business = workspaces.find((workspace) => workspace.slug === businessSlug)
+      if (!business) {
+        fail("Business not found or access denied", 404)
+      }
+      const workspaceIds = [business.id]
+
+      const [{ metrics, composition }, sales, transactions] = await Promise.all([
+        buildRevenueMetrics(workspaceIds, range),
+        buildRevenueSales(workspaceIds, range),
+        buildRevenueTransactions(workspaceIds, range),
+      ])
+
+      return {
+        business: { slug: business.slug, name: business.name },
+        metrics,
+        sales,
+        composition,
+        transactions,
+      }
+    },
+
     async getDashboard(
       principal: WorkspacePrincipal,
       workspaceSlug: string,

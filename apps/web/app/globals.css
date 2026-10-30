@@ -1157,3 +1157,125 @@ body {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+.revenue-stats {
+  grid-template-columns: repeat(6, 1fr);
+}
+.revenue-stats article {
+  padding: 20px;
+}
+.revenue-stats strong {
+  font-size: 26px;
+}
+.revenue-error {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #fef3f2;
+  border: 1px solid #fecdca;
+  color: #c4322a;
+  font-size: 14px;
+}
+.revenue-composition {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+}
+.revenue-composition li {
+  display: grid;
+  grid-template-columns: 100px 1fr 40px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  font-size: 12px;
+  color: #182b4f;
+}
+.revenue-composition b {
+  text-align: right;
+}
+.revenue-note {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid #e1e7f0;
+  border-radius: 12px;
+  background: #f7f9fc;
+  color: #71809a;
+  font-size: 12px;
+}
+.revenue-note svg {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  stroke: #182b4f;
+  fill: none;
+  stroke-width: 1.8;
+}
+.revenue-order {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.revenue-avatar {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 10px;
+  background: #eef2f8;
+  color: #182b4f;
+  font-size: 12px;
+  font-weight: 700;
+}
+.revenue-order b {
+  display: block;
+  color: #182b4f;
+}
+.revenue-order small {
+  color: #71809a;
+}
+.revenue-pill {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.revenue-pill-paid {
+  color: #168347;
+  background: #e6f6ed;
+}
+.revenue-pill-pending {
+  color: #ad6b00;
+  background: #fff4e0;
+}
+.revenue-pill-failed,
+.revenue-pill-refunded {
+  color: #c4322a;
+  background: #fdecea;
+}
+.revenue-pill-delivered {
+  color: #168347;
+  background: #e6f6ed;
+}
+.revenue-pill-progress {
+  color: #2f6fe0;
+  background: #eaf1fd;
+}
+.revenue-pill-cancelled {
+  color: #c4322a;
+  background: #fdecea;
+}
+@media (max-width: 1200px) {
+  .revenue-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 900px) {
+  .revenue-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

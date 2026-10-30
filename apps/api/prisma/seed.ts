@@ -61,6 +61,14 @@ const CUSTOMER_NAMES = [
   "Karan V.",
   "Neha T.",
   "Vikram J.",
+  "Siddharth M.",
+  "Kunal A.",
+  "Ananya B.",
+  "Rahul D.",
+  "Sneha L.",
+  "Arjun N.",
+  "Divya G.",
+  "Manish C.",
 ]
 
 const PARTNER_NAMES = [
@@ -168,14 +176,17 @@ async function seedWorkspace(config: (typeof WORKSPACES)[number]) {
   )
 
   const approvedVendors = vendors.filter((vendor) => vendor.approvalStatus === "APPROVED")
+  const activePartners = deliveryPartners.filter((partner) => partner.status === "ACTIVE")
 
   const orders = []
   for (let i = 0; i < 150; i += 1) {
-    const ageDays = randomInt(0, 29)
+    const ageDays = randomInt(0, 59)
     const placedAt = daysAgo(ageDays, randomInt(8, 22))
     const status = pickOrderStatus()
     const grossValue = randomInt(200, 7500)
     const platformRevenue = Math.round(grossValue * 0.17)
+    const commissionAmount = Math.round(platformRevenue * 0.7)
+    const deliveryFeeAmount = Math.round(platformRevenue * 0.21)
 
     const acceptedAt =
       status === "PLACED" ? null : new Date(placedAt.getTime() + randomInt(2, 18) * 60_000)
@@ -188,15 +199,32 @@ async function seedWorkspace(config: (typeof WORKSPACES)[number]) {
         ? new Date(acceptedAt.getTime() + randomInt(20, 70) * 60_000)
         : null
     const rating = status === "DELIVERED" ? randomInt(3, 5) : null
+    const paymentStatus =
+      status === "DELIVERED"
+        ? "PAID"
+        : status === "REFUNDED"
+          ? "REFUNDED"
+          : status === "CANCELLED"
+            ? "FAILED"
+            : random() < 0.3
+              ? "PAID"
+              : "PENDING"
+    const assignedPartner =
+      status === "PLACED" || status === "CANCELLED" ? null : pick(activePartners)
 
     const order = await prisma.order.create({
       data: {
         workspaceId: workspace.id,
         orderNumber: `${config.orderPrefix}-${(88000 + i).toString()}`,
         vendorId: approvedVendors.length > 0 ? pick(approvedVendors).id : null,
+        deliveryPartnerId: assignedPartner?.id ?? null,
+        customerName: pick(CUSTOMER_NAMES),
         status,
+        paymentStatus,
         grossValue,
         platformRevenue,
+        commissionAmount,
+        deliveryFeeAmount,
         placedAt,
         acceptedAt,
         readyAt,
@@ -300,7 +328,7 @@ async function seedLedgerTransactions(
     const paymentMethod = pickPaymentMethod()
     const grossValue = Number(order.grossValue)
     const platformRevenue = Number(order.platformRevenue)
-    const commissionAmount = Math.round(platformRevenue * 0.65)
+    const commissionAmount = Number(order.commissionAmount)
     const deliveryFeeAmount = platformRevenue - commissionAmount
 
     transactions.push({

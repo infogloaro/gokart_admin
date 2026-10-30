@@ -70,6 +70,34 @@ export interface OverviewResponse {
   insight: string
 }
 
+export interface RevenueQuery extends DashboardQuery {
+  businessSlug: string
+}
+
+export interface CompositionRow {
+  label: string
+  value: number
+}
+
+export interface RevenueTransactionRow {
+  id: string
+  customer: string
+  business: string
+  vendor: string
+  partner: string
+  payment: string
+  status: string
+  amount: string
+}
+
+export interface RevenueResponse {
+  business: { slug: string; name: string }
+  metrics: MetricRow[]
+  sales: TrendData
+  composition: CompositionRow[]
+  transactions: RevenueTransactionRow[]
+}
+
 export interface ResolvedWorkspace {
   id: string
   slug: string
