@@ -16,34 +16,40 @@ enum ComplaintPriority {
 }
 
 model Complaint {
-  id           String            @id @default(cuid())
+  id                 String            @id @default(cuid())
   /// CMP-2041
-  code         String            @unique
-  business     Business
-  zoneId       String
-  orderId      String?
-  orderCode    String?
-  vendorName   String?
+  code               String            @unique
+  business           Business
+  zoneId             String
+  orderId            String?
+  orderCode          String?
+  vendorName         String?
   /// see COMPLAINT_CATEGORIES in packages/shared
-  category     String
-  priority     ComplaintPriority @default(medium)
-  status       ComplaintStatus   @default(open)
-  customerName String
-  summary      String
-  details      String
+  category           String
+  priority           ComplaintPriority @default(medium)
+  status             ComplaintStatus   @default(open)
+  customerName       String
+  summary            String
+  details            String
   /// Short descriptions of what the customer attached, e.g. "3 photos of the parcel".
-  evidence     String[]
+  evidence           String[]
   /// Amount the customer is asking back, if any.
-  claimPaise   Int?
-  assigneeId   String?
-  assigneeName String?
-  escalatedAt  DateTime?
-  resolvedAt   DateTime?
-  resolution   String?
-  version      Int               @default(0)
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  notes        ComplaintNote[]
+  claimPaise         Int?
+  assigneeId         String?
+  assigneeName       String?
+  sourceApplication  String            @default("support")
+  reporterRole       String            @default("admin")
+  reporterId         String?
+  responsibleAdminId String?
+  deliveryFleetId    String?
+  escalatedAt        DateTime?
+  resolvedAt         DateTime?
+  resolution         String?
+  version            Int               @default(0)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  notes              ComplaintNote[]
+  deliveryFleet      DeliveryFleet?    @relation(fields: [deliveryFleetId], references: [id], onDelete: SetNull)
 
   @@index([business, status])
   @@index([zoneId, createdAt])

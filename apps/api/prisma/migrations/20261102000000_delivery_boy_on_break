@@ -1,0 +1,1 @@
+ALTER TYPE "DeliveryBoyAvailability" ADD VALUE 'on_break';

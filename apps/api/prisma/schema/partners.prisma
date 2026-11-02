@@ -61,6 +61,229 @@ model Partner {
   @@map("partners")
 }
 
+enum DeliveryFleetStatus {
+  pending_approval
+  active
+  suspended
+  rejected
+}
+
+enum DeliveryBoyStatus {
+  pending_admin
+  pending_super
+  corrections_requested
+  rejected
+  active
+  suspended
+}
+
+enum DeliveryBoyAvailability {
+  available
+  on_delivery
+  on_break
+  offline
+  suspended
+}
+
+enum DeliveryBoyReviewDecision {
+  submitted
+  corrections_resubmitted
+  forwarded
+  corrections_requested
+  rejected
+  approved
+  suspended
+  reactivated
+}
+
+enum DeliveryAssignmentStatus {
+  assigned
+  accepted
+  rejected
+  completed
+  cancelled
+}
+
+model DeliveryFleet {
+  id                 String              @id @default(cuid())
+  code               String              @unique
+  name               String
+  companyName        String?
+  contactPerson      String
+  phone              String              @unique
+  email              String?
+  address            String
+  districtId         String
+  credentialHash     String?             @unique
+  credentialIssuedAt DateTime?
+  status             DeliveryFleetStatus @default(pending_approval)
+  /// Admin who asked Super Admin to create this partner; null for partners Super Admin added directly.
+  requestedById      String?
+  requestedByName    String?
+  /// Zones requested by the Admin; become active zone assignments when Super Admin approves.
+  requestedZoneIds   String[]            @default([])
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  district    District             @relation(fields: [districtId], references: [id], onDelete: Restrict)
+  businesses  DeliveryFleetBusiness[]
+  zones       DeliveryFleetZone[]
+  boys        DeliveryBoy[]
+  boyReviews  DeliveryBoyReview[]
+  assignments DeliveryAssignment[]
+  complaints  Complaint[]
+  orders      Order[]
+  history     DeliveryHistory[]
+
+  @@index([districtId, status])
+  @@map("delivery_fleets")
+}
+
+model DeliveryFleetBusiness {
+  fleetId  String
+  business Business
+  fleet    DeliveryFleet @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+
+  @@id([fleetId, business])
+  @@map("delivery_fleet_businesses")
+}
+
+/// Each assignment is historical; a partial unique index allows only one active fleet per zone.
+model DeliveryFleetZone {
+  id           String    @id @default(cuid())
+  fleetId      String
+  zoneId       String
+  assignedById String
+  notes        String?
+  assignedAt   DateTime  @default(now())
+  endedAt      DateTime?
+
+  fleet      DeliveryFleet @relation(fields: [fleetId], references: [id], onDelete: Restrict)
+  zone       Zone          @relation(fields: [zoneId], references: [id], onDelete: Restrict)
+  assignedBy Member        @relation("DeliveryFleetZoneAssignedBy", fields: [assignedById], references: [id], onDelete: Restrict)
+
+  @@index([zoneId, endedAt])
+  @@index([fleetId, endedAt])
+  @@map("delivery_fleet_zones")
+}
+
+model DeliveryBoy {
+  id              String                  @id @default(cuid())
+  code            String                  @unique
+  fleetId         String
+  zoneId          String
+  name            String
+  phone           String                  @unique
+  email           String?
+  address         String
+  dateOfBirth     DateTime?               @db.Date
+  gender          String?
+  pinCode         String?
+  drivingLicence  String?
+  licenceValidUntil DateTime?              @db.Date
+  vehicleType     VehicleType
+  vehicleNumber   String
+  vehicleModel    String?
+  payoutHolderName String?
+  payoutBankName  String?
+  payoutLast4     String?
+  payoutIfsc      String?
+  status          DeliveryBoyStatus       @default(pending_admin)
+  availability    DeliveryBoyAvailability @default(offline)
+  maxActiveOrders Int                     @default(1)
+  reviewAdminId   String?
+  version         Int                     @default(0)
+  submittedAt     DateTime                @default(now())
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  fleet         DeliveryFleet             @relation(fields: [fleetId], references: [id], onDelete: Restrict)
+  zone          Zone                      @relation(fields: [zoneId], references: [id], onDelete: Restrict)
+  reviewAdmin   Member?                   @relation("DeliveryBoyReviewAdmin", fields: [reviewAdminId], references: [id], onDelete: SetNull)
+  documents     DeliveryBoyDocument[]
+  notifications DeliveryBoyNotification[]
+  reviews       DeliveryBoyReview[]
+  assignments   DeliveryAssignment[]
+  orders        Order[]
+  history       DeliveryHistory[]
+
+  @@index([fleetId, status])
+  @@index([zoneId, status, availability])
+  @@index([reviewAdminId, status])
+  @@map("delivery_boys")
+}
+
+model DeliveryBoyDocument {
+  id          String      @id @default(cuid())
+  boyId       String
+  kind        String
+  s3Key       String
+  fileName    String
+  contentType String?
+  sizeBytes   Int?
+  uploadedAt  DateTime    @default(now())
+  verifiedAt  DateTime?
+  boy         DeliveryBoy @relation(fields: [boyId], references: [id], onDelete: Cascade)
+
+  @@unique([boyId, kind])
+  @@map("delivery_boy_documents")
+}
+
+model DeliveryBoyNotification {
+  id        String      @id @default(cuid())
+  boyId     String
+  title     String
+  body      String
+  readAt    DateTime?
+  createdAt DateTime    @default(now())
+  boy       DeliveryBoy @relation(fields: [boyId], references: [id], onDelete: Cascade)
+
+  @@index([boyId, readAt, createdAt])
+  @@map("delivery_boy_notifications")
+}
+
+model DeliveryBoyReview {
+  id        String                    @id @default(cuid())
+  boyId     String
+  actorId   String?
+  fleetId   String?
+  actorName String
+  actorRole String
+  decision  DeliveryBoyReviewDecision
+  from      DeliveryBoyStatus
+  to        DeliveryBoyStatus
+  reason    String?
+  at        DateTime                  @default(now())
+  boy       DeliveryBoy               @relation(fields: [boyId], references: [id], onDelete: Cascade)
+  fleet     DeliveryFleet?            @relation(fields: [fleetId], references: [id], onDelete: SetNull)
+
+  @@index([boyId, at])
+  @@index([fleetId, at])
+  @@map("delivery_boy_reviews")
+}
+
+/// Every edit to a partner or delivery boy: who changed it, why, and the before/after values.
+model DeliveryHistory {
+  id        String      @id @default(cuid())
+  fleetId   String?
+  boyId     String?
+  actorId   String?
+  actorName String
+  actorRole String
+  /// e.g. fleet.requested, fleet.approved, fleet.updated, boy.forwarded, boy.document_verified
+  action    String
+  reason    String?
+  /// { field: { from, to } } for every field that changed.
+  changes   Json?
+  at        DateTime    @default(now())
+  fleet     DeliveryFleet? @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  boy       DeliveryBoy?   @relation(fields: [boyId], references: [id], onDelete: Cascade)
+
+  @@index([fleetId, at])
+  @@index([boyId, at])
+  @@map("delivery_history")
+}
+
 model PartnerBusiness {
   partnerId String
   business  Business

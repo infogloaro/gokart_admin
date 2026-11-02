@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest"
 import {
   canTransition,
   CreateAdminRequest,
+  CreateDeliveryFleetRequest,
   CreateZoneRequest,
+  DeliveryBoySubmissionRequest,
   AuditLogQuery,
   formatINR,
   formatINRCompact,
@@ -11,6 +13,8 @@ import {
   percentOf,
   rupeesToPaise,
   splitPaise,
+  UpdatePartnerRequest,
+  UpdateVendorRequest,
 } from "./index"
 
 describe("money", () => {
@@ -76,6 +80,77 @@ describe("system management input", () => {
     )
   })
 
+  describe("delivery fleet onboarding", () => {
+    const rider = (name: string, phone: string) => ({
+      name,
+      phone,
+      address: "12 Test Street, Chennai",
+      zoneId: "zone-1",
+      drivingLicence: "TN0120210001",
+      vehicleType: "motorcycle",
+      vehicleNumber: "TN 01 AB 4821",
+      payout: {
+        holderName: name,
+        accountNumber: "50100012345678",
+        ifsc: "HDFC0001284",
+      },
+    })
+
+    it("accepts multiple separately detailed riders under one fleet", () => {
+      const request = CreateDeliveryFleetRequest.safeParse({
+        name: "Chennai Fleet",
+        contactPerson: "Fleet Owner",
+        phone: "+919876543210",
+        address: "1 Fleet Road, Chennai",
+        districtId: "district-1",
+        zoneIds: ["zone-1"],
+        deliveryBoys: [
+          rider("First Rider", "+919876543211"),
+          rider("Second Rider", "+919876543212"),
+        ],
+      })
+      expect(request.success).toBe(true)
+      if (request.success) {
+        expect(request.data.deliveryBoys).toHaveLength(2)
+        expect(request.data.businesses).toEqual(["food", "mart"])
+      }
+    })
+
+    it("requires a verified phone challenge for a partner-submitted delivery boy", () => {
+      const request = DeliveryBoySubmissionRequest.safeParse({
+        ...rider("Rider", "+919876543211"),
+        otpChallengeId: "2f6d88d5-3ab3-4f4e-91a7-6332f5823d58",
+        otp: "123456",
+      })
+      expect(request.success).toBe(true)
+      expect(
+        DeliveryBoySubmissionRequest.safeParse({
+          ...rider("Rider", "+919876543211"),
+          otpChallengeId: "2f6d88d5-3ab3-4f4e-91a7-6332f5823d58",
+        }).success,
+      ).toBe(false)
+    })
+
+    it("requires payout details for riders onboarded with a fleet", () => {
+      const input = {
+        name: "Chennai Fleet",
+        contactPerson: "Fleet Owner",
+        phone: "+919876543210",
+        address: "1 Fleet Road, Chennai",
+        districtId: "district-1",
+        zoneIds: ["zone-1"],
+        deliveryBoys: [rider("First Rider", "+919876543211")],
+      }
+      expect(CreateDeliveryFleetRequest.safeParse(input).success).toBe(true)
+      expect(
+        CreateDeliveryFleetRequest.safeParse({
+          ...input,
+          deliveryBoys: [{ ...input.deliveryBoys[0], payout: undefined }],
+        }).success,
+      ).toBe(false)
+    })
+  })
+
   it("requires service-area coordinates to be supplied as a pair", () => {
     const base = { district: "Chennai", city: "Chennai", location: "T Nagar" }
     expect(CreateZoneRequest.safeParse({ ...base, lat: null, lng: null }).success).toBe(true)
@@ -101,5 +176,17 @@ describe("system management input", () => {
       }).success,
     ).toBe(false)
     expect(AuditLogQuery.safeParse({ pageSize: 101 }).success).toBe(false)
+  })
+
+  it("requires an edit reason for vendor and delivery partner profile updates", () => {
+    const updatedAt = "2026-11-02T00:00:00.000Z"
+    expect(UpdateVendorRequest.safeParse({ updatedAt }).success).toBe(false)
+    expect(UpdatePartnerRequest.safeParse({ updatedAt }).success).toBe(false)
+    expect(UpdateVendorRequest.safeParse({ updatedAt, reason: "Correcting address" }).success).toBe(
+      true,
+    )
+    expect(
+      UpdatePartnerRequest.safeParse({ updatedAt, reason: "Correcting mobile number" }).success,
+    ).toBe(true)
   })
 })

@@ -6,9 +6,11 @@ import { prisma } from "./lib/prisma"
 import { redis } from "./lib/redis"
 import { authRoutes } from "./modules/auth/auth.routes"
 import { dashboardRoutes, searchRoutes } from "./modules/dashboard/dashboard.routes"
+import { deliveryRoutes } from "./modules/delivery/delivery.routes"
 import { auditRoutes } from "./modules/audit/audit"
 import { complaintRoutes } from "./modules/complaints/complaints.routes"
 import { financeRoutes } from "./modules/finance/finance.routes"
+import { bulkRoutes } from "./modules/bulk/bulk"
 import { inventoryRoutes } from "./modules/inventory/inventory"
 import { ledgerRoutes } from "./modules/ledger/ledger.routes"
 import { memberRoutes } from "./modules/members/members"
@@ -27,7 +29,9 @@ import "./modules/finance/finance.openapi"
 import "./modules/inventory/inventory.openapi"
 import "./modules/ledger/ledger.openapi"
 import "./modules/dashboard/dashboard.openapi"
+import "./modules/delivery/delivery.openapi"
 import "./modules/orders/orders.openapi"
+import "./modules/notifications/notifications.openapi"
 import "./modules/partners/partners.openapi"
 import "./modules/tracking/tracking.openapi"
 import "./modules/vendors/vendors.openapi"
@@ -49,10 +53,12 @@ export function createApp() {
   })
   v1.use("/auth", authRoutes)
   v1.use("/dashboard", dashboardRoutes)
+  v1.use("/delivery", deliveryRoutes)
   v1.use("/audit", auditRoutes)
   v1.use("/complaints", complaintRoutes)
   v1.use("/finance", financeRoutes)
   v1.use("/inventory", inventoryRoutes)
+  v1.use("/bulk", bulkRoutes)
   v1.use("/ledger", ledgerRoutes)
   v1.use("/notifications", notificationRoutes)
   v1.use("/members", memberRoutes)

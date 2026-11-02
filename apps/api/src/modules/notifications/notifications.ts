@@ -1,9 +1,17 @@
 // Stored notifications for the signed-in member, and the outbox relay that turns business
 // events (vendor approved, partner suspended, refund requested, …) into notifications.
 // The relay runs inside the API process for now; it can move to a BullMQ worker unchanged.
-import { NotificationQuery, type Business, type NotificationList } from "@zoauro/shared"
+import {
+  NotificationActivityKey,
+  NotificationActivityReadList,
+  NotificationActivityReadQuery,
+  NotificationActivityReadRequest,
+  NotificationQuery,
+  type Business,
+  type NotificationList,
+} from "@zoauro/shared"
 import { Router, type Request, type Response } from "express"
-import { notFound, parse } from "../../lib/errors"
+import { forbidden, notFound, parse } from "../../lib/errors"
 import { linkFor, membersFor, notify } from "../../lib/notify"
 import { prisma } from "../../lib/prisma"
 import { currentMember, requireAuth } from "../../middleware/auth"
@@ -63,9 +71,82 @@ async function readAll(req: Request, res: Response) {
   res.status(204).end()
 }
 
+async function readActivityList(req: Request, res: Response) {
+  const { keys: rawKeys } = parse(NotificationActivityReadQuery, req.query)
+  const keys = rawKeys ? parse(NotificationActivityReadList, { keys: rawKeys.split(",") }).keys : []
+  const uniqueKeys = [...new Set(keys)]
+  const reads = uniqueKeys.length
+    ? await prisma.notificationActivityRead.findMany({
+        where: { memberId: currentMember(req).id, activityKey: { in: uniqueKeys } },
+        select: { activityKey: true },
+      })
+    : []
+  res.json({ keys: reads.map((item) => item.activityKey) })
+}
+
+async function readActivity(req: Request, res: Response) {
+  const { key } = parse(NotificationActivityReadRequest, req.body)
+  const [kind, id] = parse(NotificationActivityKey, key).split(":")
+  const member = currentMember(req)
+  const permission =
+    kind === "vendor" ? "vendors.view" : kind === "partner" ? "partners.view" : "orders.view"
+  if (!member.permissions.includes(permission)) throw forbidden()
+
+  const zoneFilter = member.role === "super_admin" ? undefined : { in: member.zoneIds }
+  if (member.role !== "super_admin" && member.zoneIds.length === 0) throw notFound("Activity")
+  let accessible = false
+  if (kind === "vendor") {
+    accessible = Boolean(
+      await prisma.vendor.findFirst({
+        where: {
+          id,
+          status: "pending_review",
+          business: { in: member.businesses },
+          ...(zoneFilter && { zoneId: zoneFilter }),
+        },
+        select: { id: true },
+      }),
+    )
+  } else if (kind === "partner") {
+    accessible = Boolean(
+      await prisma.partner.findFirst({
+        where: {
+          id,
+          status: "pending_approval",
+          businesses: { some: { business: { in: member.businesses } } },
+          ...(zoneFilter && { zoneId: zoneFilter }),
+        },
+        select: { id: true },
+      }),
+    )
+  } else {
+    accessible = Boolean(
+      await prisma.order.findFirst({
+        where: {
+          id,
+          status: "placed",
+          business: { in: member.businesses },
+          ...(zoneFilter && { zoneId: zoneFilter }),
+        },
+        select: { id: true },
+      }),
+    )
+  }
+  if (!accessible) throw notFound("Activity")
+
+  await prisma.notificationActivityRead.upsert({
+    where: { memberId_activityKey: { memberId: member.id, activityKey: key } },
+    create: { memberId: member.id, activityKey: key },
+    update: { readAt: new Date() },
+  })
+  res.status(204).end()
+}
+
 export const notificationRoutes = Router()
   .use(requireAuth)
   .get("/", list)
+  .get("/activity-read", readActivityList)
+  .post("/activity-read", readActivity)
   .post("/read-all", readAll)
   .post("/:id/read", read)
 

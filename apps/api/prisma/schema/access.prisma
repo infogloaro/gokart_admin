@@ -41,12 +41,16 @@ model Member {
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
-  businesses    MemberBusiness[]
-  zones         MemberZone[]
-  permissions   MemberPermission[]
-  recoveryCodes MemberRecoveryCode[]
+  businesses                MemberBusiness[]
+  zones                     MemberZone[]
+  permissions               MemberPermission[]
+  recoveryCodes             MemberRecoveryCode[]
+  partnerDraft              PartnerDraft?
+  notificationActivityReads NotificationActivityRead[]
   /// Delivery partners this admin manages (drives admin commission).
-  partners      Partner[]            @relation("PartnerManager")
+  partners                  Partner[]                  @relation("PartnerManager")
+  deliveryBoysToReview      DeliveryBoy[]              @relation("DeliveryBoyReviewAdmin")
+  fleetZoneAssignments      DeliveryFleetZone[]        @relation("DeliveryFleetZoneAssignedBy")
 
   @@map("members")
 }
@@ -83,6 +87,26 @@ model MemberRecoveryCode {
 
   @@unique([memberId, codeHash])
   @@map("member_recovery_codes")
+}
+
+model PartnerDraft {
+  memberId      String   @id
+  encryptedData String
+  updatedAt     DateTime @updatedAt
+  member        Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@map("partner_drafts")
+}
+
+model NotificationActivityRead {
+  memberId    String
+  activityKey String
+  readAt      DateTime @default(now())
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@id([memberId, activityKey])
+  @@index([memberId, readAt])
+  @@map("notification_activity_reads")
 }
 
 /// Permission keys from packages/shared (e.g. "finance.approve").

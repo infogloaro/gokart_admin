@@ -41,6 +41,8 @@ model Order {
   customerPhone    String
   vendorId         String
   partnerId        String?
+  deliveryFleetId  String?
+  deliveryBoyId    String?
   zoneId           String
   paymentMethod    PaymentMethod
   paymentStatus    PaymentStatus @default(pending)
@@ -50,15 +52,38 @@ model Order {
   placedAt         DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
-  vendor  Vendor       @relation(fields: [vendorId], references: [id])
-  partner Partner?     @relation(fields: [partnerId], references: [id])
-  zone    Zone         @relation(fields: [zoneId], references: [id])
-  items   OrderItem[]
-  events  OrderEvent[]
+  vendor              Vendor               @relation(fields: [vendorId], references: [id])
+  partner             Partner?             @relation(fields: [partnerId], references: [id])
+  deliveryFleet       DeliveryFleet?       @relation(fields: [deliveryFleetId], references: [id])
+  deliveryBoy         DeliveryBoy?         @relation(fields: [deliveryBoyId], references: [id])
+  zone                Zone                 @relation(fields: [zoneId], references: [id])
+  items               OrderItem[]
+  events              OrderEvent[]
+  deliveryAssignments DeliveryAssignment[]
 
   @@index([business, status])
   @@index([zoneId, placedAt])
   @@map("orders")
+}
+
+model DeliveryAssignment {
+  id           String                   @id @default(cuid())
+  orderId      String
+  fleetId      String
+  boyId        String
+  assignedById String?
+  status       DeliveryAssignmentStatus @default(assigned)
+  assignedAt   DateTime                 @default(now())
+  endedAt      DateTime?
+  reason       String?
+  order        Order                    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  fleet        DeliveryFleet            @relation(fields: [fleetId], references: [id], onDelete: Restrict)
+  boy          DeliveryBoy              @relation(fields: [boyId], references: [id], onDelete: Restrict)
+
+  @@index([orderId, assignedAt])
+  @@index([boyId, status, endedAt])
+  @@index([fleetId, assignedAt])
+  @@map("delivery_assignments")
 }
 
 model OrderItem {

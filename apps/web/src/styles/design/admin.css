@@ -984,3 +984,5 @@
 .admin-ui .wizard-shell .review-list section h3{font-size:14px}
 .admin-ui .wizard-shell .review-list section p{font-size:13px}
 .admin-ui .wizard-shell .review-consent{font-size:12px}
+.admin-ui .wizard-shell>header .wizard-save-draft{width:auto;height:36px;padding:0 12px;border:1px solid var(--line);background:#fff;color:var(--navy)}
+@media(max-width:620px){.admin-ui .wizard-shell>header .wizard-save-draft{width:36px;padding:0}.admin-ui .wizard-shell .wizard-save-draft-label{display:none}}

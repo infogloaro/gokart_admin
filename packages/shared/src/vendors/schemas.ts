@@ -97,6 +97,8 @@ export const Vendor = z.object({
   zoneId: z.string(),
   /** "T. Nagar, Chennai" */
   zoneName: z.string(),
+  responsibleAdminId: z.string().nullable(),
+  responsibleAdminName: z.string().nullable(),
   status: VendorStatus,
   verification: VerificationStatus,
   commissionPct: z.number(),
@@ -234,7 +236,10 @@ export const UpdateVendorRequest = CreateVendorRequest.omit({
   pan: true,
 })
   .partial()
-  .extend({ updatedAt: z.iso.datetime() })
+  .extend({
+    updatedAt: z.iso.datetime(),
+    reason: z.string().trim().min(3, "Explain why this profile is being edited").max(500),
+  })
 export type UpdateVendorRequest = z.infer<typeof UpdateVendorRequest>
 
 export const VENDOR_DECISIONS = ["approve", "reject", "suspend", "reactivate"] as const

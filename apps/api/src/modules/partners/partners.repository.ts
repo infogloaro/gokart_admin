@@ -143,6 +143,7 @@ export function update(
   data: Prisma.PartnerUncheckedUpdateManyInput,
   businesses: Business[] | undefined,
   fields: string[],
+  reason: string,
   actor: Actor,
 ) {
   return prisma.$transaction(async (tx) => {
@@ -159,7 +160,7 @@ export function update(
       actor,
       "partner.updated",
       { type: "partner", id: partner.id },
-      { code: partner.code, fields },
+      { code: partner.code, fields, reason },
     )
     return tx.partner.findUniqueOrThrow({ where: { id: partner.id }, include: withDetail })
   })
@@ -211,6 +212,7 @@ export function create(
       await tx.bankAccount.create({
         data: { accountType: "partner", accountId: p.id, ...bank },
       })
+    if (actor.id) await tx.partnerDraft.deleteMany({ where: { memberId: actor.id } })
     await audit(tx, actor, "partner.submitted", { type: "partner", id: p.id }, { code: p.code })
     return p
   })

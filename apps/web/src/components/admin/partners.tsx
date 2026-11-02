@@ -1,54 +1,38 @@
 "use client"
-// Delivery partners for the Admin portal: the prototype's partner cards, profile drawer
-// and onboarding wizard. Applications go to the Super Admin for approval.
+// Delivery partners for the Admin portal: partner cards, the profile drawer, rider reviews and
+// requests for new partners. New partners are sent to the Super Admin for approval.
 import * as Dialog from "@radix-ui/react-dialog"
 import { ApiError } from "@zoauro/api-client"
 import {
   availabilityLabel,
   businessName,
-  GENDERS,
   partnerStatusLabel,
-  VEHICLE_TYPES,
   vehicleLabel,
   type Business,
+  type DeliveryBoy,
   type PartnerAvailability,
   type PartnerStatus,
 } from "@zoauro/shared"
-import {
-  AlertTriangle,
-  ArrowRight,
-  Check,
-  Eye,
-  LayoutGrid,
-  Lock,
-  Package,
-  Plus,
-  Search,
-  ShieldCheck,
-  UtensilsCrossed,
-  X,
-} from "lucide-react"
+import { Eye, Lock, Plus, Search, ShieldCheck, X } from "lucide-react"
 import { useSearchParams } from "next/navigation"
-import { useState, type InputHTMLAttributes, type ReactNode } from "react"
+import { useState } from "react"
 import {
   initials,
   maskPhone,
-  PARTNER_STEPS,
   partnerStatusTone,
   servicesLabel,
   usePartner,
   usePartners,
   usePartnerSummary,
-  usePartnerWizard,
   verificationOf,
-  type PartnerForm,
 } from "@/lib/partners"
-import { useMe, useZones } from "@/lib/session"
-import { useAreaPicker } from "@/lib/zones"
+import { useMe } from "@/lib/session"
+import { useDeliveryBoys, useReviewDeliveryBoy, useVerifyBoyDocument } from "@/lib/delivery"
 import { activityLabel, dateLabel, dateTimeLabel } from "@/lib/vendors"
 import { AvailabilityControl } from "./availability"
-import { AdminDocuments, AdminUploadCard, AdminUploadSummary } from "./documents"
-import { AdminBadge, AdminBrand, AdminButton, PageHeader } from "./ui"
+import { AdminDocuments } from "./documents"
+import { AdminPartnerRequests, PartnerRequestDialog } from "./partner-request"
+import { AdminBadge, AdminButton, PageHeader } from "./ui"
 
 type Filter = "" | PartnerAvailability | "pending_approval"
 
@@ -70,6 +54,7 @@ function PartnersScreen({
   const [filter, setFilter] = useState<Filter>("")
   const [selected, setSelected] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
+  const [reviewingRiders, setReviewingRiders] = useState(false)
   const pending = filter === "pending_approval"
   const partners = usePartners({
     business,
@@ -87,6 +72,9 @@ function PartnersScreen({
   const s = summary.data
   const food = business === "food"
 
+  if (reviewingRiders)
+    return <AdminRiderApplications business={business} close={() => setReviewingRiders(false)} />
+
   return (
     <>
       <PageHeader
@@ -95,11 +83,21 @@ function PartnersScreen({
         note={<span className="live-note">● Live data</span>}
       >
         {me.data?.permissions.includes("partners.manage") && (
-          <AdminButton icon={Plus} onClick={() => setAdding(true)}>
-            Add delivery partner
-          </AdminButton>
+          <>
+            <AdminButton
+              kind="secondary"
+              icon={ShieldCheck}
+              onClick={() => setReviewingRiders(true)}
+            >
+              Rider applications
+            </AdminButton>
+            <AdminButton icon={Plus} onClick={() => setAdding(true)}>
+              Add delivery partner
+            </AdminButton>
+          </>
         )}
       </PageHeader>
+      <AdminPartnerRequests business={business} />
       <div className="partner-summary">
         <div>
           <i className="online" />
@@ -234,8 +232,238 @@ function PartnersScreen({
         </div>
       </section>
       {selected && <PartnerProfile id={selected} close={() => setSelected(null)} />}
-      {adding && <Wizard business={business} close={() => setAdding(false)} />}
+      {adding && <PartnerRequestDialog business={business} close={() => setAdding(false)} />}
     </>
+  )
+}
+
+function AdminRiderApplications({ business, close }: { business: Business; close: () => void }) {
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const applications = useDeliveryBoys({
+    status: "pending_admin",
+    page: 1,
+    pageSize: 100,
+  })
+  const selected = applications.data?.items.find((boy) => boy.id === selectedId) ?? null
+  return (
+    <>
+      <PageHeader
+        title={`${businessName[business]} rider applications`}
+        subtitle="Review rider details and documents for your authorized zones."
+      >
+        <AdminButton kind="secondary" onClick={close}>
+          Back to delivery partners
+        </AdminButton>
+      </PageHeader>
+      <section className="panel full-panel">
+        {applications.isError && (
+          <p style={{ padding: "1rem" }}>
+            {applications.error instanceof ApiError
+              ? applications.error.message
+              : "Couldn't load rider applications."}
+          </p>
+        )}
+        {applications.data?.items.length === 0 && (
+          <p style={{ padding: "1rem" }}>No applications are waiting for Admin review.</p>
+        )}
+        <div className="partner-cards">
+          {applications.data?.items.map((boy, index) => (
+            <article className="partner-card" key={boy.id}>
+              <div className="partner-card-head">
+                <span className={`avatar a${index % 4}`}>{initials(boy.name)}</span>
+                <div>
+                  <h3>{boy.name}</h3>
+                  <small>
+                    {boy.code} · {maskPhone(boy.phone)}
+                  </small>
+                </div>
+              </div>
+              <div className="partner-badges">
+                <AdminBadge tone="info">{boy.fleetName}</AdminBadge>
+                <AdminBadge tone="warning">Admin review</AdminBadge>
+              </div>
+              <div className="partner-stats">
+                <div>
+                  <small>DISTRICT / ZONE</small>
+                  <strong>
+                    {boy.district} / {boy.zoneName}
+                  </strong>
+                </div>
+                <div>
+                  <small>DOCUMENTS</small>
+                  <strong>{boy.documents.filter((doc) => doc.verified).length} verified</strong>
+                </div>
+                <div>
+                  <small>VEHICLE</small>
+                  <strong>
+                    {boy.vehicleType} · {boy.vehicleNumber}
+                  </strong>
+                </div>
+              </div>
+              <div className="card-actions">
+                <AdminButton kind="secondary" icon={Eye} onClick={() => setSelectedId(boy.id)}>
+                  Review application
+                </AdminButton>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+      {selected && (
+        <AdminRiderReview
+          key={`${selected.id}-${selected.version}`}
+          boy={selected}
+          close={() => setSelectedId(null)}
+        />
+      )}
+    </>
+  )
+}
+
+function AdminRiderReview({ boy, close }: { boy: DeliveryBoy; close: () => void }) {
+  const [reason, setReason] = useState("")
+  const [error, setError] = useState("")
+  const review = useReviewDeliveryBoy()
+  const verify = useVerifyBoyDocument()
+
+  const decide = async (decision: "forwarded" | "corrections_requested" | "rejected") => {
+    if (reason.trim().length < 3) {
+      setError("Enter a reason for this decision. It is saved to the application history.")
+      return
+    }
+    try {
+      await review.mutateAsync({
+        id: boy.id,
+        body: { decision, version: boy.version, reason: reason.trim() },
+      })
+      close()
+    } catch (cause) {
+      setError(cause instanceof ApiError ? cause.message : "Couldn't save the review.")
+    }
+  }
+
+  return (
+    <Dialog.Root open onOpenChange={(open) => !open && close()}>
+      <Dialog.Overlay className="drawer-backdrop">
+        <Dialog.Content className="drawer" aria-describedby={undefined}>
+          <div className="drawer-head">
+            <div>
+              <Dialog.Title>{boy.name}</Dialog.Title>
+              <small>
+                {boy.code} · {boy.fleetName} · {boy.district} / {boy.zoneName}
+              </small>
+            </div>
+            <button type="button" className="icon-btn" onClick={close} aria-label="Close review">
+              ×
+            </button>
+          </div>
+          <div className="drawer-body">
+            <section className="profile-section">
+              <h3>Personal and vehicle details</h3>
+              <p>
+                {boy.phone} · {boy.email || "No email"}
+              </p>
+              <p>{boy.address}</p>
+              <p>
+                Date of birth: {boy.dateOfBirth ?? "Not provided"} · Gender:{" "}
+                {boy.gender ?? "Not provided"} · PIN: {boy.pinCode ?? "Not provided"}
+              </p>
+              <p>
+                Driving licence: {boy.drivingLicence ?? "Not provided"} · Valid until:{" "}
+                {boy.licenceValidUntil ?? "Not provided"}
+              </p>
+              <p>
+                {vehicleLabel[boy.vehicleType]} · {boy.vehicleNumber} ·{" "}
+                {boy.vehicleModel ?? "Model not provided"}
+              </p>
+              <p>
+                Payout:{" "}
+                {boy.payout
+                  ? `${boy.payout.holderName} · ${boy.payout.bankName ?? "Bank"} · •••• ${boy.payout.last4} · ${boy.payout.ifsc}`
+                  : "Not provided"}
+              </p>
+            </section>
+            <section className="profile-section">
+              <h3>Required documents</h3>
+              {boy.documents.map((document) => (
+                <div className="document-row" key={document.id}>
+                  <span>
+                    {document.kind.replaceAll("_", " ")} · {document.fileName}
+                  </span>
+                  <AdminBadge tone={document.verified ? "success" : "warning"}>
+                    {document.verified ? "Verified" : "Unverified"}
+                  </AdminBadge>
+                  <AdminButton
+                    kind="secondary"
+                    onClick={() =>
+                      window.open(
+                        `/api/v1/delivery/boys/${boy.id}/documents/${document.id}/file`,
+                        "_blank",
+                        "noopener,noreferrer",
+                      )
+                    }
+                  >
+                    View
+                  </AdminButton>
+                  <AdminButton
+                    kind="secondary"
+                    disabled={verify.isPending}
+                    onClick={() => {
+                      if (reason.trim().length < 3) {
+                        setError("Enter a reason in the box below before verifying a document.")
+                        return
+                      }
+                      verify.mutate(
+                        {
+                          id: boy.id,
+                          docId: document.id,
+                          verified: !document.verified,
+                          reason: reason.trim(),
+                        },
+                        {
+                          onError: (cause) =>
+                            setError(
+                              cause instanceof ApiError
+                                ? cause.message
+                                : "Couldn't verify document.",
+                            ),
+                        },
+                      )
+                    }}
+                  >
+                    {document.verified ? "Unverify" : "Verify"}
+                  </AdminButton>
+                </div>
+              ))}
+            </section>
+            <label className="form-field">
+              <span>Reason (required for every decision and document change)</span>
+              <textarea
+                value={reason}
+                maxLength={500}
+                onChange={(event) => setReason(event.target.value)}
+              />
+            </label>
+            {error && (
+              <p role="alert" className="form-error">
+                {error}
+              </p>
+            )}
+            <div className="card-actions">
+              <AdminButton kind="secondary" onClick={() => void decide("corrections_requested")}>
+                Request corrections
+              </AdminButton>
+              <AdminButton kind="danger" onClick={() => void decide("rejected")}>
+                Reject
+              </AdminButton>
+              <AdminButton disabled={review.isPending} onClick={() => void decide("forwarded")}>
+                Forward to Super Admin
+              </AdminButton>
+            </div>
+          </div>
+        </Dialog.Content>
+      </Dialog.Overlay>
+    </Dialog.Root>
   )
 }
 
@@ -366,451 +594,5 @@ function PartnerProfile({ id, close }: { id: string; close: () => void }) {
         </Dialog.Content>
       </Dialog.Overlay>
     </Dialog.Root>
-  )
-}
-
-function Field({
-  label,
-  error,
-  wide,
-  ...rest
-}: InputHTMLAttributes<HTMLInputElement> & {
-  label: string
-  error?: string | undefined
-  wide?: boolean
-}) {
-  return (
-    <label className={`form-field ${wide ? "wide" : ""}`}>
-      <span>{label}</span>
-      <input aria-invalid={Boolean(error)} {...rest} />
-      {error && <small>{error}</small>}
-    </label>
-  )
-}
-
-function Choice({
-  label,
-  value,
-  onChange,
-  error,
-  children,
-}: {
-  label: string
-  value: string
-  onChange: (v: string) => void
-  error?: string | undefined
-  children: ReactNode
-}) {
-  return (
-    <label className="form-field">
-      <span>{label}</span>
-      <select value={value} onChange={(e) => onChange(e.target.value)}>
-        {children}
-      </select>
-      {error && <small>{error}</small>}
-    </label>
-  )
-}
-
-const STEP_COPY = [
-  "Enter the partner's personal, contact, address and service eligibility details.",
-  "Record the driving licence. Identity documents are verified separately; nothing is auto-verified.",
-  "Add the primary vehicle the partner will deliver with.",
-  "Configure secure payout details. Only the last four digits are stored.",
-  "Confirm each section before submitting the application for review.",
-]
-
-function Wizard({ business, close }: { business: Business; close: () => void }) {
-  const zones = useZones()
-  const w = usePartnerWizard(business, "")
-  const { step, form, set, errors } = w
-  const area = useAreaPicker(zones.data, form.zoneId, set("zoneId"))
-  const [consent, setConsent] = useState(true)
-  const field = (k: keyof PartnerForm, errKey: string = k) => ({
-    value: form[k],
-    onChange: (e: { target: { value: string } }) => set(k)(e.target.value),
-    error: errors[errKey],
-  })
-  const cards = (list: [kind: string, title: string, subtitle: string][]) => (
-    <div className="upload-grid">
-      {list.map(([kind, title, subtitle]) => (
-        <AdminUploadCard
-          key={kind}
-          title={title}
-          subtitle={subtitle}
-          file={w.uploads.files[kind]}
-          error={w.uploads.errors[kind]}
-          onPick={(f) => w.uploads.choose(kind, f)}
-        />
-      ))}
-    </div>
-  )
-
-  if (w.create.isSuccess)
-    return (
-      <div className="modal-backdrop">
-        <div className="confirmation-modal" role="dialog" aria-label="Application submitted">
-          <div className="success-seal">
-            <Check className="icon" size={34} />
-          </div>
-          <AdminBadge tone="success">SUBMITTED</AdminBadge>
-          <h2>Delivery Partner Application Submitted</h2>
-          <p>The application is queued for Super Admin review. The partner is not active yet.</p>
-          <AdminUploadSummary uploads={w.uploads} />
-          <div className="confirm-details">
-            <div>
-              <small>APPLICATION ID</small>
-              <strong>{w.create.data.code}</strong>
-            </div>
-            <div>
-              <small>SUBMISSION DATE</small>
-              <strong>{dateTimeLabel(w.create.data.createdAt)}</strong>
-            </div>
-            <div>
-              <small>VERIFICATION STATUS</small>
-              <AdminBadge tone="warning">Under review</AdminBadge>
-            </div>
-            <div>
-              <small>NEXT ACTION</small>
-              <strong>Super Admin approval</strong>
-            </div>
-          </div>
-          <AdminButton onClick={close}>Back to delivery partners</AdminButton>
-        </div>
-      </div>
-    )
-
-  const zone = zones.data?.find((z) => z.id === form.zoneId)
-  const reviewRows: [string, string, string, number][] = [
-    [
-      "Personal information",
-      "Partner name and contact details",
-      `${form.name || "Not provided"} · ${form.phone || "No mobile"}`,
-      0,
-    ],
-    [
-      "Service eligibility",
-      "Business and service area",
-      `${form.service === "both" ? "Food + Mart" : businessName[form.service]} · ${zone ? `${zone.location}, ${zone.city}` : "No area"}`,
-      0,
-    ],
-    ["Identity & license", "Driving licence", form.drivingLicence || "Not provided", 1],
-    [
-      "Vehicle information",
-      "Primary delivery vehicle",
-      `${vehicleLabel[form.vehicleType]} · ${form.vehicleNumber || "No registration"}`,
-      2,
-    ],
-    [
-      "Payout information",
-      "Secure settlement account",
-      form.accountNumber
-        ? `${form.bankName} · Account ending ••${form.accountNumber.slice(-4)}`
-        : "Not provided",
-      3,
-    ],
-  ]
-
-  return (
-    <div className="wizard-shell" role="dialog" aria-label="New delivery partner">
-      <header>
-        <AdminBrand />
-        <div>
-          <AdminBadge tone="warning">Draft</AdminBadge>
-          <button type="button" onClick={close} aria-label="Close onboarding">
-            <X className="icon" size={20} />
-          </button>
-        </div>
-      </header>
-      <div className="wizard-body">
-        <aside className="stepper">
-          <div>
-            <small>PARTNER ONBOARDING</small>
-            <h2>New delivery partner</h2>
-            <p>Complete all required details. Verification is handled separately.</p>
-          </div>
-          <ol>
-            {PARTNER_STEPS.map(([title, copy], i) => (
-              <li
-                key={title}
-                className={i === step ? "active" : i < step ? "done" : ""}
-                aria-current={i === step ? "step" : undefined}
-              >
-                <span>{i < step ? <Check className="icon" size={14} /> : i + 1}</span>
-                <div>
-                  <strong>{title}</strong>
-                  <small>{copy}</small>
-                </div>
-              </li>
-            ))}
-          </ol>
-          <div className="privacy-card">
-            <ShieldCheck className="icon" size={20} />
-            <div>
-              <strong>Sensitive data protected</strong>
-              <p>Identity and banking details are masked and permission-gated.</p>
-            </div>
-          </div>
-        </aside>
-        <main className="wizard-main">
-          <div className="wizard-title">
-            <span>STEP {step + 1} OF 5</span>
-            <h1>{PARTNER_STEPS[step]![0]}</h1>
-            <p>{STEP_COPY[step]}</p>
-          </div>
-          {w.create.isError && (
-            <p role="alert" style={{ color: "#b42318", fontSize: 13, display: "flex", gap: 6 }}>
-              <AlertTriangle className="icon" size={16} />
-              {w.create.error instanceof ApiError
-                ? w.create.error.message
-                : "Couldn't submit the application."}
-            </p>
-          )}
-          {step === 0 && (
-            <div className="form-section">
-              <h3>Basic details</h3>
-              <div className="form-grid">
-                <Field label="Full name *" placeholder="Enter legal full name" {...field("name")} />
-                <Field label="Date of birth" type="date" {...field("dateOfBirth")} />
-                <Choice
-                  label="Gender"
-                  value={form.gender}
-                  onChange={set("gender")}
-                  error={errors.gender}
-                >
-                  <option value="">Select gender</option>
-                  {GENDERS.map((g) => (
-                    <option key={g}>{g}</option>
-                  ))}
-                </Choice>
-                <Field
-                  label="Mobile number *"
-                  placeholder="+91 98765 43210"
-                  inputMode="tel"
-                  {...field("phone")}
-                />
-                <Field
-                  label="Email address"
-                  type="email"
-                  placeholder="name@example.com"
-                  {...field("email")}
-                />
-                <Field
-                  label="PIN code"
-                  placeholder="600040"
-                  inputMode="numeric"
-                  {...field("pinCode")}
-                />
-                <Field
-                  label="Residential address"
-                  placeholder="House, street, locality"
-                  wide
-                  {...field("address")}
-                />
-                <Choice label="Zone *" value={area.zone} onChange={area.setZone}>
-                  <option value="">Choose a zone</option>
-                  {area.zones.map((z) => (
-                    <option value={z.key} key={z.key}>
-                      {z.label}
-                    </option>
-                  ))}
-                </Choice>
-                <Choice
-                  label="Area *"
-                  value={form.zoneId}
-                  onChange={set("zoneId")}
-                  error={errors.zoneId}
-                >
-                  <option value="">{area.zone ? "Choose an area" : "Choose a zone first"}</option>
-                  {area.areas.map((z) => (
-                    <option value={z.id} key={z.id}>
-                      {z.location}
-                    </option>
-                  ))}
-                </Choice>
-              </div>
-              <h3>Service eligibility</h3>
-              <div className="eligibility">
-                {(
-                  [
-                    ["food", UtensilsCrossed, "ZOAURO FOOD", "Restaurant pickup and food delivery"],
-                    ["mart", Package, "GLOARO MART", "Seller pickup and parcel delivery"],
-                    ["both", LayoutGrid, "Both businesses", "Requires dual eligibility approval"],
-                  ] as const
-                ).map(([value, Icon, title, copy]) => (
-                  <label key={value}>
-                    <input
-                      type="radio"
-                      name="service"
-                      checked={form.service === value}
-                      onChange={() => set("service")(value)}
-                    />
-                    <span>
-                      <Icon className="icon" size={20} />
-                      <b>{title}</b>
-                      <small>{copy}</small>
-                    </span>
-                  </label>
-                ))}
-              </div>
-              {errors.businesses && <small style={{ color: "#b42318" }}>{errors.businesses}</small>}
-            </div>
-          )}
-          {step === 1 && (
-            <div className="form-section">
-              <div className="form-grid">
-                <Field
-                  label="Driving licence number *"
-                  placeholder="TN01 20210048217"
-                  {...field("drivingLicence")}
-                />
-                <Field label="Licence valid until" type="date" {...field("licenceValidUntil")} />
-              </div>
-              {cards([
-                ["aadhaar", "Aadhaar card", "Front and back · PDF, JPG or PNG · Max 10 MB"],
-                ["driving_licence", "Driving licence", "Both sides · PDF, JPG or PNG · Max 10 MB"],
-                ["photo", "Profile photo", "JPG or PNG · Max 10 MB"],
-              ])}
-              <div className="security-note">
-                <Lock className="icon" size={16} />
-                <span>
-                  Files upload when you submit. Authorised reviewers verify them; nothing is
-                  auto-verified.
-                </span>
-              </div>
-            </div>
-          )}
-          {step === 2 && (
-            <div className="form-section">
-              <div className="form-grid">
-                <Choice
-                  label="Vehicle type *"
-                  value={form.vehicleType}
-                  onChange={set("vehicleType")}
-                >
-                  {VEHICLE_TYPES.map((v) => (
-                    <option value={v} key={v}>
-                      {vehicleLabel[v]}
-                    </option>
-                  ))}
-                </Choice>
-                <Field
-                  label="Registration number *"
-                  placeholder="TN 01 AB 4821"
-                  {...field("vehicleNumber")}
-                />
-                <Field label="Vehicle model" placeholder="Model name" {...field("vehicleModel")} />
-              </div>
-              {cards([
-                ["vehicle_rc", "Registration certificate", "PDF, JPG or PNG · Max 10 MB"],
-                ["insurance", "Insurance document", "PDF, JPG or PNG · Max 10 MB"],
-              ])}
-            </div>
-          )}
-          {step === 3 && (
-            <div className="form-section">
-              <div className="bank-alert">
-                <ShieldCheck className="icon" size={20} />
-                <div>
-                  <strong>Bank-grade privacy</strong>
-                  <p>Account details are never displayed in full in list views.</p>
-                </div>
-              </div>
-              <div className="form-grid">
-                <Field
-                  label="Account holder name"
-                  placeholder="As per bank records"
-                  {...field("holderName", "bank.holderName")}
-                />
-                <Field
-                  label="Bank name"
-                  placeholder="Bank name"
-                  {...field("bankName", "bank.bankName")}
-                />
-                <Field
-                  label="Account number"
-                  type="password"
-                  inputMode="numeric"
-                  placeholder="Enter account number"
-                  {...field("accountNumber", "bank.accountNumber")}
-                />
-                <Field
-                  label="Confirm account number"
-                  type="password"
-                  inputMode="numeric"
-                  placeholder="Re-enter account number"
-                  {...field("confirmAccount")}
-                />
-                <Field
-                  label="IFSC code"
-                  placeholder="ABCD0123456"
-                  {...field("ifsc", "bank.ifsc")}
-                />
-              </div>
-              <p className="verification-copy">
-                Payout verification remains <AdminBadge tone="neutral">Not verified</AdminBadge>{" "}
-                until an actual verification result is received.
-              </p>
-            </div>
-          )}
-          {step === 4 && (
-            <div className="review-list">
-              <div className="review-warning">
-                <AlertTriangle className="icon" size={20} />
-                <div>
-                  <strong>Review before submission</strong>
-                  <p>Submission starts verification. It does not activate this delivery partner.</p>
-                </div>
-              </div>
-              {reviewRows.map((r) => (
-                <section key={r[0]}>
-                  <span className="review-check">
-                    <Check className="icon" size={16} />
-                  </span>
-                  <div>
-                    <small>{r[1]}</small>
-                    <h3>{r[0]}</h3>
-                    <p>{r[2]}</p>
-                  </div>
-                  <AdminButton kind="ghost" onClick={() => w.goTo(r[3])}>
-                    Edit
-                  </AdminButton>
-                </section>
-              ))}
-              <label className="review-consent">
-                <input
-                  type="checkbox"
-                  checked={consent}
-                  onChange={(e) => setConsent(e.target.checked)}
-                />
-                <span>
-                  I confirm that the information is ready for authorized verification and that no
-                  documents have been automatically approved.
-                </span>
-              </label>
-            </div>
-          )}
-        </main>
-      </div>
-      <footer className="wizard-footer">
-        <AdminButton kind="ghost" onClick={close}>
-          Cancel
-        </AdminButton>
-        <div>
-          {step > 0 && (
-            <AdminButton kind="secondary" onClick={w.back}>
-              Previous
-            </AdminButton>
-          )}
-          <AdminButton
-            disabled={step === 4 && (!consent || w.create.isPending)}
-            onClick={step === 4 ? w.submit : w.next}
-          >
-            {step === 4 ? "Submit for verification" : "Continue"}{" "}
-            <ArrowRight className="icon" size={16} />
-          </AdminButton>
-        </div>
-      </footer>
-    </div>
   )
 }

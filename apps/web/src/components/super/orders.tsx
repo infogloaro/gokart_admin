@@ -30,6 +30,7 @@ import {
   useChangeOrderStatus,
   useOrder,
   useOrderCandidates,
+  useOrderFilterOptions,
   useOrders,
 } from "@/lib/orders"
 import { useOrderSummary } from "@/lib/session"
@@ -40,7 +41,7 @@ const PAGE_SIZE = 10
 
 export function SuperOrders() {
   const p = useSearchParams()
-  // A new link (from search or the dashboard) starts the list over with its filters.
+  // DIAGNOSTIC: GO-KART-SUPER-ORDERS-2026-11-02-B
   return <OrdersScreen key={`${p.get("search")}|${p.get("status")}|${p.get("delayed")}`} />
 }
 
@@ -66,11 +67,16 @@ function OrdersScreen() {
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState<Order | null>(null)
   const [delayedOnly, setDelayedOnly] = useState(params.get("delayed") === "true")
+  const [adminId, setAdminId] = useState<string | null>(null)
+  const [deliveryPartnerId, setDeliveryPartnerId] = useState<string | null>(null)
+  const filterOptions = useOrderFilterOptions(business === "all" ? undefined : business)
   const orders = useOrders({
     business: business === "all" ? undefined : business,
     status: status || undefined,
     delayed: delayedOnly ? "true" : undefined,
     search: search.trim() || undefined,
+    adminId: adminId || undefined,
+    deliveryPartnerId: deliveryPartnerId || undefined,
     page,
     pageSize: PAGE_SIZE,
   })
@@ -141,6 +147,42 @@ function OrdersScreen() {
               </option>
             ))}
           </Select>
+          <select
+            className="filter-button"
+            value={adminId || ""}
+            aria-label="Admin"
+            onChange={(e) => {
+              const newAdmin = e.target.value === "" ? null : (e.target.value as string)
+              setAdminId(newAdmin)
+              setPage(1)
+            }}
+          >
+            <option value="">All admins</option>
+            <option value="unassigned">Unassigned</option>
+            {filterOptions.data?.admins.map((opt) => (
+              <option key={opt.id} value={opt.id}>
+                {opt.name}
+              </option>
+            ))}
+          </select>
+          <select
+            className="filter-button"
+            value={deliveryPartnerId || ""}
+            aria-label="Delivery partner"
+            onChange={(e) => {
+              const newPartner = e.target.value === "" ? null : (e.target.value as string)
+              setDeliveryPartnerId(newPartner)
+              setPage(1)
+            }}
+          >
+            <option value="">All delivery partners</option>
+            <option value="unassigned">Unassigned</option>
+            {filterOptions.data?.deliveryPartners.map((opt) => (
+              <option key={opt.id} value={opt.id}>
+                {opt.name}
+              </option>
+            ))}
+          </select>
         </div>
         {orders.isError ? (
           <div className="modal-body">
@@ -158,7 +200,8 @@ function OrdersScreen() {
                     "Business",
                     "Customer",
                     "Vendor",
-                    "Partner",
+                    "Admin",
+                    "Delivery Partner",
                     "Payment",
                     "Status",
                     "Amount",
@@ -185,7 +228,12 @@ function OrdersScreen() {
                     </td>
                     <td>{o.customerName}</td>
                     <td>{o.vendorName}</td>
-                    <td>{o.partnerName ?? "Unassigned"}</td>
+                    <td>
+                      <span>{o.responsibleAdminName ?? "Unassigned"}</span>
+                    </td>
+                    <td>
+                      <span>{o.partnerName ?? "Unassigned"}</span>
+                    </td>
                     <td>
                       <Badge tone={paymentTone(o.paymentStatus)}>{paymentLabel(o)}</Badge>
                     </td>
@@ -209,7 +257,7 @@ function OrdersScreen() {
                 ))}
                 {orders.data?.items.length === 0 && (
                   <tr>
-                    <td colSpan={9}>
+                    <td colSpan={10}>
                       {delayedOnly
                         ? "No delayed orders right now."
                         : "No orders match these filters."}

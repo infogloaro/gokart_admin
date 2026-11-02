@@ -42,6 +42,7 @@ import {
   useComplaints,
   useComplaintSummary,
 } from "@/lib/operations"
+import { ComplaintSuggestions } from "./complaint-suggestions"
 import { OrderExceptions } from "./order-exceptions"
 
 type Portal = "super" | "admin"
@@ -584,6 +585,8 @@ function ComplaintPanel({
                   )}
                 </section>
               )}
+
+              {id && <ComplaintSuggestions id={id} onUseReply={(body) => setNote(body)} />}
 
               <section className="cmp-timeline">
                 <h3>History</h3>

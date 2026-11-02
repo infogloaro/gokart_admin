@@ -76,3 +76,22 @@ action("escalate", "Escalate to the Super Admin (notifies Super Admins)", Escala
 action("resolve", "Resolve with a resolution note", ResolveComplaintRequest)
 action("reopen", "Reopen a resolved complaint", ReopenComplaintRequest)
 action("notes", "Add an internal note", ComplaintNoteRequest)
+
+registry.registerPath({
+  method: "get",
+  path: "/complaints/{id}/suggestions",
+  tags: ["Complaints"],
+  summary: "Suggested priority, reasons, and reply wording (suggestions only)",
+  request: { params: id },
+  responses: {
+    200: json(
+      z.object({
+        priority: z.enum(["low", "medium", "high", "urgent"]),
+        reasons: z.array(z.string()),
+        replies: z.array(z.object({ title: z.string(), body: z.string() })),
+      }),
+      "Suggested handling",
+    ),
+    ...errors(401, 403, 404),
+  },
+})

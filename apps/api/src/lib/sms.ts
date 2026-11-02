@@ -14,8 +14,8 @@ const unavailable = () =>
     "SMS codes aren't available right now. Choose another method.",
   )
 
-export async function sendOtpSms(phone: string, code: string) {
-  const text = `${code} is your GoKart Admin sign-in code. It expires in 10 minutes. Do not share it with anyone.`
+export async function sendOtpSms(phone: string, code: string, purpose = "sign-in") {
+  const text = `${code} is your GoKart ${purpose} verification code. It expires in 10 minutes. Do not share it with anyone.`
 
   if (env.SMS_PROVIDER === "msg91") {
     if (!env.MSG91_AUTH_KEY || !env.MSG91_TEMPLATE_ID) throw unavailable()

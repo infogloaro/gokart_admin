@@ -36,6 +36,7 @@ import {
   MoreHorizontal,
   Plus,
   RefreshCw,
+  Save,
   Search,
   ShieldCheck,
   ShoppingBag,
@@ -71,6 +72,7 @@ import { DocumentsPanel, UploadCard, UploadSummary } from "./documents"
 import { useCsvExport } from "./export"
 import { useRefreshToast } from "@/components/refresh-toast"
 import { useBusinessFilter } from "./shell"
+import { SuperDeliveryManagement } from "./delivery-management"
 import {
   Badge,
   Button,
@@ -118,7 +120,23 @@ function chipQuery(chip: Chip): Pick<PartnerQuery, "status" | "availability"> {
 export function SuperPartners() {
   // Global search links here with ?search=CODE; a new link starts the list over.
   const linked = useSearchParams().get("search") ?? ""
-  return <PartnersScreen key={linked} initialSearch={linked} />
+  const [section, setSection] = useState<"Individual riders" | "Fleet delivery">(
+    "Individual riders",
+  )
+  return (
+    <>
+      <Tabs
+        items={["Individual riders", "Fleet delivery"] as const}
+        value={section}
+        onChange={setSection}
+      />
+      {section === "Individual riders" ? (
+        <PartnersScreen key={linked} initialSearch={linked} />
+      ) : (
+        <SuperDeliveryManagement />
+      )}
+    </>
+  )
 }
 
 function PartnersScreen({ initialSearch }: { initialSearch: string }) {
@@ -477,6 +495,7 @@ export function PartnerDrawer({
   const [decision, setDecision] = useState<Decision | null>(null)
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState<EditForm | null>(null)
+  const [editReason, setEditReason] = useState("")
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [menu, setMenu] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
@@ -493,6 +512,7 @@ export function PartnerDrawer({
   const startEdit = () => {
     if (!p) return
     setForm(formOf(p))
+    setEditReason("")
     setErrors({})
     update.reset()
     setEditing(true)
@@ -518,7 +538,11 @@ export function PartnerDrawer({
       setEditing(false)
       return setToast("No changes to save.")
     }
-    const parsed = UpdatePartnerRequest.safeParse({ ...changed, updatedAt: p.updatedAt })
+    const parsed = UpdatePartnerRequest.safeParse({
+      ...changed,
+      updatedAt: p.updatedAt,
+      reason: editReason.trim(),
+    })
     if (!parsed.success) return setErrors(fieldErrors(parsed.error.issues))
     update.mutate(
       { id: p.id, body: parsed.data },
@@ -548,7 +572,9 @@ export function PartnerDrawer({
             {canDecide && p.status !== "rejected" && (
               <Button
                 icon={FileText}
-                onClick={editing ? () => (setEditing(false), setErrors({})) : startEdit}
+                onClick={
+                  editing ? () => (setEditing(false), setErrors({}), setEditReason("")) : startEdit
+                }
               >
                 {editing ? "Cancel editing" : "Edit details"}
               </Button>
@@ -619,6 +645,15 @@ export function PartnerDrawer({
             </span>
           </div>
           <Tabs items={TABS} value={tab} onChange={setTab} />
+          {editing && (
+            <Input
+              label="Reason for editing *"
+              value={editReason}
+              maxLength={500}
+              error={errors.reason}
+              onChange={(event) => setEditReason(event.target.value)}
+            />
+          )}
           <main key={tab} className="tab-fade">
             {(update.isError || Object.keys(errors).length > 0) && (
               <ErrorBox icon={AlertTriangle}>
@@ -1144,6 +1179,17 @@ function PartnerWizard({
       <header className="partner-wizard-header">
         <Logo />
         <Badge tone="gold">● Draft</Badge>
+        <Button
+          icon={Save}
+          className="draft-save-button"
+          aria-label="Save draft"
+          disabled={!w.draftReady || w.saveDraft.isPending || w.create.isPending}
+          onClick={w.save}
+        >
+          <span className="draft-save-label">
+            {w.saveDraft.isPending ? "Saving…" : "Save draft"}
+          </span>
+        </Button>
         <IconButton icon={X} label="Close onboarding" onClick={close} />
       </header>
       <div className="partner-wizard-layout">
@@ -1171,144 +1217,174 @@ function PartnerWizard({
             <ShieldCheck size={19} />
             <span>
               <b>Sensitive data protected</b>
-              Only the last four digits of the bank account are stored.
+              Draft details are encrypted. Submitted account numbers are reduced to the last four
+              digits.
             </span>
           </section>
         </aside>
         <main className="partner-wizard-main">
-          <small>STEP {step + 1} OF 5</small>
-          <div className="partner-wizard-title">{PARTNER_STEPS[step]![0]}</div>
-          <p>
-            {
-              [
-                "Enter the partner's personal, contact, address and service eligibility details.",
-                "Record the driving licence. Identity documents are verified separately.",
-                "Add the primary vehicle the partner will deliver with.",
-                "Configure payout details. Account numbers are masked after saving.",
-                "Confirm each section before submitting the application for review.",
-              ][step]
-            }
-          </p>
-          {w.create.isError && (
+          {w.savedDraft.isError ? (
             <ErrorBox icon={AlertTriangle}>
-              {errorText(w.create.error, "Couldn't submit the application.")}
+              Couldn’t load the saved draft. Retry before continuing.{" "}
+              <Button onClick={() => void w.savedDraft.refetch()}>Retry</Button>
             </ErrorBox>
+          ) : !w.draftReady ? (
+            <p role="status">Loading saved draft…</p>
+          ) : (
+            <>
+              {w.savedDraft.data && (
+                <p role="status">
+                  Saved draft loaded · Updated {dateTimeLabel(w.savedDraft.data.updatedAt)}. Select
+                  documents again when you resume.
+                </p>
+              )}
+              {w.saveDraft.isError && (
+                <ErrorBox icon={AlertTriangle}>
+                  {errorText(w.saveDraft.error, "Couldn't save the draft.")}
+                </ErrorBox>
+              )}
+              <small>STEP {step + 1} OF 5</small>
+              <div className="partner-wizard-title">{PARTNER_STEPS[step]![0]}</div>
+              <p>
+                {
+                  [
+                    "Enter the partner's personal, contact, address and service eligibility details.",
+                    "Record the driving licence. Identity documents are verified separately.",
+                    "Add the primary vehicle the partner will deliver with.",
+                    "Draft bank details are encrypted; only the last four digits are kept after submission.",
+                    "Confirm each section before submitting the application for review.",
+                  ][step]
+                }
+              </p>
+              {w.create.isError && (
+                <ErrorBox icon={AlertTriangle}>
+                  {errorText(w.create.error, "Couldn't submit the application.")}
+                </ErrorBox>
+              )}
+              <section className="partner-form-card">
+                <strong>{step === 4 ? "Application summary" : "Basic details"}</strong>
+                {step === 0 && (
+                  <div className="form-grid">
+                    <Input label="Full name *" {...field("name")} />
+                    <Input
+                      label="Mobile number *"
+                      inputMode="tel"
+                      placeholder="98765 43210"
+                      {...field("phone")}
+                    />
+                    <Input label="Email address" type="email" {...field("email")} />
+                    <Input label="Date of birth" type="date" {...field("dateOfBirth")} />
+                    <Select label="Gender" value={form.gender} onChange={set("gender")}>
+                      <option value="">Select gender</option>
+                      {GENDERS.map((g) => (
+                        <option key={g}>{g}</option>
+                      ))}
+                    </Select>
+                    <Input label="PIN code" inputMode="numeric" {...field("pinCode")} />
+                    <AreaSelect value={form.zoneId} onChange={set("zoneId")} />
+                    <Input label="Residential address" {...field("address")} />
+                    <Select
+                      label="Service eligibility *"
+                      value={form.service}
+                      onChange={set("service")}
+                    >
+                      <option value="food">ZOAURO FOOD</option>
+                      <option value="mart">GLOARO MART</option>
+                      <option value="both">Both businesses</option>
+                    </Select>
+                    {errors.zoneId && <em className="rejection-error">{errors.zoneId}</em>}
+                  </div>
+                )}
+                {step === 1 && (
+                  <>
+                    <div className="form-grid">
+                      <Input label="Driving licence number *" {...field("drivingLicence")} />
+                      <Input
+                        label="Licence valid until"
+                        type="date"
+                        {...field("licenceValidUntil")}
+                      />
+                    </div>
+                    {cards([
+                      ["aadhaar", "Aadhaar card", "Front and back"],
+                      ["driving_licence", "Driving licence", "Both sides"],
+                      ["photo", "Profile photo", "Clear face photo"],
+                    ])}
+                  </>
+                )}
+                {step === 2 && (
+                  <div className="form-grid">
+                    <Select
+                      label="Vehicle type *"
+                      value={form.vehicleType}
+                      onChange={set("vehicleType")}
+                    >
+                      {VEHICLE_TYPES.map((v) => (
+                        <option value={v} key={v}>
+                          {vehicleLabel[v]}
+                        </option>
+                      ))}
+                    </Select>
+                    <Input
+                      label="Registration number *"
+                      placeholder="TN 01 AB 4821"
+                      {...field("vehicleNumber")}
+                    />
+                    <Input
+                      label="Vehicle model"
+                      placeholder="Honda SP 125"
+                      {...field("vehicleModel")}
+                    />
+                  </div>
+                )}
+                {step === 2 &&
+                  cards([
+                    ["vehicle_rc", "Registration certificate", "Vehicle RC"],
+                    ["insurance", "Insurance", "Current policy"],
+                  ])}
+                {step === 3 && (
+                  <div className="form-grid">
+                    <Input
+                      label="Account holder name"
+                      {...field("holderName", "bank.holderName")}
+                    />
+                    <Input label="Bank name" {...field("bankName", "bank.bankName")} />
+                    <Input
+                      label="Account number"
+                      type="password"
+                      inputMode="numeric"
+                      {...field("accountNumber", "bank.accountNumber")}
+                    />
+                    <Input
+                      label="Confirm account number"
+                      type="password"
+                      inputMode="numeric"
+                      {...field("confirmAccount")}
+                    />
+                    <Input
+                      label="IFSC code"
+                      placeholder="HDFC0001284"
+                      {...field("ifsc", "bank.ifsc")}
+                    />
+                  </div>
+                )}
+                {step === 4 && (
+                  <WizardReview w={w} zoneName={zones.data?.find((z) => z.id === form.zoneId)} />
+                )}
+              </section>
+            </>
           )}
-          <section className="partner-form-card">
-            <strong>{step === 4 ? "Application summary" : "Basic details"}</strong>
-            {step === 0 && (
-              <div className="form-grid">
-                <Input label="Full name *" {...field("name")} />
-                <Input
-                  label="Mobile number *"
-                  inputMode="tel"
-                  placeholder="98765 43210"
-                  {...field("phone")}
-                />
-                <Input label="Email address" type="email" {...field("email")} />
-                <Input label="Date of birth" type="date" {...field("dateOfBirth")} />
-                <Select label="Gender" value={form.gender} onChange={set("gender")}>
-                  <option value="">Select gender</option>
-                  {GENDERS.map((g) => (
-                    <option key={g}>{g}</option>
-                  ))}
-                </Select>
-                <Input label="PIN code" inputMode="numeric" {...field("pinCode")} />
-                <AreaSelect value={form.zoneId} onChange={set("zoneId")} />
-                <Input label="Residential address" {...field("address")} />
-                <Select
-                  label="Service eligibility *"
-                  value={form.service}
-                  onChange={set("service")}
-                >
-                  <option value="food">ZOAURO FOOD</option>
-                  <option value="mart">GLOARO MART</option>
-                  <option value="both">Both businesses</option>
-                </Select>
-                {errors.zoneId && <em className="rejection-error">{errors.zoneId}</em>}
-              </div>
-            )}
-            {step === 1 && (
-              <>
-                <div className="form-grid">
-                  <Input label="Driving licence number *" {...field("drivingLicence")} />
-                  <Input label="Licence valid until" type="date" {...field("licenceValidUntil")} />
-                </div>
-                {cards([
-                  ["aadhaar", "Aadhaar card", "Front and back"],
-                  ["driving_licence", "Driving licence", "Both sides"],
-                  ["photo", "Profile photo", "Clear face photo"],
-                ])}
-              </>
-            )}
-            {step === 2 && (
-              <div className="form-grid">
-                <Select
-                  label="Vehicle type *"
-                  value={form.vehicleType}
-                  onChange={set("vehicleType")}
-                >
-                  {VEHICLE_TYPES.map((v) => (
-                    <option value={v} key={v}>
-                      {vehicleLabel[v]}
-                    </option>
-                  ))}
-                </Select>
-                <Input
-                  label="Registration number *"
-                  placeholder="TN 01 AB 4821"
-                  {...field("vehicleNumber")}
-                />
-                <Input
-                  label="Vehicle model"
-                  placeholder="Honda SP 125"
-                  {...field("vehicleModel")}
-                />
-              </div>
-            )}
-            {step === 2 &&
-              cards([
-                ["vehicle_rc", "Registration certificate", "Vehicle RC"],
-                ["insurance", "Insurance", "Current policy"],
-              ])}
-            {step === 3 && (
-              <div className="form-grid">
-                <Input label="Account holder name" {...field("holderName", "bank.holderName")} />
-                <Input label="Bank name" {...field("bankName", "bank.bankName")} />
-                <Input
-                  label="Account number"
-                  type="password"
-                  inputMode="numeric"
-                  {...field("accountNumber", "bank.accountNumber")}
-                />
-                <Input
-                  label="Confirm account number"
-                  type="password"
-                  inputMode="numeric"
-                  {...field("confirmAccount")}
-                />
-                <Input
-                  label="IFSC code"
-                  placeholder="HDFC0001284"
-                  {...field("ifsc", "bank.ifsc")}
-                />
-              </div>
-            )}
-            {step === 4 && (
-              <WizardReview w={w} zoneName={zones.data?.find((z) => z.id === form.zoneId)} />
-            )}
-          </section>
         </main>
       </div>
       <footer className="partner-wizard-footer">
         <Button onClick={step === 0 ? close : w.back}>{step === 0 ? "Cancel" : "Back"}</Button>
         <span />
         {step < 4 ? (
-          <Button primary onClick={w.next}>
+          <Button primary disabled={!w.draftReady} onClick={w.next}>
             Continue <ArrowRight size={15} />
           </Button>
         ) : (
-          <Button primary disabled={w.create.isPending} onClick={w.submit}>
+          <Button primary disabled={!w.draftReady || w.create.isPending} onClick={w.submit}>
             Submit for verification
           </Button>
         )}

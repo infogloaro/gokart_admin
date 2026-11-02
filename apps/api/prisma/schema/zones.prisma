@@ -2,24 +2,45 @@
 
 /// A serviceable location: district → city → location (e.g. Chennai › T. Nagar › Bus Stand).
 model Zone {
-  id        String   @id @default(cuid())
-  district  String
-  city      String
-  location  String
+  id         String   @id @default(cuid())
+  district   String
+  districtId String
+  city       String
+  location   String
   /// Map centre for live tracking; null until someone sets it.
-  lat       Float?
-  lng       Float?
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
+  lat        Float?
+  lng        Float?
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
 
-  members  MemberZone[]
-  vendors  Vendor[]
-  partners Partner[]
-  orders   Order[]
-  feeRules FeeRule[]
+  members          MemberZone[]
+  districtRecord   District            @relation(fields: [districtId], references: [id], onDelete: Restrict)
+  vendors          Vendor[]
+  partners         Partner[]
+  fleetAssignments DeliveryFleetZone[]
+  deliveryBoys     DeliveryBoy[]
+  orders           Order[]
+  feeRules         FeeRule[]
 
   @@unique([district, city, location])
+  @@index([districtId])
   @@map("zones")
+}
+
+model District {
+  id          String          @id @default(cuid())
+  code        String          @unique
+  name        String
+  state       String
+  description String?
+  active      Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  zones       Zone[]
+  fleets      DeliveryFleet[]
+
+  @@unique([state, name])
+  @@map("districts")
 }
 
 /// Versioned by `effectiveFrom` so past orders keep the fee they were charged.

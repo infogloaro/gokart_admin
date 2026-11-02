@@ -62,14 +62,56 @@ export type UpdateAdminRequest = z.infer<typeof UpdateAdminRequest>
 export const ManagedZone = z.object({
   id: z.string(),
   district: z.string(),
+  districtId: z.string(),
   city: z.string(),
   location: z.string(),
   lat: z.number().nullable(),
   lng: z.number().nullable(),
   active: z.boolean(),
+  partnerNames: z.array(z.string()),
+  partnerCount: z.number().int().nonnegative(),
+  availablePartnerCount: z.number().int().nonnegative(),
+  activeOrderCount: z.number().int().nonnegative(),
   createdAt: z.iso.datetime(),
 })
 export type ManagedZone = z.infer<typeof ManagedZone>
+
+export const District = z.object({
+  id: z.string(),
+  code: z.string(),
+  name: z.string(),
+  state: z.string(),
+  description: z.string().nullable(),
+  active: z.boolean(),
+  zoneCount: z.number().int().nonnegative(),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
+})
+export type District = z.infer<typeof District>
+
+export const CreateDistrictRequest = z.object({
+  code: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .min(2)
+    .max(16)
+    .regex(/^[A-Z0-9-]+$/),
+  name: z.string().trim().min(2).max(120),
+  state: z.string().trim().min(2).max(120),
+  description: z.string().trim().max(500).nullable(),
+})
+export type CreateDistrictRequest = z.infer<typeof CreateDistrictRequest>
+
+export const UpdateDistrictRequest = CreateDistrictRequest.extend({
+  active: z.boolean(),
+})
+export type UpdateDistrictRequest = z.infer<typeof UpdateDistrictRequest>
+
+export const DistrictQuery = z.object({
+  status: z.enum(["active", "inactive"]).optional(),
+  search: z.string().trim().max(120).optional(),
+})
 
 const coordinates = z.object({
   lat: z.number().min(-90).max(90).nullable(),
@@ -78,11 +120,16 @@ const coordinates = z.object({
 
 export const CreateZoneRequest = z
   .object({
-    district: z.string().trim().min(2).max(120),
+    districtId: z.string().min(1).optional(),
+    district: z.string().trim().min(2).max(120).optional(),
     city: z.string().trim().min(2).max(120),
     location: z.string().trim().min(2).max(120),
   })
   .extend(coordinates.shape)
+  .refine((value) => Boolean(value.districtId) !== Boolean(value.district), {
+    message: "Choose an existing district.",
+    path: ["districtId"],
+  })
   .refine((value) => (value.lat === null) === (value.lng === null), {
     message: "Enter both coordinates or leave both empty.",
     path: ["lat"],

@@ -26,7 +26,16 @@ export const Order = z.object({
   vendorName: z.string(),
   partnerId: z.string().nullable(),
   partnerName: z.string().nullable(),
+  deliveryFleetId: z.string().nullable(),
+  deliveryFleetName: z.string().nullable(),
+  deliveryBoyId: z.string().nullable(),
+  deliveryBoyName: z.string().nullable(),
   zoneId: z.string(),
+  zoneName: z.string(),
+  districtId: z.string(),
+  districtName: z.string(),
+  responsibleAdminId: z.string().nullable(),
+  responsibleAdminName: z.string().nullable(),
   paymentMethod: PaymentMethod,
   paymentStatus: PaymentStatus,
   itemsTotalPaise: Paise,
@@ -40,6 +49,14 @@ export const Order = z.object({
   delayed: z.boolean(),
 })
 export type Order = z.infer<typeof Order>
+
+export const OrderFilterOptions = z.object({
+  admins: z.array(z.object({ id: z.string(), name: z.string() })),
+  deliveryPartners: z.array(z.object({ id: z.string(), name: z.string() })),
+})
+export type OrderFilterOptions = z.infer<typeof OrderFilterOptions>
+
+export const OrderFilterOptionsQuery = z.object({ business: Business.optional() })
 
 /** How long an order may take from placed to delivered before it counts as delayed. */
 export const ORDER_SLA_MINUTES: Record<"food" | "mart", number> = { food: 45, mart: 240 }
@@ -67,7 +84,22 @@ export const OrderEvent = z.object({
 })
 export type OrderEvent = z.infer<typeof OrderEvent>
 
-export const OrderDetail = Order.extend({ events: z.array(OrderEvent) })
+export const DeliveryAssignmentEvent = z.object({
+  id: z.string(),
+  fleetId: z.string(),
+  fleetName: z.string(),
+  boyId: z.string(),
+  boyName: z.string(),
+  status: z.enum(["assigned", "accepted", "rejected", "completed", "cancelled"]),
+  assignedAt: z.iso.datetime(),
+  endedAt: z.iso.datetime().nullable(),
+  reason: z.string().nullable(),
+})
+
+export const OrderDetail = Order.extend({
+  events: z.array(OrderEvent),
+  assignmentHistory: z.array(DeliveryAssignmentEvent),
+})
 export type OrderDetail = z.infer<typeof OrderDetail>
 
 export const AssignPartnerRequest = z.object({
@@ -88,19 +120,32 @@ export const AssignablePartner = z.object({
 })
 export type AssignablePartner = z.infer<typeof AssignablePartner>
 
-export const OrderListQuery = z.object({
-  business: Business.optional(),
-  status: OrderStatus.optional(),
-  search: z.string().trim().optional(),
-  /** Orders carried by one delivery partner. */
-  partnerId: z.string().optional(),
-  /** Orders from one restaurant or seller. */
-  vendorId: z.string().optional(),
-  /** Only orders past their time limit. */
-  delayed: z.stringbool().optional(),
-  page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(20),
-})
+export const OrderListQuery = z
+  .object({
+    business: Business.optional(),
+    status: OrderStatus.optional(),
+    search: z.string().trim().optional(),
+    districtId: z.string().optional(),
+    zoneId: z.string().optional(),
+    adminId: z.string().optional(),
+    deliveryFleetId: z.string().optional(),
+    deliveryPartnerId: z.string().optional(),
+    deliveryBoyId: z.string().optional(),
+    /** Orders carried by one delivery partner. */
+    partnerId: z.string().optional(),
+    /** Orders from one restaurant or seller. */
+    vendorId: z.string().optional(),
+    /** Only orders past their time limit. */
+    delayed: z.stringbool().optional(),
+    fromDate: z.iso.date().optional(),
+    toDate: z.iso.date().optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  })
+  .refine((query) => !query.fromDate || !query.toDate || query.fromDate <= query.toDate, {
+    message: "Start date must be on or before end date.",
+    path: ["fromDate"],
+  })
 
 export const ChangeOrderStatusRequest = z.object({
   to: OrderStatus,

@@ -24,6 +24,7 @@ declare global {
     interface Request {
       member?: MemberContext
       sessionToken?: string
+      deliveryFleetId?: string
     }
   }
 }

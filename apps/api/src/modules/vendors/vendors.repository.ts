@@ -4,7 +4,25 @@ import { audit, type Actor } from "../../lib/audit"
 import { prisma } from "../../lib/prisma"
 
 const withZone = {
-  zone: { select: { city: true, location: true } },
+  zone: {
+    select: {
+      city: true,
+      location: true,
+      members: {
+        where: { member: { status: "active", role: "admin" } },
+        orderBy: [{ member: { createdAt: "asc" } }, { member: { id: "asc" } }],
+        select: {
+          member: {
+            select: {
+              id: true,
+              name: true,
+              businesses: { select: { business: true } },
+            },
+          },
+        },
+      },
+    },
+  },
 } satisfies Prisma.VendorInclude
 
 const withDetail = {
@@ -187,6 +205,7 @@ export function update(
   updatedAt: Date,
   data: Prisma.VendorUncheckedUpdateManyInput,
   fields: string[],
+  reason: string,
   actor: Actor,
 ) {
   return prisma.$transaction(async (tx) => {
@@ -197,7 +216,7 @@ export function update(
       actor,
       "vendor.updated",
       { type: "vendor", id: vendor.id },
-      { code: vendor.code, fields },
+      { code: vendor.code, fields, reason },
     )
     return tx.vendor.findUniqueOrThrow({ where: { id: vendor.id }, include: withDetail })
   })

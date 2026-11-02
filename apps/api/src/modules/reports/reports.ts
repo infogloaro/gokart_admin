@@ -7,6 +7,7 @@ import { Prisma } from "../../generated/prisma/client"
 import { parse } from "../../lib/errors"
 import { prisma } from "../../lib/prisma"
 import { requireAuth, requirePermission, scope } from "../../middleware/auth"
+import { zoneInsights } from "./insights"
 
 type Scope = { businesses: Business[]; zoneIds: string[] | null }
 const IST = 330 * 60_000
@@ -127,6 +128,9 @@ export async function analytics(s: Scope, period: ReportPeriod): Promise<Analyti
 
 export const reportRoutes = Router()
   .use(requireAuth, requirePermission("reports.view"))
+  .get("/insights", async (req: Request, res: Response) => {
+    res.json(await zoneInsights(scope(req)))
+  })
   .get("/analytics", async (req: Request, res: Response) => {
     const q = parse(AnalyticsQuery, req.query)
     res.json(await analytics(scope(req), q.period))

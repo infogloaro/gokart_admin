@@ -178,6 +178,7 @@ export const findOrder = (code: string) =>
       version: true,
       zoneId: true,
       partnerId: true,
+      deliveryBoyId: true,
     },
   })
 

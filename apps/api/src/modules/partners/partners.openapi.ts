@@ -7,6 +7,8 @@ import {
   Partner,
   PartnerDecisionRequest,
   PartnerDetail,
+  PartnerDraft,
+  PartnerDraftRequest,
   PartnerListQuery,
   PartnerSummary,
   UpdatePartnerRequest,
@@ -17,8 +19,24 @@ import { errors, json, registry } from "../../openapi/registry"
 const tags = ["Delivery partners"]
 const PartnerRef = registry.register("Partner", Partner)
 const PartnerDetailRef = registry.register("PartnerDetail", PartnerDetail)
+const PartnerDraftRef = registry.register("PartnerDraft", PartnerDraft)
 const id = z.object({ id: z.string() })
 
+registry.registerPath({
+  method: "get",
+  path: "/partners/draft",
+  tags,
+  summary: "Get the signed-in member's saved delivery partner draft",
+  responses: { 200: json(PartnerDraftRef.nullable(), "Saved draft, or null"), ...errors(401, 403) },
+})
+registry.registerPath({
+  method: "put",
+  path: "/partners/draft",
+  tags,
+  summary: "Save an incomplete delivery partner application",
+  request: { body: json(PartnerDraftRequest) },
+  responses: { 200: json(PartnerDraftRef, "Saved draft"), ...errors(400, 401, 403) },
+})
 registry.registerPath({
   method: "get",
   path: "/partners",

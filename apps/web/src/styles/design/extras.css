@@ -678,3 +678,7 @@
   .admin-ui .top-actions > button.top-search { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; margin-right: 0; background: #fff; }
   .admin-ui .top-actions > button.top-search span, .admin-ui .top-actions > button.top-search kbd { display: none; }
 }
+
+/* Vendor wizard (components/super/vendors.tsx): the step content scrolls between the fixed
+   step bar and the fixed footer, so fields near the bottom (e.g. FSSAI number) stay reachable. */
+.super-ui .modal > .wizard-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }

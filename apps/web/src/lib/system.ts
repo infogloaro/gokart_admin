@@ -8,9 +8,11 @@ import type {
   AuditModule,
   AuditSource,
   Role,
+  CreateDistrictRequest,
   CreateAdminRequest,
   CreateFeeRuleRequest,
   CreateZoneRequest,
+  UpdateDistrictRequest,
   UpdateAdminRequest,
   UpdateZoneRequest,
 } from "@zoauro/shared"
@@ -86,6 +88,37 @@ export const useManagedZones = () =>
     queryKey: ["system", "zones"],
     queryFn: () => api("get", "/settings/zones"),
   })
+
+export const useManagedDistricts = () =>
+  useQuery({
+    queryKey: ["system", "districts"],
+    queryFn: () => api("get", "/settings/districts"),
+  })
+
+export function useCreateDistrict() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (body: CreateDistrictRequest) => api("post", "/settings/districts", { body }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["system", "districts"] })
+      void client.invalidateQueries({ queryKey: ["system", "zones"] })
+      void client.invalidateQueries({ queryKey: ["zones"] })
+    },
+  })
+}
+
+export function useUpdateDistrict() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (input: { id: string; body: UpdateDistrictRequest }) =>
+      api("patch", "/settings/districts/{id}", { params: { id: input.id }, body: input.body }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["system", "districts"] })
+      void client.invalidateQueries({ queryKey: ["system", "zones"] })
+      void client.invalidateQueries({ queryKey: ["zones"] })
+    },
+  })
+}
 
 export function useCreateZone() {
   const client = useQueryClient()

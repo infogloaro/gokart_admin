@@ -70,3 +70,7 @@ export async function note(req: Id, res: Response) {
   const body = parse(ComplaintNoteRequest, req.body)
   res.json(await service.note(req.params.id, scope(req), body.body, actorOf(req)))
 }
+
+export async function suggestions(req: Id, res: Response) {
+  res.json(await service.suggestions(req.params.id, scope(req)))
+}

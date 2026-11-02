@@ -34,6 +34,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react"
 import { useForm, type UseFormRegisterReturn } from "react-hook-form"
@@ -180,6 +181,9 @@ function CredentialsStep({ onChallenge }: { onChallenge: (c: LoginChallenge) => 
           Accounts and passwords are in apps/api/prisma/seed.ts. Email and SMS codes both arrive in
           Mailpit at localhost:8025.
         </DevNote>
+        <p>
+          Delivery partner? <Link href="/delivery-partner">Open the partner portal</Link>
+        </p>
       </div>
       {forgot && <ForgotPassword close={() => setForgot(false)} />}
     </LoginShell>

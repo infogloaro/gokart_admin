@@ -99,6 +99,7 @@ function VendorsScreen({ business, initialSearch }: { business: Business; initia
               <p>
                 {v.openOrders} open · {v.ordersCount} orders · {v.zoneName}
               </p>
+              <p>Admin: {v.responsibleAdminName ?? "Unassigned"}</p>
               <AdminBadge tone={vendorStatusTone(v.status)}>
                 {vendorStatusLabel[v.status]}
               </AdminBadge>
@@ -169,6 +170,7 @@ function VendorDrawer({ id, close }: { id: string; close: () => void }) {
                 <div>
                   <small>SERVICE AREA</small>
                   <strong>{v.zoneName}</strong>
+                  <p>Admin: {v.responsibleAdminName ?? "Unassigned"}</p>
                   <p>{v.address}</p>
                 </div>
               </section>

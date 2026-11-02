@@ -26,6 +26,7 @@ import {
   useProductStatus,
 } from "@/lib/operations"
 import { useMe } from "@/lib/session"
+import { BulkProducts } from "./bulk-products"
 import { AdminBadge, AdminButton, PageHeader } from "./ui"
 
 const PAGE_SIZE = 10
@@ -92,7 +93,9 @@ export function AdminInventory() {
         title="Products & inventory"
         subtitle="Stock for products sold by GLOARO MART sellers in your zones."
         note={<span className="live-note">● Live data</span>}
-      />
+      >
+        <BulkProducts onImported={() => void products.refetch()} />
+      </PageHeader>
       <div className="metrics-grid">
         <Tile
           label="Products"

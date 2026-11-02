@@ -1,13 +1,14 @@
 import {
   CreatePartnerRequest,
   DocumentVerifyRequest,
+  PartnerDraftRequest,
   PartnerDecisionRequest,
   PartnerListQuery,
   UpdatePartnerRequest,
 } from "@zoauro/shared"
 import type { Request, Response } from "express"
 import { parse } from "../../lib/errors"
-import { actorOf, scope } from "../../middleware/auth"
+import { actorOf, currentMember, scope } from "../../middleware/auth"
 import * as service from "./partners.service"
 
 export async function list(req: Request, res: Response) {
@@ -35,6 +36,18 @@ export async function get(req: Request<{ id: string }>, res: Response) {
 export async function create(req: Request, res: Response) {
   const body = parse(CreatePartnerRequest, req.body)
   res.status(201).json(await service.create(body, scope(req), actorOf(req)))
+}
+
+export async function getDraft(req: Request, res: Response) {
+  res.setHeader("Cache-Control", "private, no-store")
+  res.json(await service.getDraft(currentMember(req).id, scope(req)))
+}
+
+export async function saveDraft(req: Request, res: Response) {
+  const member = currentMember(req)
+  const body = parse(PartnerDraftRequest, req.body)
+  res.setHeader("Cache-Control", "private, no-store")
+  res.json(await service.saveDraft(member.id, scope(req), body))
 }
 
 export async function decide(req: Request<{ id: string }>, res: Response) {

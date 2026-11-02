@@ -1,27 +1,45 @@
 "use client"
 
 import { ApiError } from "@zoauro/api-client"
-import { businessName, formatINR, type ManagedZone } from "@zoauro/shared"
-import { CircleDollarSign, MapPinned, Plus, RefreshCw, Search, Settings2 } from "lucide-react"
+import { businessName, formatINR, type District, type ManagedZone } from "@zoauro/shared"
+import {
+  Building2,
+  CircleDollarSign,
+  MapPinned,
+  Plus,
+  RefreshCw,
+  Search,
+  Settings2,
+} from "lucide-react"
 import { useMemo, useState, type FormEvent } from "react"
 import { Button, Input, Modal, Panel, Select, Badge } from "./ui"
 import { Count, HeadActions } from "./dashboard"
 import { useRefreshToast } from "@/components/refresh-toast"
 import {
+  useCreateDistrict,
   useCreateFeeRule,
   useCreateZone,
+  useManagedDistricts,
   useFeeRules,
   useManagedZones,
+  useUpdateDistrict,
   useUpdateZone,
 } from "@/lib/system"
 
 const PAGE_SIZE = 10
 type ZoneDraft = {
-  district: string
+  districtId: string
   city: string
   location: string
   lat: string
   lng: string
+  active: boolean
+}
+type DistrictDraft = {
+  code: string
+  name: string
+  state: string
+  description: string
   active: boolean
 }
 type FeeDraft = {
@@ -33,11 +51,18 @@ type FeeDraft = {
   effectiveFrom: string
 }
 const blankZone = (): ZoneDraft => ({
-  district: "",
+  districtId: "",
   city: "",
   location: "",
   lat: "",
   lng: "",
+  active: true,
+})
+const blankDistrict = (): DistrictDraft => ({
+  code: "",
+  name: "",
+  state: "Tamil Nadu",
+  description: "",
   active: true,
 })
 const localDateTime = () => {
@@ -62,11 +87,21 @@ const rupees = (paise: number) => formatINR(paise)
 
 export function AreasFees() {
   const runRefresh = useRefreshToast()
+  const districts = useManagedDistricts()
   const zones = useManagedZones()
+  const createDistrict = useCreateDistrict()
+  const updateDistrict = useUpdateDistrict()
   const createZone = useCreateZone()
   const updateZone = useUpdateZone()
+  const [districtSearch, setDistrictSearch] = useState("")
+  const [districtStatus, setDistrictStatus] = useState<"all" | "active" | "inactive">("all")
+  const [districtPage, setDistrictPage] = useState(1)
+  const [districtEditor, setDistrictEditor] = useState<DistrictDraft | null>(null)
+  const [editingDistrict, setEditingDistrict] = useState<District | null>(null)
+  const [districtError, setDistrictError] = useState("")
   const [zoneSearch, setZoneSearch] = useState("")
   const [zoneStatus, setZoneStatus] = useState<"all" | "active" | "inactive">("all")
+  const [zoneDistrictFilter, setZoneDistrictFilter] = useState("")
   const [zonePage, setZonePage] = useState(1)
   const [zoneEditor, setZoneEditor] = useState<ZoneDraft | null>(null)
   const [editingZone, setEditingZone] = useState<ManagedZone | null>(null)
@@ -85,14 +120,32 @@ export function AreasFees() {
   const [feeEditor, setFeeEditor] = useState<FeeDraft | null>(null)
   const [feeError, setFeeError] = useState("")
 
+  const filteredDistricts = useMemo(() => {
+    const query = districtSearch.trim().toLowerCase()
+    return (districts.data ?? []).filter(
+      (district) =>
+        (districtStatus === "all" ||
+          (districtStatus === "active" ? district.active : !district.active)) &&
+        (!query ||
+          `${district.code} ${district.name} ${district.state}`.toLowerCase().includes(query)),
+    )
+  }, [districts.data, districtSearch, districtStatus])
+  const districtPageCount = Math.max(1, Math.ceil(filteredDistricts.length / PAGE_SIZE))
+  const currentDistrictPage = Math.min(districtPage, districtPageCount)
+  const visibleDistricts = filteredDistricts.slice(
+    (currentDistrictPage - 1) * PAGE_SIZE,
+    currentDistrictPage * PAGE_SIZE,
+  )
+
   const filteredZones = useMemo(() => {
     const query = zoneSearch.trim().toLowerCase()
     return (zones.data ?? []).filter(
       (zone) =>
         (zoneStatus === "all" || (zoneStatus === "active" ? zone.active : !zone.active)) &&
+        (!zoneDistrictFilter || zone.districtId === zoneDistrictFilter) &&
         (!query || `${zone.district} ${zone.city} ${zone.location}`.toLowerCase().includes(query)),
     )
-  }, [zones.data, zoneSearch, zoneStatus])
+  }, [zones.data, zoneSearch, zoneStatus, zoneDistrictFilter])
   const zonePageCount = Math.max(1, Math.ceil(filteredZones.length / PAGE_SIZE))
   const currentZonePage = Math.min(zonePage, zonePageCount)
   const visibleZones = filteredZones.slice(
@@ -107,12 +160,57 @@ export function AreasFees() {
   const activeCount = (zones.data ?? []).filter((zone) => zone.active).length
   const inactiveCount = (zones.data ?? []).length - activeCount
 
+  const openDistrict = (district?: District) => {
+    setEditingDistrict(district ?? null)
+    setDistrictEditor(
+      district
+        ? {
+            code: district.code,
+            name: district.name,
+            state: district.state,
+            description: district.description ?? "",
+            active: district.active,
+          }
+        : blankDistrict(),
+    )
+    setDistrictError("")
+  }
+  const closeDistrict = () => {
+    setDistrictEditor(null)
+    setEditingDistrict(null)
+    setDistrictError("")
+    createDistrict.reset()
+    updateDistrict.reset()
+  }
+  const saveDistrict = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!districtEditor) return
+    const body = {
+      code: districtEditor.code.trim().toUpperCase(),
+      name: districtEditor.name.trim(),
+      state: districtEditor.state.trim(),
+      description: districtEditor.description.trim() || null,
+    }
+    setDistrictError("")
+    try {
+      if (editingDistrict)
+        await updateDistrict.mutateAsync({
+          id: editingDistrict.id,
+          body: { ...body, active: districtEditor.active },
+        })
+      else await createDistrict.mutateAsync(body)
+      closeDistrict()
+    } catch (error) {
+      setDistrictError(message(error))
+    }
+  }
+
   const openZone = (zone?: ManagedZone) => {
     setEditingZone(zone ?? null)
     setZoneEditor(
       zone
         ? {
-            district: zone.district,
+            districtId: zone.districtId,
             city: zone.city,
             location: zone.location,
             lat: zone.lat == null ? "" : String(zone.lat),
@@ -149,7 +247,7 @@ export function AreasFees() {
       return
     }
     const body = {
-      district: zoneEditor.district,
+      districtId: zoneEditor.districtId,
       city: zoneEditor.city,
       location: zoneEditor.location,
       lat,
@@ -208,18 +306,31 @@ export function AreasFees() {
       <HeadActions>
         <Button
           icon={RefreshCw}
-          className={zones.isFetching || feeQuery.isFetching ? "spinning" : ""}
+          className={
+            districts.isFetching || zones.isFetching || feeQuery.isFetching ? "spinning" : ""
+          }
           onClick={() =>
             void runRefresh(async () => {
-              const results = await Promise.all([zones.refetch(), feeQuery.refetch()])
+              const results = await Promise.all([
+                districts.refetch(),
+                zones.refetch(),
+                feeQuery.refetch(),
+              ])
               if (results.some((result) => result.isError)) throw new Error("Refresh failed")
             })
           }
         >
           Refresh
         </Button>
-        <Button icon={Plus} onClick={() => openZone()}>
-          Add service area
+        <Button icon={Plus} onClick={() => openDistrict()}>
+          Add district
+        </Button>
+        <Button
+          icon={Plus}
+          onClick={() => openZone()}
+          disabled={!districts.data?.some((d) => d.active)}
+        >
+          Add zone
         </Button>
         <Button
           primary
@@ -234,6 +345,11 @@ export function AreasFees() {
       </HeadActions>
 
       <div className="sys-summary">
+        <div>
+          <Building2 size={18} />
+          <span>Districts</span>
+          <Count value={districts.data?.length} />
+        </div>
         <div>
           <MapPinned size={18} />
           <span>Service areas</span>
@@ -252,8 +368,104 @@ export function AreasFees() {
       </div>
 
       <Panel
-        title="Service areas"
-        subtitle="Manage district, city, location, map centre, and availability."
+        title="District management"
+        subtitle="Maintain districts and their operational status."
+      >
+        <div className="sys-toolbar">
+          <Input
+            icon={Search}
+            value={districtSearch}
+            onChange={(event) => {
+              setDistrictSearch(event.target.value)
+              setDistrictPage(1)
+            }}
+            placeholder="Search district, code or state"
+            aria-label="Search districts"
+          />
+          <select
+            value={districtStatus}
+            onChange={(event) => {
+              setDistrictStatus(event.target.value as typeof districtStatus)
+              setDistrictPage(1)
+            }}
+            aria-label="Filter district status"
+          >
+            <option value="all">All districts</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+        {districts.isError ? (
+          <p className="sys-state error" role="alert">
+            Could not load districts. {districts.error.message}
+          </p>
+        ) : districts.isPending ? (
+          <p className="sys-state">Loading districts…</p>
+        ) : filteredDistricts.length ? (
+          <div className="sys-table-scroll">
+            <table className="sys-table">
+              <thead>
+                <tr>
+                  <th>District</th>
+                  <th>Code</th>
+                  <th>State</th>
+                  <th>Zones</th>
+                  <th>Status</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {visibleDistricts.map((district) => (
+                  <tr key={district.id}>
+                    <td>
+                      <strong>{district.name}</strong>
+                      {district.description && <small>{district.description}</small>}
+                    </td>
+                    <td>{district.code}</td>
+                    <td>{district.state}</td>
+                    <td>{district.zoneCount}</td>
+                    <td>
+                      <Badge tone={district.active ? "success" : "neutral"}>
+                        {district.active ? "Active" : "Inactive"}
+                      </Badge>
+                    </td>
+                    <td>
+                      <Button onClick={() => openDistrict(district)}>Edit district</Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="sys-state">No districts match these filters.</p>
+        )}
+        {filteredDistricts.length > PAGE_SIZE && (
+          <div className="sys-pagination">
+            <span>
+              Page {currentDistrictPage} of {districtPageCount}
+            </span>
+            <div>
+              <Button
+                disabled={currentDistrictPage <= 1}
+                onClick={() => setDistrictPage((page) => page - 1)}
+              >
+                Previous
+              </Button>
+              <Button
+                disabled={currentDistrictPage >= districtPageCount}
+                onClick={() => setDistrictPage((page) => page + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
+      </Panel>
+
+      <Panel
+        title="Zone management"
+        subtitle="Manage each district's zones, current delivery partners, workload, and availability."
       >
         <div className="sys-toolbar">
           <Input
@@ -278,13 +490,28 @@ export function AreasFees() {
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
           </select>
+          <select
+            value={zoneDistrictFilter}
+            onChange={(event) => {
+              setZoneDistrictFilter(event.target.value)
+              setZonePage(1)
+            }}
+            aria-label="Filter zones by district"
+          >
+            <option value="">All districts</option>
+            {districts.data?.map((district) => (
+              <option key={district.id} value={district.id}>
+                {district.name}
+              </option>
+            ))}
+          </select>
         </div>
         {zones.isError ? (
           <p className="sys-state error" role="alert">
-            Could not load service areas. {zones.error.message}
+            Could not load zones. {zones.error.message}
           </p>
         ) : zones.isPending ? (
-          <p className="sys-state">Loading service areas…</p>
+          <p className="sys-state">Loading zones…</p>
         ) : filteredZones.length ? (
           <div className="sys-table-scroll">
             <table className="sys-table">
@@ -292,6 +519,10 @@ export function AreasFees() {
                 <tr>
                   <th>Service area</th>
                   <th>District</th>
+                  <th>Delivery partner</th>
+                  <th>Delivery boys</th>
+                  <th>Available</th>
+                  <th>Active orders</th>
                   <th>Map centre</th>
                   <th>Status</th>
                   <th />
@@ -305,6 +536,12 @@ export function AreasFees() {
                       <small>{zone.city}</small>
                     </td>
                     <td>{zone.district}</td>
+                    <td>
+                      {zone.partnerNames.length ? zone.partnerNames.join(", ") : "Unassigned"}
+                    </td>
+                    <td>{zone.partnerCount}</td>
+                    <td>{zone.availablePartnerCount}</td>
+                    <td>{zone.activeOrderCount}</td>
                     <td>
                       {zone.lat == null || zone.lng == null
                         ? "Not configured"
@@ -324,19 +561,19 @@ export function AreasFees() {
             </table>
           </div>
         ) : (
-          <p className="sys-state">No service areas match these filters.</p>
+          <p className="sys-state">No zones match these filters.</p>
         )}
         {filteredZones.length > PAGE_SIZE && (
           <nav className="sys-pagination zone-pagination" aria-label="Service area pages">
             <span>
               Showing {(currentZonePage - 1) * PAGE_SIZE + 1}–
               {Math.min(currentZonePage * PAGE_SIZE, filteredZones.length)} of{" "}
-              {filteredZones.length} areas
+              {filteredZones.length} zones
             </span>
             <div>
               <Button
                 disabled={currentZonePage <= 1}
-                aria-label="Previous service area page"
+                aria-label="Previous zone page"
                 onClick={() => setZonePage((page) => Math.max(1, page - 1))}
               >
                 Previous
@@ -345,7 +582,7 @@ export function AreasFees() {
                 <Button
                   key={pageNumber}
                   className="zone-page-number"
-                  aria-label={`Service area page ${pageNumber}`}
+                  aria-label={`Zone page ${pageNumber}`}
                   aria-current={currentZonePage === pageNumber ? "page" : undefined}
                   onClick={() => setZonePage(pageNumber)}
                 >
@@ -354,7 +591,7 @@ export function AreasFees() {
               ))}
               <Button
                 disabled={currentZonePage >= zonePageCount}
-                aria-label="Next service area page"
+                aria-label="Next zone page"
                 onClick={() => setZonePage((page) => Math.min(zonePageCount, page + 1))}
               >
                 Next
@@ -465,18 +702,29 @@ export function AreasFees() {
 
       {zoneEditor && (
         <Modal
-          title={editingZone ? "Edit service area" : "Add service area"}
+          title={editingZone ? "Edit zone" : "Add zone"}
           subtitle="Map coordinates are optional; leave blank when they are not known."
           close={closeZone}
         >
           <form className="sys-editor" onSubmit={(event) => void saveZone(event)}>
             <label className="sys-field">
               <span>District</span>
-              <input
+              <select
                 required
-                value={zoneEditor.district}
-                onChange={(event) => setZoneEditor({ ...zoneEditor, district: event.target.value })}
-              />
+                value={zoneEditor.districtId}
+                onChange={(event) =>
+                  setZoneEditor({ ...zoneEditor, districtId: event.target.value })
+                }
+              >
+                <option value="">Select district</option>
+                {districts.data
+                  ?.filter((district) => district.active || district.id === editingZone?.districtId)
+                  .map((district) => (
+                    <option key={district.id} value={district.id}>
+                      {district.name}
+                    </option>
+                  ))}
+              </select>
             </label>
             <label className="sys-field">
               <span>City</span>
@@ -527,7 +775,7 @@ export function AreasFees() {
                     setZoneEditor({ ...zoneEditor, active: event.target.checked })
                   }
                 />{" "}
-                Area is active for operations
+                Zone is active for operations
               </label>
             )}
             {zoneError && (
@@ -538,7 +786,94 @@ export function AreasFees() {
             <footer className="sys-editor-actions">
               <Button onClick={closeZone}>Cancel</Button>
               <Button primary type="submit" disabled={createZone.isPending || updateZone.isPending}>
-                {createZone.isPending || updateZone.isPending ? "Saving…" : "Save area"}
+                {createZone.isPending || updateZone.isPending ? "Saving…" : "Save zone"}
+              </Button>
+            </footer>
+          </form>
+        </Modal>
+      )}
+
+      {districtEditor && (
+        <Modal
+          title={editingDistrict ? "Edit district" : "Add district"}
+          subtitle="Districts organize service zones and operational reporting."
+          close={closeDistrict}
+        >
+          <form className="sys-editor" onSubmit={(event) => void saveDistrict(event)}>
+            <div className="sys-form-grid">
+              <label className="sys-field">
+                <span>District name</span>
+                <input
+                  required
+                  minLength={2}
+                  maxLength={120}
+                  value={districtEditor.name}
+                  onChange={(event) =>
+                    setDistrictEditor({ ...districtEditor, name: event.target.value })
+                  }
+                />
+              </label>
+              <label className="sys-field">
+                <span>District code</span>
+                <input
+                  required
+                  minLength={2}
+                  maxLength={16}
+                  pattern="[A-Za-z0-9-]+"
+                  value={districtEditor.code}
+                  onChange={(event) =>
+                    setDistrictEditor({ ...districtEditor, code: event.target.value })
+                  }
+                />
+              </label>
+              <label className="sys-field">
+                <span>State</span>
+                <input
+                  required
+                  minLength={2}
+                  maxLength={120}
+                  value={districtEditor.state}
+                  onChange={(event) =>
+                    setDistrictEditor({ ...districtEditor, state: event.target.value })
+                  }
+                />
+              </label>
+            </div>
+            <label className="sys-field">
+              <span>Description (optional)</span>
+              <textarea
+                maxLength={500}
+                value={districtEditor.description}
+                onChange={(event) =>
+                  setDistrictEditor({ ...districtEditor, description: event.target.value })
+                }
+              />
+            </label>
+            {editingDistrict && (
+              <label className="sys-inline-check">
+                <input
+                  type="checkbox"
+                  checked={districtEditor.active}
+                  onChange={(event) =>
+                    setDistrictEditor({ ...districtEditor, active: event.target.checked })
+                  }
+                />{" "}
+                District is active for operations
+              </label>
+            )}
+            {districtError && (
+              <p className="sys-form-error" role="alert">
+                {districtError}
+              </p>
+            )}
+            <footer className="sys-editor-actions">
+              <Button onClick={closeDistrict}>Cancel</Button>
+              <Button
+                primary
+                type="submit"
+                disabled={createDistrict.isPending || updateDistrict.isPending}
+              >
+                {createDistrict.isPending || updateDistrict.isPending ? "Saving…" : "Save district"}
               </Button>
             </footer>
           </form>

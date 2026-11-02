@@ -1,5 +1,6 @@
 import {
   PARTNER_DOCUMENT_KINDS,
+  PartnerDraftRequest,
   partnerDecisions,
   partnerStatusLabel,
   type Business,
@@ -8,12 +9,15 @@ import {
   type PartnerAvailability,
   type PartnerDecision,
   type PartnerDetail,
+  type PartnerDraft,
+  type PartnerDraftRequest as PartnerDraftInput,
   type PartnerStatus,
   type UpdatePartnerRequest,
 } from "@zoauro/shared"
 import { PartnerPlan } from "@zoauro/shared"
 import { activityFor, type Actor } from "../../lib/audit"
 import { checkUpload, toStoredDocument } from "../../lib/documents"
+import { decryptSecret, encryptSecret } from "../../lib/crypto"
 import { badRequest, conflict, forbidden, notFound } from "../../lib/errors"
 import { prisma } from "../../lib/prisma"
 import { deleteObject, getObject, putObject } from "../../lib/storage"
@@ -115,6 +119,38 @@ async function loadInScope(id: string, scope: Scope) {
 
 export async function get(id: string, scope: Scope) {
   return toDetail(await loadInScope(id, scope))
+}
+
+function checkDraftScope(input: PartnerDraftInput, scope: Scope) {
+  const businesses: Business[] =
+    input.form.service === "both" ? ["food", "mart"] : [input.form.service]
+  if (businesses.some((business) => !scope.businesses.includes(business)))
+    throw forbidden("You can only add partners to your own businesses.")
+  if (input.form.zoneId && scope.zoneIds && !scope.zoneIds.includes(input.form.zoneId))
+    throw forbidden("That service area isn't one of yours.")
+}
+
+export async function getDraft(memberId: string, scope: Scope): Promise<PartnerDraft | null> {
+  const draft = await prisma.partnerDraft.findUnique({ where: { memberId } })
+  if (!draft) return null
+  const input = PartnerDraftRequest.parse(JSON.parse(decryptSecret(draft.encryptedData)))
+  checkDraftScope(input, scope)
+  return { ...input, updatedAt: draft.updatedAt.toISOString() }
+}
+
+export async function saveDraft(
+  memberId: string,
+  scope: Scope,
+  input: PartnerDraftInput,
+): Promise<PartnerDraft> {
+  checkDraftScope(input, scope)
+  const encryptedData = encryptSecret(JSON.stringify(input))
+  const draft = await prisma.partnerDraft.upsert({
+    where: { memberId },
+    create: { memberId, encryptedData },
+    update: { encryptedData },
+  })
+  return { ...input, updatedAt: draft.updatedAt.toISOString() }
 }
 
 const day = (iso: string | undefined) => (iso ? new Date(`${iso}T00:00:00Z`) : null)
@@ -225,6 +261,7 @@ export async function update(id: string, scope: Scope, input: UpdatePartnerReque
     data,
     businesses,
     [...changed, ...(businesses ? ["businesses"] : [])],
+    input.reason,
     actor,
   )
   if (!updated)

@@ -9,13 +9,21 @@ import {
   type OrderStatus,
 } from "@zoauro/shared"
 import type { Actor } from "../../lib/audit"
-import { badRequest, forbidden, notFound } from "../../lib/errors"
+import { badRequest, conflict, forbidden, notFound } from "../../lib/errors"
+import type { MemberContext } from "../../middleware/auth"
+import { suggestRiders } from "../delivery/delivery.service"
 import { refreshAvailability } from "../tracking/tracking.service"
+import { audit } from "../../lib/audit"
 import * as repo from "./orders.repository"
+import { prisma } from "../../lib/prisma"
 
 type Scope = { businesses: string[]; zoneIds: string[] | null }
 
 export function toDto(o: repo.OrderRow): Order {
+  const responsibleAdmin =
+    o.zone.members.find((entry) =>
+      entry.member.businesses.some(({ business }) => business === o.business),
+    )?.member ?? null
   return {
     id: o.id,
     code: o.code,
@@ -28,7 +36,16 @@ export function toDto(o: repo.OrderRow): Order {
     vendorName: o.vendor.name,
     partnerId: o.partnerId,
     partnerName: o.partner?.name ?? null,
+    deliveryFleetId: o.deliveryFleetId,
+    deliveryFleetName: o.deliveryFleet?.name ?? null,
+    deliveryBoyId: o.deliveryBoyId,
+    deliveryBoyName: o.deliveryBoy?.name ?? null,
     zoneId: o.zoneId,
+    zoneName: `${o.zone.location}, ${o.zone.city}`,
+    districtId: o.zone.districtId,
+    districtName: o.zone.districtRecord.name,
+    responsibleAdminId: responsibleAdmin?.id ?? null,
+    responsibleAdminName: responsibleAdmin?.name ?? null,
     paymentMethod: o.paymentMethod,
     paymentStatus: o.paymentStatus,
     itemsTotalPaise: o.itemsTotalPaise,
@@ -55,6 +72,11 @@ export async function list(filter: repo.OrderFilter, page: number, pageSize: num
 export const summary = (scope: { businesses: Order["business"][]; zoneIds: string[] | null }) =>
   repo.summary(scope)
 
+export const filterOptions = (scope: {
+  businesses: Order["business"][]
+  zoneIds: string[] | null
+}) => repo.filterOptions(scope)
+
 // Out-of-scope orders answer 404, not 403, so ids from other zones can't be probed.
 async function loadInScope(id: string, scope: Scope) {
   const o = await repo.findById(id)
@@ -76,6 +98,17 @@ export async function get(id: string, scope: Scope): Promise<OrderDetail> {
   )
   return {
     ...toDto(detail),
+    assignmentHistory: detail.deliveryAssignments.map((assignment) => ({
+      id: assignment.id,
+      fleetId: assignment.fleetId,
+      fleetName: assignment.fleet.name,
+      boyId: assignment.boyId,
+      boyName: assignment.boy.name,
+      status: assignment.status,
+      assignedAt: assignment.assignedAt.toISOString(),
+      endedAt: assignment.endedAt?.toISOString() ?? null,
+      reason: assignment.reason,
+    })),
     events: detail.events.map((e) => ({
       from: e.from,
       to: e.to,
@@ -130,6 +163,145 @@ export async function assign(
   return toDto(updated)
 }
 
+/** Assigns a delivery boy to a ready or assigned order. */
+export async function assignBoy(
+  id: string,
+  scope: Scope,
+  input: { boyId: string; version: number },
+  actor: Actor,
+) {
+  const o = await loadInScope(id, scope)
+  if (o.status !== "ready" && o.status !== "assigned")
+    throw badRequest(
+      `Only orders that are ready or assigned can have a delivery boy assigned. This one is “${orderStatusLabel(o.business, o.status)}”.`,
+    )
+  if (o.deliveryBoyId) throw badRequest("This order already has a delivery boy assigned.")
+
+  const deliveryBoy = await prisma.deliveryBoy.findUnique({
+    where: { id: input.boyId },
+    include: {
+      fleet: { select: { id: true, name: true } },
+      zone: true,
+      documents: true,
+    },
+  })
+  if (!deliveryBoy) throw notFound("Delivery boy")
+  if (deliveryBoy.status !== "active") throw forbidden("Delivery boy is not active.")
+  if (deliveryBoy.availability !== "available")
+    throw badRequest(`${deliveryBoy.name} is not available. Choose another rider.`)
+  if (deliveryBoy.zoneId !== o.zoneId)
+    throw forbidden("This delivery boy is not assigned to the order's zone.")
+  const fleet = await prisma.deliveryFleet.findUnique({
+    where: { id: deliveryBoy.fleetId },
+    select: { status: true, businesses: { select: { business: true } } },
+  })
+  if (fleet?.status !== "active") throw forbidden("This delivery boy's partner is inactive.")
+  if (!fleet.businesses.some(({ business }) => business === o.business))
+    throw forbidden("This delivery boy's partner does not serve this business.")
+  const primaryZone = await prisma.deliveryFleetZone.findFirst({
+    where: { fleetId: deliveryBoy.fleetId, zoneId: o.zoneId, endedAt: null },
+    select: { id: true },
+  })
+  if (!primaryZone)
+    throw forbidden("This delivery boy's partner is not the active primary partner for the zone.")
+  const orderWithBoy = await repo.findById(o.id)
+  if (!orderWithBoy || orderWithBoy.deliveryBoyId)
+    throw conflict("This order already has a delivery boy assignment.")
+  const workload = await prisma.deliveryAssignment.count({
+    where: { boyId: deliveryBoy.id, endedAt: null },
+  })
+  if (workload >= deliveryBoy.maxActiveOrders)
+    throw conflict("This rider has reached the maximum active order limit.")
+  const requiredDocs = ["photo_id", "driving_licence", "vehicle_registration"]
+  const verifiedDocs = deliveryBoy.documents?.filter(
+    (d) =>
+      typeof d === "object" &&
+      "kind" in d &&
+      "verifiedAt" in d &&
+      d.verifiedAt != null &&
+      requiredDocs.includes((d.kind as string) ?? ""),
+  )
+  if (verifiedDocs?.length < requiredDocs.length)
+    throw conflict("This rider's required documents are not all verified.")
+
+  return prisma.$transaction(async (tx) => {
+    // Update the order with the delivery boy assignment
+    const updatedOrder = await tx.order.updateMany({
+      where: { id: o.id, version: o.version },
+      data: {
+        status: "assigned",
+        deliveryFleetId: deliveryBoy.fleetId,
+        deliveryBoyId: deliveryBoy.id,
+        version: { increment: 1 },
+      },
+    })
+    if (!updatedOrder.count)
+      throw conflict("This order was updated by someone else. Reload to see the latest.")
+
+    // Create the delivery assignment record
+    await tx.deliveryAssignment.create({
+      data: {
+        orderId: o.id,
+        fleetId: deliveryBoy.fleetId,
+        boyId: deliveryBoy.id,
+        status: "assigned",
+      },
+    })
+
+    // Create the order event for the assignment
+    await tx.orderEvent.create({
+      data: {
+        orderId: o.id,
+        from: o.status,
+        to: "assigned",
+        actorType: "delivery_partner",
+        actorId: deliveryBoy.fleetId,
+        reason: `Assigned to ${deliveryBoy.name} (${deliveryBoy.code})`,
+      },
+    })
+
+    // Update the delivery boy's availability
+    await tx.deliveryBoy.updateMany({
+      where: {
+        id: deliveryBoy.id,
+        version: deliveryBoy.version,
+        status: "active",
+        availability: "available",
+      },
+      data: {
+        version: { increment: 1 },
+        availability: workload + 1 >= deliveryBoy.maxActiveOrders ? "on_delivery" : "available",
+      },
+    })
+
+    // Write audit trail
+    await audit(
+      tx,
+      actor,
+      "order.delivery_boy_assigned",
+      { type: "order", id: o.id },
+      { code: o.code, fleetId: deliveryBoy.fleetId, boyId: deliveryBoy.id },
+    )
+
+    // Publish outbox event
+    await tx.outboxEvent.create({
+      data: {
+        topic: "order.delivery_boy_assigned",
+        payload: {
+          orderId: o.id,
+          code: o.code,
+          fleetId: deliveryBoy.fleetId,
+          boyId: deliveryBoy.id,
+        },
+      },
+    })
+
+    // Return the updated order DTO
+    const result = await tx.order.findUnique({ where: { id: o.id }, include: repo.withNames })
+    return toDto(result as repo.OrderRow)
+  })
+}
+
 export async function changeStatus(
   id: string,
   scope: Scope,
@@ -147,4 +319,12 @@ export async function changeStatus(
   // The partner's availability follows the orders they carry.
   if (updated.partnerId) await refreshAvailability(updated.partnerId)
   return toDto(updated)
+}
+
+/** Assigns the least busy eligible rider for this order (see suggestRiders). */
+export async function autoAssignBoy(id: string, scope: Scope, member: MemberContext, actor: Actor) {
+  const o = await loadInScope(id, scope)
+  const [top] = await suggestRiders(id, member)
+  if (!top) throw conflict("No available rider in this zone right now.")
+  return assignBoy(id, scope, { boyId: top.id, version: o.version }, actor)
 }

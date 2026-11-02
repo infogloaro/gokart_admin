@@ -315,6 +315,232 @@ export interface paths {
         };
         trace?: never;
     };
+    "/settings/districts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List districts with current zone counts */
+        get: {
+            parameters: {
+                query?: {
+                    status?: "active" | "inactive";
+                    search?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["District"][];
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Create a district */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        code: string;
+                        name: string;
+                        state: string;
+                        description: string | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["District"];
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Changed by someone else; reload and retry */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/districts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update or deactivate a district */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        code: string;
+                        name: string;
+                        state: string;
+                        description: string | null;
+                        active: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["District"];
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Changed by someone else; reload and retry */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
     "/settings/zones": {
         parameters: {
             query?: never;
@@ -374,7 +600,8 @@ export interface paths {
             requestBody?: {
                 content: {
                     "application/json": {
-                        district: string;
+                        districtId?: string;
+                        district?: string;
                         city: string;
                         location: string;
                         lat: number | null;
@@ -463,7 +690,8 @@ export interface paths {
             requestBody?: {
                 content: {
                     "application/json": {
-                        district: string;
+                        districtId?: string;
+                        district?: string;
                         city: string;
                         location: string;
                         lat: number | null;
@@ -2225,6 +2453,79 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/complaints/{id}/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Suggested priority, reasons, and reply wording (suggestions only) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Suggested handling */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            priority: "low" | "medium" | "high" | "urgent";
+                            reasons: string[];
+                            replies: {
+                                title: string;
+                                body: string;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4896,6 +5197,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reports/insights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Zones with unusually many orders today compared with their usual day */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Zone insights */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            zoneId: string;
+                            zoneName: string;
+                            today: number;
+                            usualPerDay: number;
+                            flagged: boolean;
+                            reason: string | null;
+                        }[];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/dashboard/overview": {
         parameters: {
             query?: never;
@@ -5150,6 +5512,2475 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/delivery/fleets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List delivery fleet partners */
+        get: {
+            parameters: {
+                query?: {
+                    status?: "pending_approval" | "active" | "suspended" | "rejected";
+                    business?: "food" | "mart";
+                    districtId?: string;
+                    zoneId?: string;
+                    search?: string;
+                    page?: number;
+                    pageSize?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DeliveryFleetPage"];
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Create a fleet and issue its one-time partner credential */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        name: string;
+                        companyName?: string;
+                        contactPerson: string;
+                        phone: string;
+                        /** Format: email */
+                        email?: string;
+                        address: string;
+                        districtId: string;
+                        /**
+                         * @default [
+                         *       "food",
+                         *       "mart"
+                         *     ]
+                         */
+                        businesses?: ("food" | "mart")[];
+                        zoneIds: string[];
+                        /** @default [] */
+                        deliveryBoys?: {
+                            name: string;
+                            phone: string;
+                            /** Format: email */
+                            email?: string;
+                            /** Format: date */
+                            dateOfBirth?: string;
+                            /** @enum {string} */
+                            gender?: "Female" | "Male" | "Non-binary" | "Prefer not to say";
+                            address: string;
+                            pinCode?: string;
+                            zoneId: string;
+                            drivingLicence: string;
+                            /** Format: date */
+                            licenceValidUntil?: string;
+                            /** @enum {string} */
+                            vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
+                            vehicleNumber: string;
+                            vehicleModel?: string;
+                            payout: {
+                                holderName: string;
+                                bankName?: string;
+                                accountNumber: string;
+                                ifsc: string;
+                            };
+                        }[];
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DeliveryFleetWithCredential"];
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Changed by someone else; reload and retry */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/fleet-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin asks Super Admin to create a delivery partner for their zones */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        name: string;
+                        companyName?: string;
+                        contactPerson: string;
+                        phone: string;
+                        /** Format: email */
+                        email?: string;
+                        address: string;
+                        districtId: string;
+                        /**
+                         * @default [
+                         *       "food",
+                         *       "mart"
+                         *     ]
+                         */
+                        businesses?: ("food" | "mart")[];
+                        zoneIds: string[];
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            code: string;
+                            name: string;
+                            companyName: string | null;
+                            contactPerson: string;
+                            phone: string;
+                            /** Format: email */
+                            email: string | null;
+                            address: string;
+                            districtId: string;
+                            district: string;
+                            businesses: ("food" | "mart")[];
+                            /** @enum {string} */
+                            status: "pending_approval" | "active" | "suspended" | "rejected";
+                            requestedByName: string | null;
+                            zones: {
+                                id: string;
+                                name: string;
+                            }[];
+                            deliveryBoyCount: number;
+                            availableBoyCount: number;
+                            /** Format: date-time */
+                            createdAt: string;
+                        };
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Changed by someone else; reload and retry */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/fleets/{id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Super Admin approves (issues the partner credential) or rejects a partner request */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        decision: "approved" | "rejected";
+                        reason: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DeliveryFleetReview"];
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Changed by someone else; reload and retry */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/fleets/{id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Who changed the partner, why, and what changed */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            action: string;
+                            actorName: string;
+                            actorRole: string;
+                            reason: string | null;
+                            changes: {
+                                [key: string]: {
+                                    from?: unknown;
+                                    to?: unknown;
+                                };
+                            } | null;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/orders/{id}/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Riders who could take this order now, least busy first */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            code: string;
+                            name: string;
+                            fleetName: string;
+                            activeOrders: number;
+                            maxActiveOrders: number;
+                        }[];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/boys/{id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Who changed the delivery boy, why, and what changed */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            action: string;
+                            actorName: string;
+                            actorRole: string;
+                            reason: string | null;
+                            changes: {
+                                [key: string]: {
+                                    from?: unknown;
+                                    to?: unknown;
+                                };
+                            } | null;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/fleets/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update fleet profile or active status (reason required) */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        name: string;
+                        companyName: string | null;
+                        contactPerson: string;
+                        phone: string;
+                        /** Format: email */
+                        email: string | null;
+                        address: string;
+                        /** @enum {string} */
+                        status: "active" | "suspended";
+                        businesses: ("food" | "mart")[];
+                        reason: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            code: string;
+                            name: string;
+                            companyName: string | null;
+                            contactPerson: string;
+                            phone: string;
+                            /** Format: email */
+                            email: string | null;
+                            address: string;
+                            districtId: string;
+                            district: string;
+                            businesses: ("food" | "mart")[];
+                            /** @enum {string} */
+                            status: "pending_approval" | "active" | "suspended" | "rejected";
+                            requestedByName: string | null;
+                            zones: {
+                                id: string;
+                                name: string;
+                            }[];
+                            deliveryBoyCount: number;
+                            availableBoyCount: number;
+                            /** Format: date-time */
+                            createdAt: string;
+                        };
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Changed by someone else; reload and retry */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/delivery/fleets/{id}/credential": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rotate a fleet partner credential (reason required) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        reason: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DeliveryFleetCredential"];
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/fleets/{id}/zones/{zoneId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Assign or replace a zone's primary fleet */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    zoneId: string;
+                };
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /** @default false */
+                        replaceCurrent?: boolean;
+                        reason: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description No content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Changed by someone else; reload and retry */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/boys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List delivery boy applications in the member's authorized zones */
+        get: {
+            parameters: {
+                query?: {
+                    status?: "pending_admin" | "pending_super" | "corrections_requested" | "rejected" | "active" | "suspended";
+                    districtId?: string;
+                    zoneId?: string;
+                    fleetId?: string;
+                    search?: string;
+                    page?: number;
+                    pageSize?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DeliveryBoyPage"];
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/boys/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** View a delivery boy application and review history */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            code: string;
+                            fleetId: string;
+                            fleetName: string;
+                            zoneId: string;
+                            zoneName: string;
+                            districtId: string;
+                            district: string;
+                            name: string;
+                            phone: string;
+                            /** Format: email */
+                            email: string | null;
+                            address: string;
+                            /** Format: date */
+                            dateOfBirth: string | null;
+                            gender: string | null;
+                            pinCode: string | null;
+                            drivingLicence: string | null;
+                            /** Format: date */
+                            licenceValidUntil: string | null;
+                            /** @enum {string} */
+                            vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
+                            vehicleNumber: string;
+                            vehicleModel: string | null;
+                            payout: {
+                                holderName: string;
+                                bankName: string | null;
+                                last4: string;
+                                ifsc: string;
+                            } | null;
+                            /** @enum {string} */
+                            status: "pending_admin" | "pending_super" | "corrections_requested" | "rejected" | "active" | "suspended";
+                            /** @enum {string} */
+                            availability: "available" | "on_delivery" | "offline" | "suspended";
+                            maxActiveOrders: number;
+                            version: number;
+                            reviewAdminId: string | null;
+                            reviewAdminName: string | null;
+                            documents: {
+                                id: string;
+                                /** @enum {string} */
+                                kind: "photo_id" | "driving_licence" | "vehicle_registration" | "profile_photo" | "insurance";
+                                fileName: string;
+                                contentType: string | null;
+                                sizeBytes: number | null;
+                                /** Format: date-time */
+                                uploadedAt: string;
+                                verified: boolean;
+                            }[];
+                            reviews: {
+                                id: string;
+                                actorId: string | null;
+                                fleetId: string | null;
+                                actorName: string;
+                                actorRole: string;
+                                /** @enum {string} */
+                                decision: "submitted" | "corrections_resubmitted" | "forwarded" | "corrections_requested" | "rejected" | "approved" | "suspended" | "reactivated";
+                                /** @enum {string} */
+                                from: "pending_admin" | "pending_super" | "corrections_requested" | "rejected" | "active" | "suspended";
+                                /** @enum {string} */
+                                to: "pending_admin" | "pending_super" | "corrections_requested" | "rejected" | "active" | "suspended";
+                                reason: string | null;
+                                /** Format: date-time */
+                                at: string;
+                            }[];
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/boys/{id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Forward, return, reject, or finally approve an application */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        decision: "forwarded" | "corrections_requested" | "rejected" | "approved";
+                        reason: string;
+                        version: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            code: string;
+                            fleetId: string;
+                            fleetName: string;
+                            zoneId: string;
+                            zoneName: string;
+                            districtId: string;
+                            district: string;
+                            name: string;
+                            phone: string;
+                            /** Format: email */
+                            email: string | null;
+                            address: string;
+                            /** Format: date */
+                            dateOfBirth: string | null;
+                            gender: string | null;
+                            pinCode: string | null;
+                            drivingLicence: string | null;
+                            /** Format: date */
+                            licenceValidUntil: string | null;
+                            /** @enum {string} */
+                            vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
+                            vehicleNumber: string;
+                            vehicleModel: string | null;
+                            payout: {
+                                holderName: string;
+                                bankName: string | null;
+                                last4: string;
+                                ifsc: string;
+                            } | null;
+                            /** @enum {string} */
+                            status: "pending_admin" | "pending_super" | "corrections_requested" | "rejected" | "active" | "suspended";
+                            /** @enum {string} */
+                            availability: "available" | "on_delivery" | "offline" | "suspended";
+                            maxActiveOrders: number;
+                            version: number;
+                            reviewAdminId: string | null;
+                            reviewAdminName: string | null;
+                            documents: {
+                                id: string;
+                                /** @enum {string} */
+                                kind: "photo_id" | "driving_licence" | "vehicle_registration" | "profile_photo" | "insurance";
+                                fileName: string;
+                                contentType: string | null;
+                                sizeBytes: number | null;
+                                /** Format: date-time */
+                                uploadedAt: string;
+                                verified: boolean;
+                            }[];
+                            reviews: {
+                                id: string;
+                                actorId: string | null;
+                                fleetId: string | null;
+                                actorName: string;
+                                actorRole: string;
+                                /** @enum {string} */
+                                decision: "submitted" | "corrections_resubmitted" | "forwarded" | "corrections_requested" | "rejected" | "approved" | "suspended" | "reactivated";
+                                /** @enum {string} */
+                                from: "pending_admin" | "pending_super" | "corrections_requested" | "rejected" | "active" | "suspended";
+                                /** @enum {string} */
+                                to: "pending_admin" | "pending_super" | "corrections_requested" | "rejected" | "active" | "suspended";
+                                reason: string | null;
+                                /** Format: date-time */
+                                at: string;
+                            }[];
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Changed by someone else; reload and retry */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/boys/{id}/documents/{docId}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Verify or unverify a required application document */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    docId: string;
+                };
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        verified: boolean;
+                        reason: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DeliveryBoyDocument"];
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Changed by someone else; reload and retry */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/boys/{id}/documents/{docId}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** View a delivery boy application document */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    docId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The stored document */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/pdf": string;
+                        "image/jpeg": string;
+                        "image/png": string;
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/intake/fleet/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the authenticated delivery partner profile and assigned business areas */
+        get: {
+            parameters: {
+                query?: never;
+                header: {
+                    "x-partner-credential": string;
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            code: string;
+                            name: string;
+                            companyName: string | null;
+                            contactPerson: string;
+                            phone: string;
+                            /** Format: email */
+                            email: string | null;
+                            address: string;
+                            districtId: string;
+                            district: string;
+                            businesses: ("food" | "mart")[];
+                            /** @enum {string} */
+                            status: "pending_approval" | "active" | "suspended" | "rejected";
+                            requestedByName: string | null;
+                            zones: {
+                                id: string;
+                                name: string;
+                            }[];
+                            deliveryBoyCount: number;
+                            availableBoyCount: number;
+                            /** Format: date-time */
+                            createdAt: string;
+                        };
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/intake/fleet/me/boys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List applications belonging to the authenticated fleet */
+        get: {
+            parameters: {
+                query?: never;
+                header: {
+                    "x-partner-credential": string;
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DeliveryFleetBoys"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Submit a delivery boy application for an assigned zone */
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    "x-partner-credential": string;
+                };
+                path?: never;
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        name: string;
+                        phone: string;
+                        /** Format: email */
+                        email?: string;
+                        /** Format: date */
+                        dateOfBirth?: string;
+                        /** @enum {string} */
+                        gender?: "Female" | "Male" | "Non-binary" | "Prefer not to say";
+                        address: string;
+                        pinCode?: string;
+                        zoneId: string;
+                        drivingLicence?: string;
+                        /** Format: date */
+                        licenceValidUntil?: string;
+                        /** @enum {string} */
+                        vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
+                        vehicleNumber: string;
+                        vehicleModel?: string;
+                        payout?: {
+                            holderName: string;
+                            bankName?: string;
+                            accountNumber: string;
+                            ifsc: string;
+                        };
+                        /** Format: uuid */
+                        otpChallengeId: string;
+                        otp: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            code: string;
+                            fleetId: string;
+                            fleetName: string;
+                            zoneId: string;
+                            zoneName: string;
+                            districtId: string;
+                            district: string;
+                            name: string;
+                            phone: string;
+                            /** Format: email */
+                            email: string | null;
+                            address: string;
+                            /** Format: date */
+                            dateOfBirth: string | null;
+                            gender: string | null;
+                            pinCode: string | null;
+                            drivingLicence: string | null;
+                            /** Format: date */
+                            licenceValidUntil: string | null;
+                            /** @enum {string} */
+                            vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
+                            vehicleNumber: string;
+                            vehicleModel: string | null;
+                            payout: {
+                                holderName: string;
+                                bankName: string | null;
+                                last4: string;
+                                ifsc: string;
+                            } | null;
+                            /** @enum {string} */
+                            status: "pending_admin" | "pending_super" | "corrections_requested" | "rejected" | "active" | "suspended";
+                            /** @enum {string} */
+                            availability: "available" | "on_delivery" | "offline" | "suspended";
+                            maxActiveOrders: number;
+                            version: number;
+                            reviewAdminId: string | null;
+                            reviewAdminName: string | null;
+                            documents: {
+                                id: string;
+                                /** @enum {string} */
+                                kind: "photo_id" | "driving_licence" | "vehicle_registration" | "profile_photo" | "insurance";
+                                fileName: string;
+                                contentType: string | null;
+                                sizeBytes: number | null;
+                                /** Format: date-time */
+                                uploadedAt: string;
+                                verified: boolean;
+                            }[];
+                            reviews: {
+                                id: string;
+                                actorId: string | null;
+                                fleetId: string | null;
+                                actorName: string;
+                                actorRole: string;
+                                /** @enum {string} */
+                                decision: "submitted" | "corrections_resubmitted" | "forwarded" | "corrections_requested" | "rejected" | "approved" | "suspended" | "reactivated";
+                                /** @enum {string} */
+                                from: "pending_admin" | "pending_super" | "corrections_requested" | "rejected" | "active" | "suspended";
+                                /** @enum {string} */
+                                to: "pending_admin" | "pending_super" | "corrections_requested" | "rejected" | "active" | "suspended";
+                                reason: string | null;
+                                /** Format: date-time */
+                                at: string;
+                            }[];
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Changed by someone else; reload and retry */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/intake/fleet/me/boys/otp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send an OTP to verify a new delivery boy's phone number */
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    "x-partner-credential": string;
+                };
+                path?: never;
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        phone: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            challengeId: string;
+                            destination: string;
+                            expiresInSeconds: number;
+                            resendInSeconds: number;
+                        };
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Too many attempts */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Service temporarily unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/intake/fleet/me/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List eligible orders in the authenticated fleet's active zones */
+        get: {
+            parameters: {
+                query?: never;
+                header: {
+                    "x-partner-credential": string;
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DeliveryFleetOrders"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/intake/fleet/me/orders/{orderId}/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Assign an eligible order to an approved, available rider */
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    "x-partner-credential": string;
+                };
+                path: {
+                    orderId: string;
+                };
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        boyId: string;
+                        version: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            code: string;
+                            /** @enum {string} */
+                            business: "food" | "mart";
+                            /** @enum {string} */
+                            status: "ready" | "assigned";
+                            zoneId: string;
+                            zoneName: string;
+                            vendorName: string;
+                            /** Format: date-time */
+                            placedAt: string;
+                            totalPaise: number;
+                        };
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Changed by someone else; reload and retry */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/intake/fleet/me/orders/{orderId}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Advance an assigned order through the existing delivery status workflow */
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    "x-partner-credential": string;
+                };
+                path: {
+                    orderId: string;
+                };
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        to: "picked_up" | "out_for_delivery" | "delivered";
+                        version: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            code: string;
+                            /** @enum {string} */
+                            business: "food" | "mart";
+                            /** @enum {string} */
+                            status: "ready" | "assigned";
+                            zoneId: string;
+                            zoneName: string;
+                            vendorName: string;
+                            /** Format: date-time */
+                            placedAt: string;
+                            totalPaise: number;
+                        };
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Changed by someone else; reload and retry */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/intake/fleet/me/boys/{id}/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List notifications for a delivery boy owned by the authenticated fleet */
+        get: {
+            parameters: {
+                query?: never;
+                header: {
+                    "x-partner-credential": string;
+                };
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DeliveryBoyNotification"][];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/intake/fleet/me/boys/{id}/notifications/{notificationId}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark a delivery boy notification as read */
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    "x-partner-credential": string;
+                };
+                path: {
+                    id: string;
+                    notificationId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/intake/fleet/me/boys/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Resubmit a returned application with corrections */
+        patch: {
+            parameters: {
+                query?: never;
+                header: {
+                    "x-partner-credential": string;
+                };
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        name: string;
+                        phone: string;
+                        /** Format: email */
+                        email?: string;
+                        /** Format: date */
+                        dateOfBirth?: string;
+                        /** @enum {string} */
+                        gender?: "Female" | "Male" | "Non-binary" | "Prefer not to say";
+                        address: string;
+                        pinCode?: string;
+                        zoneId: string;
+                        drivingLicence?: string;
+                        /** Format: date */
+                        licenceValidUntil?: string;
+                        /** @enum {string} */
+                        vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
+                        vehicleNumber: string;
+                        vehicleModel?: string;
+                        payout?: {
+                            holderName: string;
+                            bankName?: string;
+                            accountNumber: string;
+                            ifsc: string;
+                        };
+                        reason: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            code: string;
+                            fleetId: string;
+                            fleetName: string;
+                            zoneId: string;
+                            zoneName: string;
+                            districtId: string;
+                            district: string;
+                            name: string;
+                            phone: string;
+                            /** Format: email */
+                            email: string | null;
+                            address: string;
+                            /** Format: date */
+                            dateOfBirth: string | null;
+                            gender: string | null;
+                            pinCode: string | null;
+                            drivingLicence: string | null;
+                            /** Format: date */
+                            licenceValidUntil: string | null;
+                            /** @enum {string} */
+                            vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
+                            vehicleNumber: string;
+                            vehicleModel: string | null;
+                            payout: {
+                                holderName: string;
+                                bankName: string | null;
+                                last4: string;
+                                ifsc: string;
+                            } | null;
+                            /** @enum {string} */
+                            status: "pending_admin" | "pending_super" | "corrections_requested" | "rejected" | "active" | "suspended";
+                            /** @enum {string} */
+                            availability: "available" | "on_delivery" | "offline" | "suspended";
+                            maxActiveOrders: number;
+                            version: number;
+                            reviewAdminId: string | null;
+                            reviewAdminName: string | null;
+                            documents: {
+                                id: string;
+                                /** @enum {string} */
+                                kind: "photo_id" | "driving_licence" | "vehicle_registration" | "profile_photo" | "insurance";
+                                fileName: string;
+                                contentType: string | null;
+                                sizeBytes: number | null;
+                                /** Format: date-time */
+                                uploadedAt: string;
+                                verified: boolean;
+                            }[];
+                            reviews: {
+                                id: string;
+                                actorId: string | null;
+                                fleetId: string | null;
+                                actorName: string;
+                                actorRole: string;
+                                /** @enum {string} */
+                                decision: "submitted" | "corrections_resubmitted" | "forwarded" | "corrections_requested" | "rejected" | "approved" | "suspended" | "reactivated";
+                                /** @enum {string} */
+                                from: "pending_admin" | "pending_super" | "corrections_requested" | "rejected" | "active" | "suspended";
+                                /** @enum {string} */
+                                to: "pending_admin" | "pending_super" | "corrections_requested" | "rejected" | "active" | "suspended";
+                                reason: string | null;
+                                /** Format: date-time */
+                                at: string;
+                            }[];
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Changed by someone else; reload and retry */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/delivery/intake/fleet/me/boys/{id}/documents/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Upload or replace an application document */
+        put: {
+            parameters: {
+                query?: never;
+                header: {
+                    "x-partner-credential": string;
+                    "x-file-name"?: string;
+                };
+                path: {
+                    id: string;
+                    kind: "photo_id" | "driving_licence" | "vehicle_registration" | "profile_photo" | "insurance";
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/pdf": string;
+                    "image/jpeg": string;
+                    "image/png": string;
+                };
+            };
+            responses: {
+                /** @description OK */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DeliveryBoyDocument"];
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Changed by someone else; reload and retry */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/orders": {
         parameters: {
             query?: never;
@@ -5164,9 +7995,17 @@ export interface paths {
                     business?: "food" | "mart";
                     status?: "placed" | "accepted" | "preparing" | "packed" | "ready" | "assigned" | "picked_up" | "out_for_delivery" | "delivered" | "cancelled" | "refund_requested" | "refunded";
                     search?: string;
+                    districtId?: string;
+                    zoneId?: string;
+                    adminId?: string;
+                    deliveryFleetId?: string;
+                    deliveryPartnerId?: string;
+                    deliveryBoyId?: string;
                     partnerId?: string;
                     vendorId?: string;
                     delayed?: string;
+                    fromDate?: string;
+                    toDate?: string;
                     page?: number;
                     pageSize?: number;
                 };
@@ -5196,6 +8035,71 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/filters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin and assigned delivery partner filters in the member's scope */
+        get: {
+            parameters: {
+                query?: {
+                    business?: "food" | "mart";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Order filters */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            admins: {
+                                id: string;
+                                name: string;
+                            }[];
+                            deliveryPartners: {
+                                id: string;
+                                name: string;
+                            }[];
+                        };
                     };
                 };
                 /** @description Not signed in */
@@ -5608,6 +8512,430 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/orders/{id}/assign-boy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Assign a delivery boy to an order */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        boyId: string;
+                        version: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description Updated order */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Order"];
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Changed by someone else; reload and retry */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{id}/auto-assign-boy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Assign the least busy eligible delivery boy to an order */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Updated order */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Order"];
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Changed by someone else; reload and retry */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications/activity-read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List acknowledged pending activity items for the signed-in member */
+        get: {
+            parameters: {
+                query?: {
+                    keys?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            keys: string[];
+                        };
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Acknowledge one accessible pending activity item */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        key: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description No content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/partners/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the signed-in member's saved delivery partner draft */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Saved draft, or null */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PartnerDraft"] & (Record<string, never> | null);
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        /** Save an incomplete delivery partner application */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        step: number;
+                        form: {
+                            name: string;
+                            phone: string;
+                            email: string;
+                            dateOfBirth: string;
+                            gender: string;
+                            address: string;
+                            pinCode: string;
+                            /** @enum {string} */
+                            service: "food" | "mart" | "both";
+                            zoneId: string;
+                            drivingLicence: string;
+                            licenceValidUntil: string;
+                            /** @enum {string} */
+                            vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
+                            vehicleNumber: string;
+                            vehicleModel: string;
+                            holderName: string;
+                            bankName: string;
+                            accountNumber: string;
+                            confirmAccount: string;
+                            ifsc: string;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description Saved draft */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PartnerDraft"];
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/partners": {
         parameters: {
             query?: never;
@@ -5922,6 +9250,7 @@ export interface paths {
                         licenceValidUntil?: string;
                         /** Format: date-time */
                         updatedAt: string;
+                        reason: string;
                     };
                 };
             };
@@ -7187,6 +10516,7 @@ export interface paths {
                         settlementCycle?: "weekly" | "biweekly" | "monthly";
                         /** Format: date-time */
                         updatedAt: string;
+                        reason: string;
                     };
                 };
             };
@@ -7611,13 +10941,31 @@ export interface components {
         ManagedZone: {
             id: string;
             district: string;
+            districtId: string;
             city: string;
             location: string;
             lat: number | null;
             lng: number | null;
             active: boolean;
+            partnerNames: string[];
+            partnerCount: number;
+            availablePartnerCount: number;
+            activeOrderCount: number;
             /** Format: date-time */
             createdAt: string;
+        };
+        District: {
+            id: string;
+            code: string;
+            name: string;
+            state: string;
+            description: string | null;
+            active: boolean;
+            zoneCount: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
         };
         FeeRule: {
             id: string;
@@ -7636,6 +10984,7 @@ export interface components {
         Zone: {
             id: string;
             district: string;
+            districtId: string;
             city: string;
             location: string;
         };
@@ -8337,6 +11686,281 @@ export interface components {
                 status: string;
             }[];
         };
+        DeliveryFleetPage: {
+            items: {
+                id: string;
+                code: string;
+                name: string;
+                companyName: string | null;
+                contactPerson: string;
+                phone: string;
+                /** Format: email */
+                email: string | null;
+                address: string;
+                districtId: string;
+                district: string;
+                businesses: ("food" | "mart")[];
+                /** @enum {string} */
+                status: "pending_approval" | "active" | "suspended" | "rejected";
+                requestedByName: string | null;
+                zones: {
+                    id: string;
+                    name: string;
+                }[];
+                deliveryBoyCount: number;
+                availableBoyCount: number;
+                /** Format: date-time */
+                createdAt: string;
+            }[];
+            total: number;
+            page: number;
+            pageSize: number;
+        };
+        DeliveryBoyPage: {
+            items: {
+                id: string;
+                code: string;
+                fleetId: string;
+                fleetName: string;
+                zoneId: string;
+                zoneName: string;
+                districtId: string;
+                district: string;
+                name: string;
+                phone: string;
+                /** Format: email */
+                email: string | null;
+                address: string;
+                /** Format: date */
+                dateOfBirth: string | null;
+                gender: string | null;
+                pinCode: string | null;
+                drivingLicence: string | null;
+                /** Format: date */
+                licenceValidUntil: string | null;
+                /** @enum {string} */
+                vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
+                vehicleNumber: string;
+                vehicleModel: string | null;
+                payout: {
+                    holderName: string;
+                    bankName: string | null;
+                    last4: string;
+                    ifsc: string;
+                } | null;
+                /** @enum {string} */
+                status: "pending_admin" | "pending_super" | "corrections_requested" | "rejected" | "active" | "suspended";
+                /** @enum {string} */
+                availability: "available" | "on_delivery" | "offline" | "suspended";
+                maxActiveOrders: number;
+                version: number;
+                reviewAdminId: string | null;
+                reviewAdminName: string | null;
+                documents: {
+                    id: string;
+                    /** @enum {string} */
+                    kind: "photo_id" | "driving_licence" | "vehicle_registration" | "profile_photo" | "insurance";
+                    fileName: string;
+                    contentType: string | null;
+                    sizeBytes: number | null;
+                    /** Format: date-time */
+                    uploadedAt: string;
+                    verified: boolean;
+                }[];
+                reviews: {
+                    id: string;
+                    actorId: string | null;
+                    fleetId: string | null;
+                    actorName: string;
+                    actorRole: string;
+                    /** @enum {string} */
+                    decision: "submitted" | "corrections_resubmitted" | "forwarded" | "corrections_requested" | "rejected" | "approved" | "suspended" | "reactivated";
+                    /** @enum {string} */
+                    from: "pending_admin" | "pending_super" | "corrections_requested" | "rejected" | "active" | "suspended";
+                    /** @enum {string} */
+                    to: "pending_admin" | "pending_super" | "corrections_requested" | "rejected" | "active" | "suspended";
+                    reason: string | null;
+                    /** Format: date-time */
+                    at: string;
+                }[];
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: date-time */
+                updatedAt: string;
+            }[];
+            total: number;
+            page: number;
+            pageSize: number;
+        };
+        DeliveryFleetWithCredential: {
+            fleet: {
+                id: string;
+                code: string;
+                name: string;
+                companyName: string | null;
+                contactPerson: string;
+                phone: string;
+                /** Format: email */
+                email: string | null;
+                address: string;
+                districtId: string;
+                district: string;
+                businesses: ("food" | "mart")[];
+                /** @enum {string} */
+                status: "pending_approval" | "active" | "suspended" | "rejected";
+                requestedByName: string | null;
+                zones: {
+                    id: string;
+                    name: string;
+                }[];
+                deliveryBoyCount: number;
+                availableBoyCount: number;
+                /** Format: date-time */
+                createdAt: string;
+            };
+            credential: string;
+            deliveryBoys: {
+                id: string;
+                code: string;
+                name: string;
+            }[];
+        };
+        DeliveryFleetCredential: {
+            credential: string;
+        };
+        DeliveryFleetReview: {
+            fleet: {
+                id: string;
+                code: string;
+                name: string;
+                companyName: string | null;
+                contactPerson: string;
+                phone: string;
+                /** Format: email */
+                email: string | null;
+                address: string;
+                districtId: string;
+                district: string;
+                businesses: ("food" | "mart")[];
+                /** @enum {string} */
+                status: "pending_approval" | "active" | "suspended" | "rejected";
+                requestedByName: string | null;
+                zones: {
+                    id: string;
+                    name: string;
+                }[];
+                deliveryBoyCount: number;
+                availableBoyCount: number;
+                /** Format: date-time */
+                createdAt: string;
+            };
+            credential: string | null;
+        };
+        DeliveryFleetBoys: {
+            id: string;
+            code: string;
+            fleetId: string;
+            fleetName: string;
+            zoneId: string;
+            zoneName: string;
+            districtId: string;
+            district: string;
+            name: string;
+            phone: string;
+            /** Format: email */
+            email: string | null;
+            address: string;
+            /** Format: date */
+            dateOfBirth: string | null;
+            gender: string | null;
+            pinCode: string | null;
+            drivingLicence: string | null;
+            /** Format: date */
+            licenceValidUntil: string | null;
+            /** @enum {string} */
+            vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
+            vehicleNumber: string;
+            vehicleModel: string | null;
+            payout: {
+                holderName: string;
+                bankName: string | null;
+                last4: string;
+                ifsc: string;
+            } | null;
+            /** @enum {string} */
+            status: "pending_admin" | "pending_super" | "corrections_requested" | "rejected" | "active" | "suspended";
+            /** @enum {string} */
+            availability: "available" | "on_delivery" | "offline" | "suspended";
+            maxActiveOrders: number;
+            version: number;
+            reviewAdminId: string | null;
+            reviewAdminName: string | null;
+            documents: {
+                id: string;
+                /** @enum {string} */
+                kind: "photo_id" | "driving_licence" | "vehicle_registration" | "profile_photo" | "insurance";
+                fileName: string;
+                contentType: string | null;
+                sizeBytes: number | null;
+                /** Format: date-time */
+                uploadedAt: string;
+                verified: boolean;
+            }[];
+            reviews: {
+                id: string;
+                actorId: string | null;
+                fleetId: string | null;
+                actorName: string;
+                actorRole: string;
+                /** @enum {string} */
+                decision: "submitted" | "corrections_resubmitted" | "forwarded" | "corrections_requested" | "rejected" | "approved" | "suspended" | "reactivated";
+                /** @enum {string} */
+                from: "pending_admin" | "pending_super" | "corrections_requested" | "rejected" | "active" | "suspended";
+                /** @enum {string} */
+                to: "pending_admin" | "pending_super" | "corrections_requested" | "rejected" | "active" | "suspended";
+                reason: string | null;
+                /** Format: date-time */
+                at: string;
+            }[];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        }[];
+        DeliveryFleetOrders: {
+            id: string;
+            code: string;
+            /** @enum {string} */
+            business: "food" | "mart";
+            /** @enum {string} */
+            status: "ready" | "assigned";
+            zoneId: string;
+            zoneName: string;
+            vendorName: string;
+            /** Format: date-time */
+            placedAt: string;
+            totalPaise: number;
+        }[];
+        DeliveryBoyNotification: {
+            id: string;
+            title: string;
+            body: string;
+            /** Format: date-time */
+            readAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        DeliveryBoyDocument: {
+            id: string;
+            /** @enum {string} */
+            kind: "photo_id" | "driving_licence" | "vehicle_registration" | "profile_photo" | "insurance";
+            fileName: string;
+            contentType: string | null;
+            sizeBytes: number | null;
+            /** Format: date-time */
+            uploadedAt: string;
+            verified: boolean;
+        };
         Order: {
             id: string;
             code: string;
@@ -8351,7 +11975,16 @@ export interface components {
             vendorName: string;
             partnerId: string | null;
             partnerName: string | null;
+            deliveryFleetId: string | null;
+            deliveryFleetName: string | null;
+            deliveryBoyId: string | null;
+            deliveryBoyName: string | null;
             zoneId: string;
+            zoneName: string;
+            districtId: string;
+            districtName: string;
+            responsibleAdminId: string | null;
+            responsibleAdminName: string | null;
             /** @enum {string} */
             paymentMethod: "upi" | "card" | "cod" | "wallet" | "netbanking";
             /** @enum {string} */
@@ -8383,7 +12016,16 @@ export interface components {
             vendorName: string;
             partnerId: string | null;
             partnerName: string | null;
+            deliveryFleetId: string | null;
+            deliveryFleetName: string | null;
+            deliveryBoyId: string | null;
+            deliveryBoyName: string | null;
             zoneId: string;
+            zoneName: string;
+            districtId: string;
+            districtName: string;
+            responsibleAdminId: string | null;
+            responsibleAdminName: string | null;
             /** @enum {string} */
             paymentMethod: "upi" | "card" | "cod" | "wallet" | "netbanking";
             /** @enum {string} */
@@ -8409,6 +12051,20 @@ export interface components {
                 at: string;
                 actorType: string;
                 actorName: string | null;
+                reason: string | null;
+            }[];
+            assignmentHistory: {
+                id: string;
+                fleetId: string;
+                fleetName: string;
+                boyId: string;
+                boyName: string;
+                /** @enum {string} */
+                status: "assigned" | "accepted" | "rejected" | "completed" | "cancelled";
+                /** Format: date-time */
+                assignedAt: string;
+                /** Format: date-time */
+                endedAt: string | null;
                 reason: string | null;
             }[];
         };
@@ -8513,6 +12169,34 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        PartnerDraft: {
+            step: number;
+            form: {
+                name: string;
+                phone: string;
+                email: string;
+                dateOfBirth: string;
+                gender: string;
+                address: string;
+                pinCode: string;
+                /** @enum {string} */
+                service: "food" | "mart" | "both";
+                zoneId: string;
+                drivingLicence: string;
+                licenceValidUntil: string;
+                /** @enum {string} */
+                vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
+                vehicleNumber: string;
+                vehicleModel: string;
+                holderName: string;
+                bankName: string;
+                accountNumber: string;
+                confirmAccount: string;
+                ifsc: string;
+            };
+            /** Format: date-time */
+            updatedAt: string;
+        };
         PartnerDocument: {
             id: string;
             kind: string;
@@ -8565,6 +12249,8 @@ export interface components {
             address: string;
             zoneId: string;
             zoneName: string;
+            responsibleAdminId: string | null;
+            responsibleAdminName: string | null;
             /** @enum {string} */
             status: "pending_review" | "active" | "rejected" | "suspended";
             /** @enum {string} */
@@ -8588,6 +12274,8 @@ export interface components {
             address: string;
             zoneId: string;
             zoneName: string;
+            responsibleAdminId: string | null;
+            responsibleAdminName: string | null;
             /** @enum {string} */
             status: "pending_review" | "active" | "rejected" | "suspended";
             /** @enum {string} */

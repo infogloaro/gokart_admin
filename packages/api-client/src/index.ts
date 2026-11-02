@@ -24,6 +24,7 @@ type Options<O> = ([Body<O>] extends [never] ? { body?: undefined } : { body: Bo
   ([Params<O>] extends [never] | [undefined] ? { params?: undefined } : { params: Params<O> }) & {
     query?: [Query<O>] extends [never] ? undefined : Partial<NonNullable<Query<O>>>
     signal?: AbortSignal
+    headers?: Record<string, string>
   }
 
 export class ApiError extends Error {
@@ -54,6 +55,7 @@ export async function api<P extends keyof paths, M extends MethodsOf<P>>(
     params?: Record<string, string>
     query?: Record<string, unknown>
     signal?: AbortSignal
+    headers?: Record<string, string>
   }
   let url =
     baseUrl +
@@ -68,6 +70,7 @@ export async function api<P extends keyof paths, M extends MethodsOf<P>>(
     credentials: "include",
     headers: {
       "X-Client-Source": "web",
+      ...o.headers,
       ...(o.body === undefined ? {} : { "Content-Type": "application/json" }),
     },
     body: o.body === undefined ? undefined : JSON.stringify(o.body),

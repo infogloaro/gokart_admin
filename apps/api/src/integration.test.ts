@@ -38,6 +38,9 @@ const lastCode = (to: string) => sent.findLast((m) => m.to === to)!.text.match(/
 /** Password, then an emailed code. */
 async function signIn(email: string, password: string) {
   const agent = request.agent(app)
+  // The suite signs in many times from one IP; reset the sign-in limits between helper logins.
+  const loginLimits = await redis.keys("rl:login:*")
+  if (loginLimits.length) await redis.del(...loginLimits)
   const start = await agent.post("/api/v1/auth/login").send({ email, password })
   expect(start.status).toBe(200)
   await agent
@@ -62,7 +65,7 @@ const session = (email: string, password: string) => {
 describe("system management permissions", () => {
   it("exposes the admin, area, fee and audit data only to the Super Admin", async (ctx) => {
     if (!ready) ctx.skip()
-    const { agent: superAdmin } = await signIn("superadmin@gokart.in", "Gokart@12345")
+    const { agent: superAdmin } = await session("superadmin@gokart.in", "Gokart@12345")
     const [members, zones, fees, audit] = await Promise.all([
       superAdmin.get("/api/v1/members"),
       superAdmin.get("/api/v1/settings/zones"),
@@ -361,6 +364,78 @@ describe("orders", () => {
       where: { business: "food", zoneId: { notIn: [...ids] } },
     })
     if (elsewhere) await agent.get(`/api/v1/orders/${elsewhere.id}`).expect(404)
+  })
+
+  it("uses the same responsible-admin and assigned-partner relationships for order filters", async (ctx) => {
+    if (!ready) ctx.skip()
+    const { agent: superAdmin } = await signIn("superadmin@gokart.in", "Gokart@12345")
+    const options = await superAdmin.get("/api/v1/orders/filters?business=food").expect(200)
+    expect(options.body).toEqual(
+      expect.objectContaining({
+        admins: expect.any(Array),
+        deliveryPartners: expect.any(Array),
+      }),
+    )
+    const all = await superAdmin.get("/api/v1/orders?business=food&pageSize=100").expect(200)
+    const assigned = all.body.items.find(
+      (order: { responsibleAdminId: string | null; partnerId: string | null }) =>
+        order.responsibleAdminId && order.partnerId,
+    )
+    if (assigned) {
+      expect(options.body.admins).toContainEqual(
+        expect.objectContaining({
+          id: assigned.responsibleAdminId,
+          name: assigned.responsibleAdminName,
+        }),
+      )
+      expect(options.body.deliveryPartners).toContainEqual(
+        expect.objectContaining({ id: assigned.partnerId, name: assigned.partnerName }),
+      )
+      const combined = await superAdmin
+        .get(
+          `/api/v1/orders?business=food&adminId=${assigned.responsibleAdminId}&deliveryPartnerId=${assigned.partnerId}`,
+        )
+        .expect(200)
+      expect(combined.body.items.length).toBeGreaterThan(0)
+      expect(
+        combined.body.items.every(
+          (order: { responsibleAdminId: string; partnerId: string }) =>
+            order.responsibleAdminId === assigned.responsibleAdminId &&
+            order.partnerId === assigned.partnerId,
+        ),
+      ).toBe(true)
+    }
+
+    const unassignedAdmin = await superAdmin
+      .get("/api/v1/orders?business=food&adminId=unassigned&pageSize=100")
+      .expect(200)
+    expect(
+      unassignedAdmin.body.items.every(
+        (order: { responsibleAdminId: string | null }) => order.responsibleAdminId === null,
+      ),
+    ).toBe(true)
+    const unassignedPartner = await superAdmin
+      .get("/api/v1/orders?business=food&deliveryPartnerId=unassigned&pageSize=100")
+      .expect(200)
+    expect(
+      unassignedPartner.body.items.every(
+        (order: { partnerId: string | null }) => order.partnerId === null,
+      ),
+    ).toBe(true)
+
+    const { agent: admin } = await session("priya.shankar@gokart.in", "Admin@123")
+    const scopedOptions = await admin.get("/api/v1/orders/filters?business=food").expect(200)
+    const scopedAdmin = scopedOptions.body.admins[0]
+    if (scopedAdmin) {
+      const scoped = await admin
+        .get(`/api/v1/orders?business=food&adminId=${scopedAdmin.id}&pageSize=100`)
+        .expect(200)
+      expect(
+        scoped.body.items.every(
+          (order: { responsibleAdminId: string }) => order.responsibleAdminId === scopedAdmin.id,
+        ),
+      ).toBe(true)
+    }
   })
 
   it("moves an order through the state machine with a version check and an audit entry", async (ctx) => {
@@ -730,6 +805,42 @@ describe("inventory", () => {
 })
 
 describe("notifications and account", () => {
+  it("persists pending activity acknowledgments per member", async (ctx) => {
+    if (!ready) ctx.skip()
+    const { agent: superAdmin } = await signIn("superadmin@gokart.in", "Gokart@12345")
+    const { agent: admin } = await signIn("priya.shankar@gokart.in", "Admin@123")
+    const zone = await prisma.zone.findFirstOrThrow()
+    const vendor = await prisma.vendor.create({
+      data: {
+        code: `NOTIF-${Date.now()}`,
+        business: "food",
+        name: "Notification test vendor",
+        ownerName: "Integration Test",
+        phone: `+9199${String(Date.now()).slice(-8)}`,
+        email: "notification-test@gokart.in",
+        address: "Test address",
+        zoneId: zone.id,
+        commissionBps: 1800,
+      },
+    })
+    const key = `vendor:${vendor.id}`
+    try {
+      await superAdmin
+        .get(`/api/v1/notifications/activity-read?keys=${encodeURIComponent(key)}`)
+        .expect(200, { keys: [] })
+      await superAdmin.post("/api/v1/notifications/activity-read").send({ key }).expect(204)
+      await superAdmin
+        .get(`/api/v1/notifications/activity-read?keys=${encodeURIComponent(key)}`)
+        .expect(200, { keys: [key] })
+      await admin
+        .get(`/api/v1/notifications/activity-read?keys=${encodeURIComponent(key)}`)
+        .expect(200, { keys: [] })
+    } finally {
+      await prisma.notificationActivityRead.deleteMany({ where: { activityKey: key } })
+      await prisma.vendor.delete({ where: { id: vendor.id } })
+    }
+  })
+
   it("lists and marks the member's own notifications, lists sessions and saves preferences", async (ctx) => {
     if (!ready) ctx.skip()
     const { agent } = await signIn("admin@gokart.in", "Admin@123")
@@ -762,6 +873,135 @@ describe("notifications and account", () => {
     expect((await agent.get("/api/v1/auth/preferences").expect(200)).body.emailComplaints).toBe(
       false,
     )
+  })
+})
+
+describe("district and zone administration", () => {
+  it("creates and edits districts and zones while protecting active references", async (ctx) => {
+    if (!ready) ctx.skip()
+    const { agent } = await signIn("superadmin@gokart.in", "Gokart@12345")
+    const suffix = Date.now().toString()
+    const createdDistrict = await agent
+      .post("/api/v1/settings/districts")
+      .send({
+        code: `IT${suffix.slice(-8)}`,
+        name: `Integration District ${suffix}`,
+        state: "Tamil Nadu",
+        description: null,
+      })
+      .expect(201)
+    const districtId = createdDistrict.body.id as string
+    let zoneId: string | null = null
+    let vendorId: string | null = null
+    let orderId: string | null = null
+    try {
+      expect(createdDistrict.body.zoneCount).toBe(0)
+      const createdZone = await agent
+        .post("/api/v1/settings/zones")
+        .send({
+          districtId,
+          city: `Test City ${suffix}`,
+          location: `Test Locality ${suffix}`,
+          lat: null,
+          lng: null,
+        })
+        .expect(201)
+      const activeZoneId = createdZone.body.id as string
+      zoneId = activeZoneId
+      expect(createdZone.body.districtId).toBe(districtId)
+      expect(createdZone.body.district).toBe(createdDistrict.body.name)
+
+      const vendor = await prisma.vendor.create({
+        data: {
+          code: `ITV-${suffix}`,
+          business: "food",
+          name: "District test vendor",
+          ownerName: "Integration Test",
+          phone: `+9199${suffix.slice(-8)}`,
+          email: `district-test-${suffix}@gokart.in`,
+          address: "Test address",
+          zoneId: activeZoneId,
+          commissionBps: 1800,
+        },
+      })
+      vendorId = vendor.id
+      const order = await prisma.order.create({
+        data: {
+          code: `ITO-${suffix}`,
+          business: "food",
+          customerName: "Integration Test",
+          customerPhone: `+9188${suffix.slice(-8)}`,
+          vendorId: vendor.id,
+          zoneId: activeZoneId,
+          paymentMethod: "cod",
+          itemsTotalPaise: 10000,
+          deliveryFeePaise: 500,
+          totalPaise: 10500,
+        },
+      })
+      orderId = order.id
+
+      await agent
+        .patch(`/api/v1/settings/districts/${districtId}`)
+        .send({
+          code: createdDistrict.body.code,
+          name: createdDistrict.body.name,
+          state: createdDistrict.body.state,
+          description: null,
+          active: false,
+        })
+        .expect(409)
+
+      await agent
+        .patch(`/api/v1/settings/zones/${zoneId}`)
+        .send({
+          districtId,
+          city: `Test City ${suffix}`,
+          location: `Test Locality ${suffix}`,
+          lat: null,
+          lng: null,
+          active: false,
+        })
+        .expect(409)
+
+      const zoneSummary = (await agent.get("/api/v1/settings/zones").expect(200)).body.find(
+        (item: { id: string }) => item.id === zoneId,
+      )
+      expect(zoneSummary.activeOrderCount).toBe(1)
+
+      await prisma.order.update({ where: { id: orderId }, data: { status: "cancelled" } })
+      await agent
+        .patch(`/api/v1/settings/zones/${zoneId}`)
+        .send({
+          districtId,
+          city: `Test City ${suffix}`,
+          location: `Test Locality ${suffix}`,
+          lat: null,
+          lng: null,
+          active: false,
+        })
+        .expect(200)
+      const deactivatedDistrict = await agent
+        .patch(`/api/v1/settings/districts/${districtId}`)
+        .send({
+          code: createdDistrict.body.code,
+          name: createdDistrict.body.name,
+          state: createdDistrict.body.state,
+          description: null,
+          active: false,
+        })
+        .expect(200)
+      expect(deactivatedDistrict.body.zoneCount).toBe(1)
+      expect(
+        (await agent.get(`/api/v1/settings/districts?search=${encodeURIComponent(suffix)}`)).body[0]
+          .active,
+      ).toBe(false)
+    } finally {
+      if (orderId) await prisma.order.delete({ where: { id: orderId } })
+      if (vendorId) await prisma.vendor.delete({ where: { id: vendorId } })
+      if (zoneId) await prisma.zone.delete({ where: { id: zoneId } })
+      await prisma.district.delete({ where: { id: districtId } })
+    }
   })
 })
 
@@ -853,6 +1093,44 @@ describe("partners", () => {
     const admin = (await signIn("admin@gokart.in", "Admin@123")).agent
     const zone = await prisma.zone.findFirstOrThrow({ where: { location: "Adyar" } })
     const elsewhere = await prisma.zone.findFirstOrThrow({ where: { district: "Madurai" } })
+    const savedDraft = {
+      step: 2,
+      form: {
+        name: "Incomplete Rider",
+        phone: "98400 77777",
+        email: "",
+        dateOfBirth: "",
+        gender: "",
+        address: "",
+        pinCode: "",
+        service: "food",
+        zoneId: zone.id,
+        drivingLicence: "",
+        licenceValidUntil: "",
+        vehicleType: "motorcycle",
+        vehicleNumber: "",
+        vehicleModel: "",
+        holderName: "",
+        bankName: "",
+        accountNumber: "50100012345678",
+        confirmAccount: "50100012345678",
+        ifsc: "",
+      },
+    }
+    await admin.put("/api/v1/partners/draft").send(savedDraft).expect(200)
+    const member = await prisma.member.findUniqueOrThrow({
+      where: { email: "admin@gokart.in" },
+      select: { id: true },
+    })
+    const encryptedDraft = await prisma.partnerDraft.findUniqueOrThrow({
+      where: { memberId: member.id },
+    })
+    expect(encryptedDraft.encryptedData).not.toContain("50100012345678")
+    await admin
+      .get("/api/v1/partners/draft")
+      .expect(200)
+      .expect((res) => expect(res.body).toMatchObject(savedDraft))
+
     const body = {
       name: "Test Rider",
       phone: "98400 88888",
@@ -882,6 +1160,10 @@ describe("partners", () => {
         submittedByName: "Ananya Kapoor",
         bank: { last4: "5678", ifsc: "HDFC0001284", verified: false },
       })
+      await admin
+        .get("/api/v1/partners/draft")
+        .expect(200)
+        .expect((res) => expect(res.body).toBeNull())
       const dup = await admin.post("/api/v1/partners").send(body)
       expect(dup.status).toBe(400)
       await admin
@@ -904,6 +1186,7 @@ describe("partners", () => {
         reason: "Driving license issue",
       })
     } finally {
+      await prisma.partnerDraft.deleteMany({ where: { memberId: member.id } })
       await prisma.bankAccount.deleteMany({ where: { accountId: created.body.id } })
       await prisma.partner.delete({ where: { id: created.body.id } })
     }
@@ -935,20 +1218,28 @@ describe("partner profile", () => {
     const p = await prisma.partner.findFirstOrThrow({ where: { code: "DP-2386" } })
     const before = { vehicleModel: p.vehicleModel, updatedAt: p.updatedAt }
     try {
-      const ok = await agent
-        .patch(`/api/v1/partners/${p.id}`)
-        .send({ vehicleModel: "TVS Jupiter", updatedAt: p.updatedAt.toISOString() })
+      const ok = await agent.patch(`/api/v1/partners/${p.id}`).send({
+        vehicleModel: "TVS Jupiter",
+        updatedAt: p.updatedAt.toISOString(),
+        reason: "Correcting the registered vehicle model",
+      })
       expect(ok.status).toBe(200)
       expect(ok.body.vehicleModel).toBe("TVS Jupiter")
       expect(ok.body.activity[0]).toMatchObject({ action: "partner.updated" })
-      const stale = await agent
-        .patch(`/api/v1/partners/${p.id}`)
-        .send({ vehicleModel: "Honda Activa", updatedAt: p.updatedAt.toISOString() })
+      const stale = await agent.patch(`/api/v1/partners/${p.id}`).send({
+        vehicleModel: "Honda Activa",
+        updatedAt: p.updatedAt.toISOString(),
+        reason: "Testing stale profile protection",
+      })
       expect(stale.status).toBe(409)
       const admin = (await signIn("ravi.chandran@gokart.in", "Admin@123")).agent
       await admin
         .patch(`/api/v1/partners/${p.id}`)
-        .send({ vehicleModel: "Honda Activa", updatedAt: ok.body.updatedAt })
+        .send({
+          vehicleModel: "Honda Activa",
+          updatedAt: ok.body.updatedAt,
+          reason: "Testing role access",
+        })
         .expect(403)
     } finally {
       await prisma.partner.update({
@@ -1076,6 +1367,19 @@ describe("vendor profile", () => {
     const counts = sorted.body.items.map((v: { ordersCount: number }) => v.ordersCount)
     expect(counts).toEqual([...counts].sort((a: number, b: number) => b - a))
     const top = sorted.body.items[0]
+    const responsibleAdmin = await prisma.member.findFirst({
+      where: {
+        role: "admin",
+        status: "active",
+        businesses: { some: { business: top.business } },
+        zones: { some: { zoneId: top.zoneId } },
+      },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    })
+    expect(top).toMatchObject({
+      responsibleAdminId: responsibleAdmin?.id ?? null,
+      responsibleAdminName: responsibleAdmin?.name ?? null,
+    })
     const orders = await agent.get(`/api/v1/orders?vendorId=${top.id}&pageSize=100`).expect(200)
     expect(orders.body.total).toBe(top.ordersCount)
     const summary = await agent.get("/api/v1/vendors/summary").expect(200)
@@ -1083,20 +1387,30 @@ describe("vendor profile", () => {
 
     const v = await prisma.vendor.findFirstOrThrow({ where: { code: "VEN-1044" } })
     try {
-      const ok = await agent
-        .patch(`/api/v1/vendors/${v.id}`)
-        .send({ commissionPct: 16.5, updatedAt: v.updatedAt.toISOString() })
+      const ok = await agent.patch(`/api/v1/vendors/${v.id}`).send({
+        commissionPct: 16.5,
+        updatedAt: v.updatedAt.toISOString(),
+        reason: "Correcting the agreed commission rate",
+      })
       expect(ok.status).toBe(200)
       expect(ok.body).toMatchObject({ commissionPct: 16.5 })
       expect(ok.body.activity[0]).toMatchObject({ action: "vendor.updated" })
       await agent
         .patch(`/api/v1/vendors/${v.id}`)
-        .send({ commissionPct: 15, updatedAt: v.updatedAt.toISOString() })
+        .send({
+          commissionPct: 15,
+          updatedAt: v.updatedAt.toISOString(),
+          reason: "Testing stale vendor profile protection",
+        })
         .expect(409)
       const admin = (await signIn("priya.shankar@gokart.in", "Admin@123")).agent
       await admin
         .patch(`/api/v1/vendors/${v.id}`)
-        .send({ commissionPct: 15, updatedAt: ok.body.updatedAt })
+        .send({
+          commissionPct: 15,
+          updatedAt: ok.body.updatedAt,
+          reason: "Testing role access",
+        })
         .expect(403)
     } finally {
       await prisma.vendor.update({ where: { id: v.id }, data: { commissionBps: v.commissionBps } })

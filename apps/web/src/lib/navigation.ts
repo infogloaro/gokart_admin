@@ -203,10 +203,10 @@ export const superNav: { group: string; items: Screen[] }[] = [
       },
       {
         key: "settings",
-        label: "Areas & fees",
+        label: "Districts, zones & fees",
         icon: Settings,
-        title: "Service Areas & Fees",
-        subtitle: "Configure delivery zones and fee rules.",
+        title: "Districts, Zones & Fees",
+        subtitle: "Manage districts, service zones, delivery coverage and fee rules.",
         owner: "Dev 1",
         module: "Areas & fees",
         permission: "settings.manage",
@@ -236,6 +236,17 @@ export const adminNav: Screen[] = [
     subtitle: "Today's operations in your zones.",
     owner: "Dev 3",
     module: "Reports & dashboards",
+    permission: "dashboard.view",
+    live: true,
+  },
+  {
+    key: "notifications",
+    label: "Notifications",
+    icon: Bell,
+    title: "Notifications",
+    subtitle: "Alerts and approvals for you.",
+    owner: "Dev 1",
+    module: "Notifications",
     permission: "dashboard.view",
     live: true,
   },
@@ -340,17 +351,6 @@ export const adminNav: Screen[] = [
 ]
 
 export const adminAccountNav: Screen[] = [
-  {
-    key: "notifications",
-    label: "Notifications",
-    icon: Bell,
-    title: "Notifications",
-    subtitle: "Alerts and approvals for you.",
-    owner: "Dev 1",
-    module: "Notifications",
-    permission: "dashboard.view",
-    live: true,
-  },
   {
     key: "profile",
     label: "My profile",

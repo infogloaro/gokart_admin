@@ -5,6 +5,7 @@ import { env } from "./config/env"
 import { prisma } from "./lib/prisma"
 import { attachRealtime, closeRealtime } from "./lib/realtime"
 import { redis } from "./lib/redis"
+import { runAlertChecks } from "./modules/alerts/alerts"
 import { relayOutbox } from "./modules/notifications/notifications"
 import { sweepStale } from "./modules/tracking/tracking.service"
 
@@ -26,9 +27,16 @@ const relay = setInterval(() => {
 }, 5_000)
 relay.unref()
 
+// Smart alerts: delayed orders, failed payments and suspended vendors with open orders.
+const alerts = setInterval(() => {
+  runAlertChecks().catch((e: unknown) => console.error("Alert checks failed", e))
+}, 60_000)
+alerts.unref()
+
 async function shutdown() {
   clearInterval(sweeper)
   clearInterval(relay)
+  clearInterval(alerts)
   await closeRealtime()
   server.close()
   await Promise.allSettled([prisma.$disconnect(), redis.quit()])

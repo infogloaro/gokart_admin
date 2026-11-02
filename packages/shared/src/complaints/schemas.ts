@@ -146,6 +146,18 @@ export const NotificationQuery = z.object({
   unread: z.enum(["true", "false"]).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 })
+export const NotificationActivityKey = z
+  .string()
+  .regex(/^(vendor|partner|order):[A-Za-z0-9_-]{1,128}$/)
+export const NotificationActivityReadQuery = z.object({
+  keys: z.string().max(8000).optional(),
+})
+export const NotificationActivityReadRequest = z.object({
+  key: NotificationActivityKey,
+})
+export const NotificationActivityReadList = z.object({
+  keys: z.array(NotificationActivityKey),
+})
 
 // ---------- inventory (GLOARO MART) ----------
 

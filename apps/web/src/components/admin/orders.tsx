@@ -1,45 +1,85 @@
 "use client"
-// Live orders for the Admin portal (prototype Orders screen), limited to the admin's zones.
+// Live orders for the Admin portal, with delivery boy assignment and Admin/Partner filters.
 import * as Dialog from "@radix-ui/react-dialog"
 import { ApiError } from "@zoauro/api-client"
 import {
+  businessName,
   formatINR,
-  nextStatuses,
   ORDER_STATUSES,
   orderStatusLabel,
   type Business,
   type Order,
   type OrderStatus,
 } from "@zoauro/shared"
-import { Bike, Check, Package, Search, UtensilsCrossed, X } from "lucide-react"
+import { Search, X } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 import { useState } from "react"
+import { useRouter } from "next/router"
 import {
   paymentLabel,
-  paymentTone,
-  placedLabel,
   statusTone,
-  useAssignPartner,
-  useChangeOrderStatus,
-  useOrder,
-  useOrderCandidates,
+  placedLabel,
+  useOrderFilterOptions,
   useOrders,
 } from "@/lib/orders"
+import { useDeliveryBoys } from "@/lib/delivery"
+import { useZones } from "@/lib/session"
 import { AdminBadge, AdminButton, PageHeader } from "./ui"
 
 const PAGE_SIZE = 10
 
+import { RiderAssignment } from "./rider-assignment"
+
+function OrderDrawer({ order, close }: { order: Order; close: () => void }) {
+  return (
+    <Dialog.Root open={true} onOpenChange={() => {}}>
+      <Dialog.Content className="drawer" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="head">
+          <small>ORDER DETAILS</small>
+          <h2>{order.code}</h2>
+          <button onClick={close} className="close-btn">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="body">
+          <div className="details">
+            <strong>Customer:</strong> {order.customerName}
+            <br />
+            <strong>Vendor:</strong> {order.vendorName}
+            <br />
+            <strong>Status:</strong> <span>{orderStatusLabel(order.business, order.status)}</span>
+            <br />
+            <strong>Amount:</strong> {formatINR(order.totalPaise)}
+            <br />
+            <strong>Placed:</strong> {placedLabel(order.placedAt)}
+            <br />
+            <strong>Admin:</strong> {order.responsibleAdminName ?? "Unassigned"}
+            <br />
+            <strong>Delivery Partner:</strong> {order.partnerName ?? "Unassigned"}
+          </div>
+          <RiderAssignment order={order} />
+        </div>
+      </Dialog.Content>
+    </Dialog.Root>
+  )
+}
+
 export function AdminOrders({ business }: { business: Business }) {
   const p = useSearchParams()
-  // Dashboard, notification and search links open the list pre-filtered; a new link starts over.
   return (
     <OrdersScreen
-      key={`${p.get("search")}|${p.get("status")}|${p.get("delayed")}`}
+      key={`${p.get("search")}|${p.get("status")}|${p.get("delayed")}|${p.get("adminId")}|${p.get("deliveryPartnerId")}`}
       business={business}
       linked={{
         search: p.get("search") ?? "",
         status: ORDER_STATUSES.find((s) => s === p.get("status")) ?? "",
         delayed: p.get("delayed") === "true",
+        adminId: p.get("adminId") ?? null,
+        zoneId: p.get("zoneId") ?? null,
+        deliveryPartnerId: p.get("deliveryPartnerId") ?? null,
+        boyId: p.get("boyId") ?? null,
+        fromDate: p.get("fromDate") ?? null,
+        toDate: p.get("toDate") ?? null,
       }}
     />
   )
@@ -50,25 +90,49 @@ function OrdersScreen({
   linked,
 }: {
   business: Business
-  linked: { search: string; status: OrderStatus | ""; delayed: boolean }
+  linked: {
+    search: string
+    status: OrderStatus | ""
+    delayed: boolean
+    adminId: string | null
+    zoneId: string | null
+    deliveryPartnerId: string | null
+    boyId: string | null
+    fromDate: string | null
+    toDate: string | null
+  }
 }) {
+  const router = useRouter()
   const [query, setQuery] = useState(linked.search)
   const [status, setStatus] = useState<OrderStatus | "">(linked.status)
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState<Order | null>(null)
-  const [delayedOnly, setDelayedOnly] = useState(linked.delayed)
+  const [adminId, setAdminId] = useState<string | null>(linked.adminId ?? null)
+  const [zoneId, setZoneId] = useState<string | null>(linked.zoneId ?? null)
+  const [deliveryPartnerId, setDeliveryPartnerId] = useState<string | null>(
+    linked.deliveryPartnerId ?? null,
+  )
+  const [fromDate, setFromDate] = useState<string | null>(linked.fromDate ?? null)
+  const [toDate, setToDate] = useState<string | null>(linked.toDate ?? null)
+  const [boyId, setBoyId] = useState<string | null>(linked.boyId ?? null)
+  const filterOptions = useOrderFilterOptions(business)
+  const zones = useZones()
+  const riders = useDeliveryBoys({ status: "active", page: 1, pageSize: 100 })
+
   const orders = useOrders({
     business,
     status: status || undefined,
-    delayed: delayedOnly ? "true" : undefined,
     search: query.trim() || undefined,
+    zoneId: zoneId || undefined,
+    adminId: adminId || undefined,
+    deliveryPartnerId: deliveryPartnerId || undefined,
+    fromDate: fromDate || undefined,
+    toDate: toDate || undefined,
     page,
     pageSize: PAGE_SIZE,
   })
+
   const total = orders.data?.total ?? 0
-  const statuses = ORDER_STATUSES.filter((s) =>
-    business === "food" ? s !== "packed" : s !== "preparing",
-  )
 
   return (
     <>
@@ -79,6 +143,7 @@ function OrdersScreen({
       />
       <section className="panel full-panel">
         <div className="toolbar">
+          <AdminBadge tone="danger">TEST MARKER - orders component rendering</AdminBadge>
           <div className="search-field">
             <Search className="icon" size={17} />
             <input
@@ -93,28 +158,132 @@ function OrdersScreen({
           </div>
           <select
             className="filter-button"
-            value={status}
+            value={status || ""}
+            aria-label="Status"
             onChange={(e) => {
-              setStatus(e.target.value as OrderStatus | "")
+              setStatus(e.target.value === "" ? "" : (e.target.value as OrderStatus))
               setPage(1)
             }}
-            aria-label="Status"
           >
-            <option value="">Status: All</option>
-            {statuses.map((s) => (
-              <option value={s} key={s}>
+            <option value="">All statuses</option>
+            {ORDER_STATUSES.map((s) => (
+              <option key={s} value={s}>
                 {orderStatusLabel(business, s)}
               </option>
             ))}
           </select>
+          <select
+            className="filter-button"
+            value={adminId || ""}
+            onChange={(e) => {
+              const newAdmin = e.target.value === "" ? null : (e.target.value as string)
+              setAdminId(newAdmin)
+              setPage(1)
+            }}
+            aria-label="Admin"
+          >
+            <option value="">All admins</option>
+            <option value="unassigned">Unassigned</option>
+            {filterOptions.data?.admins.map((opt) => (
+              <option key={opt.id} value={opt.id}>
+                {opt.name}
+              </option>
+            ))}
+          </select>
+          <select
+            className="filter-button"
+            value={deliveryPartnerId || ""}
+            aria-label="Delivery partner"
+            onChange={(e) => {
+              const newPartner = e.target.value === "" ? null : (e.target.value as string)
+              setDeliveryPartnerId(newPartner)
+              setPage(1)
+            }}
+          >
+            <option value="">All delivery partners</option>
+            <option value="unassigned">Unassigned</option>
+            {filterOptions.data?.deliveryPartners.map((opt) => (
+              <option key={opt.id} value={opt.id}>
+                {opt.name}
+              </option>
+            ))}
+          </select>
+          <select
+            className="filter-button"
+            value={zoneId || ""}
+            aria-label="Zone"
+            onChange={(e) => {
+              setZoneId(e.target.value === "" ? null : (e.target.value as string))
+              setPage(1)
+            }}
+          >
+            <option value="">All zones</option>
+            {zones.data?.map((zone) => (
+              <option key={zone.id} value={zone.id}>
+                {zone.location}, {zone.city}
+              </option>
+            ))}
+          </select>
+          <select
+            className="filter-button"
+            value={boyId || ""}
+            aria-label="Delivery boy"
+            onChange={(e) => {
+              setBoyId(e.target.value === "" ? null : (e.target.value as string))
+              setPage(1)
+            }}
+          >
+            <option value="">All delivery boys</option>
+            {riders.data?.items
+              ?.map((boy) => ({
+                id: boy.id,
+                name: boy.name,
+                code: boy.code,
+              }))
+              .map((boy) => (
+                <option key={boy.id} value={boy.id}>
+                  {boy.name} · {boy.code}
+                </option>
+              ))}
+          </select>
+          <label className="filter-button">
+            From{" "}
+            <input
+              type="date"
+              value={fromDate || ""}
+              onChange={(e) => {
+                setFromDate(e.target.value as string)
+                setPage(1)
+              }}
+            />
+          </label>
+          <label className="filter-button">
+            To{" "}
+            <input
+              type="date"
+              value={toDate || ""}
+              onChange={(e) => {
+                setToDate(e.target.value as string)
+                setPage(1)
+              }}
+            />
+          </label>
           <button
             type="button"
-            className={`filter-button${delayedOnly ? " active" : ""}`}
-            aria-pressed={delayedOnly}
-            onClick={() => (setDelayedOnly(!delayedOnly), setPage(1))}
-            title={`Still being fulfilled after ${business === "food" ? "45 minutes" : "4 hours"}`}
+            className="filter-button"
+            onClick={() => {
+              setQuery("")
+              setStatus("")
+              setAdminId(null)
+              setZoneId(null)
+              setDeliveryPartnerId(null)
+              setBoyId(null)
+              setFromDate(null)
+              setToDate(null)
+              setPage(1)
+            }}
           >
-            Delayed only
+            Reset
           </button>
         </div>
         <div className="table-summary">
@@ -134,15 +303,18 @@ function OrdersScreen({
                 <tr>
                   <th>Order</th>
                   <th>Customer</th>
-                  <th>{business === "food" ? "Restaurant" : "Seller"}</th>
-                  <th>Amount</th>
+                  <th>Business</th>
+                  <th>Vendor</th>
+                  <th>Admin</th>
+                  <th>Delivery Partner</th>
+                  <th>Payment</th>
                   <th>Status</th>
-                  <th>Partner</th>
+                  <th>Amount</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {orders.data?.items.map((o) => (
-                  // Whole row opens the drawer for mouse users; the order code button covers keyboards.
                   <tr key={o.id} onClick={() => setSelected(o)}>
                     <td>
                       <button
@@ -152,11 +324,21 @@ function OrdersScreen({
                       >
                         <strong>{o.code}</strong>
                       </button>
+                      <small>{businessName[o.business]}</small>
                       <small>{placedLabel(o.placedAt)}</small>
                     </td>
                     <td>{o.customerName}</td>
                     <td>
+                      <AdminBadge tone={o.business}>{businessName[o.business]}</AdminBadge>
+                    </td>
+                    <td>
                       <strong className="vendor-name">{o.vendorName}</strong>
+                    </td>
+                    <td>
+                      <span>{o.responsibleAdminName ?? "Unassigned"}</span>
+                    </td>
+                    <td>
+                      <span>{o.partnerName ?? "Unassigned"}</span>
                     </td>
                     <td>
                       <strong>{formatINR(o.totalPaise)}</strong>
@@ -169,13 +351,48 @@ function OrdersScreen({
                       {o.delayed && <AdminBadge tone="danger">Delayed</AdminBadge>}
                     </td>
                     <td>
-                      <span>{o.partnerName ?? "Unassigned"}</span>
+                      <strong>{formatINR(o.totalPaise)}</strong>
+                    </td>
+                    <td>
+                      {o.deliveryBoyId || o.partnerId ? (
+                        <>
+                          {o.deliveryBoyId && (
+                            <AdminButton
+                              kind="secondary"
+                              onClick={() => {
+                                router.push(`/admin/${business}/orders/${o.id}/assign-boy`)
+                              }}
+                            >
+                              Reassign boy
+                            </AdminButton>
+                          )}
+                          {o.partnerId && (
+                            <AdminButton
+                              kind="secondary"
+                              onClick={() => {
+                                router.push(`/admin/${business}/orders/${o.id}/assign`)
+                              }}
+                            >
+                              Reassign partner
+                            </AdminButton>
+                          )}
+                        </>
+                      ) : (
+                        <AdminButton
+                          kind="primary"
+                          onClick={() => {
+                            router.push(`/admin/${business}/orders/${o.id}/assign`)
+                          }}
+                        >
+                          Assign partner
+                        </AdminButton>
+                      )}
                     </td>
                   </tr>
                 ))}
                 {orders.data?.items.length === 0 && (
                   <tr>
-                    <td colSpan={6}>No orders match these filters.</td>
+                    <td colSpan={10}>No orders match these filters.</td>
                   </tr>
                 )}
               </tbody>
@@ -201,267 +418,7 @@ function OrdersScreen({
           </button>
         </div>
       </section>
-      {selected && (
-        <OrderDrawer order={selected} close={() => setSelected(null)} onChanged={setSelected} />
-      )}
+      {selected && <OrderDrawer order={selected} close={() => setSelected(null)} />}
     </>
-  )
-}
-
-function OrderDrawer({
-  order,
-  close,
-  onChanged,
-}: {
-  order: Order
-  close: () => void
-  onChanged: (o: Order) => void
-}) {
-  const change = useChangeOrderStatus()
-  const [reason, setReason] = useState("")
-  const [cancelling, setCancelling] = useState(false)
-  const next = nextStatuses(order.business, order.status)
-  const run = (to: OrderStatus, why?: string) =>
-    change.mutate(
-      { order, to, ...(why && { reason: why }) },
-      { onSuccess: (o) => (onChanged(o), setCancelling(false)) },
-    )
-  const ItemIcon = order.business === "food" ? UtensilsCrossed : Package
-
-  return (
-    // Radix Dialog gives Escape, focus trapping and outside-click closing; rendered in
-    // place (no portal) so .admin-ui styles apply.
-    <Dialog.Root open onOpenChange={(open) => !open && close()}>
-      <Dialog.Overlay className="drawer-backdrop">
-        <Dialog.Content className="drawer" aria-describedby={undefined}>
-          <div className="drawer-head">
-            <div>
-              <small>ORDER DETAILS</small>
-              <Dialog.Title asChild>
-                <h2>{order.code}</h2>
-              </Dialog.Title>
-            </div>
-            <Dialog.Close aria-label="Close">
-              <X className="icon" size={20} />
-            </Dialog.Close>
-          </div>
-          <div className="drawer-status">
-            <AdminBadge tone={statusTone(order.status)}>
-              {orderStatusLabel(order.business, order.status)}
-            </AdminBadge>
-            <span>Placed {placedLabel(order.placedAt)}</span>
-          </div>
-          <div className="route-card">
-            <div>
-              <span className="route-dot start" />
-              <div>
-                <small>{order.business === "food" ? "RESTAURANT" : "SELLER PICKUP"}</small>
-                <strong>{order.vendorName}</strong>
-              </div>
-            </div>
-            <i />
-            <div>
-              <span className="route-dot end" />
-              <div>
-                <small>CUSTOMER</small>
-                <strong>{order.customerName}</strong>
-                <p>{order.customerPhone}</p>
-              </div>
-            </div>
-          </div>
-          <section className="drawer-section">
-            <h3>{order.business === "food" ? "Items in this order" : "Product summary"}</h3>
-            {order.items.map((i, k) => (
-              <div className="item-row" key={k}>
-                <span className="item-thumb">
-                  <ItemIcon className="icon" size={20} />
-                </span>
-                <div>
-                  <strong>{i.name}</strong>
-                  <small>Quantity · {i.quantity}</small>
-                </div>
-                <b>{formatINR(i.quantity * i.unitPricePaise)}</b>
-              </div>
-            ))}
-            <div className="item-row">
-              <span />
-              <div>
-                <strong>Total incl. delivery fee {formatINR(order.deliveryFeePaise)}</strong>
-              </div>
-              <b>{formatINR(order.totalPaise)}</b>
-            </div>
-          </section>
-          <section className="drawer-section split-info">
-            <div>
-              <small>PAYMENT</small>
-              <AdminBadge tone={paymentTone(order.paymentStatus)}>{paymentLabel(order)}</AdminBadge>
-            </div>
-            <div>
-              <small>DELIVERY PARTNER</small>
-              <strong>{order.partnerName ?? "Not assigned"}</strong>
-            </div>
-          </section>
-          {(order.status === "ready" || order.status === "assigned") && (
-            <AdminAssign order={order} onAssigned={onChanged} />
-          )}
-          <AdminHistory id={order.id} business={order.business} />
-          {change.isError && (
-            <p role="alert" style={{ color: "#b42318", fontSize: 13 }}>
-              {change.error instanceof ApiError
-                ? change.error.message
-                : "Couldn't update the order."}
-            </p>
-          )}
-          {cancelling && (
-            <label
-              className="drawer-section"
-              style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13 }}
-            >
-              Reason for cancelling
-              <input
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                style={{
-                  height: 38,
-                  border: "1px solid #e2e8f0",
-                  borderRadius: 9,
-                  padding: "0 10px",
-                }}
-              />
-            </label>
-          )}
-          <div className="drawer-actions">
-            {cancelling ? (
-              <>
-                <AdminButton kind="ghost" onClick={() => setCancelling(false)}>
-                  Keep order
-                </AdminButton>
-                <AdminButton
-                  kind="danger"
-                  disabled={!reason.trim() || change.isPending}
-                  onClick={() => run("cancelled", reason.trim())}
-                >
-                  Cancel order
-                </AdminButton>
-              </>
-            ) : (
-              // Assigning needs a partner, so it happens in the picker above.
-              next
-                .filter((to) => to !== "assigned")
-                .map((to) =>
-                  to === "cancelled" ? (
-                    <AdminButton key={to} kind="ghost" onClick={() => setCancelling(true)}>
-                      Cancel order
-                    </AdminButton>
-                  ) : (
-                    <AdminButton
-                      key={to}
-                      kind={order.status === "assigned" && to === "ready" ? "secondary" : "primary"}
-                      disabled={change.isPending}
-                      onClick={() => run(to)}
-                    >
-                      {order.status === "assigned" && to === "ready"
-                        ? "Unassign partner"
-                        : order.status === "refund_requested" && to === "delivered"
-                          ? "Decline refund"
-                          : `Mark ${orderStatusLabel(order.business, to).toLowerCase()}`}
-                    </AdminButton>
-                  ),
-                )
-            )}
-          </div>
-        </Dialog.Content>
-      </Dialog.Overlay>
-    </Dialog.Root>
-  )
-}
-
-function AdminAssign({ order, onAssigned }: { order: Order; onAssigned: (o: Order) => void }) {
-  const candidates = useOrderCandidates(order.id, true)
-  const assign = useAssignPartner()
-  const [partnerId, setPartnerId] = useState("")
-  const list = candidates.data ?? []
-  const free = list.filter((p) => p.availability === "available" && p.id !== order.partnerId)
-  return (
-    <section className="drawer-section assign-section">
-      <h3>{order.partnerName ? "Reassign delivery partner" : "Assign a delivery partner"}</h3>
-      <div>
-        <select
-          value={partnerId}
-          onChange={(e) => setPartnerId(e.target.value)}
-          aria-label="Delivery partner"
-        >
-          <option value="">
-            {candidates.isLoading
-              ? "Loading partners…"
-              : free.length
-                ? "Choose an online partner"
-                : "No partner is free in this area"}
-          </option>
-          {free.map((p) => (
-            <option value={p.id} key={p.id}>
-              {p.name} · {p.code}
-            </option>
-          ))}
-          {list
-            .filter((p) => p.availability !== "available")
-            .map((p) => (
-              <option value={p.id} key={p.id} disabled>
-                {p.name} · on delivery ({p.carrying})
-              </option>
-            ))}
-        </select>
-        <AdminButton
-          icon={Bike}
-          disabled={!partnerId || assign.isPending}
-          onClick={() =>
-            assign.mutate(
-              { order, partnerId },
-              { onSuccess: (o) => (onAssigned(o), setPartnerId("")) },
-            )
-          }
-        >
-          {order.partnerName ? "Reassign" : "Assign"}
-        </AdminButton>
-      </div>
-      {assign.isError && (
-        <p role="alert" className="doc-error">
-          {assign.error instanceof ApiError ? assign.error.message : "Couldn't assign the partner."}
-        </p>
-      )}
-    </section>
-  )
-}
-
-function AdminHistory({ id, business }: { id: string; business: Order["business"] }) {
-  const detail = useOrder(id)
-  const events = detail.data?.events ?? []
-  const who = (e: (typeof events)[number]) =>
-    e.actorName ??
-    { app: "Customer app", partner: "Partner app", seed: "Demo data", system: "System" }[
-      e.actorType
-    ] ??
-    e.actorType
-  return (
-    <section className="drawer-section">
-      <h3>History</h3>
-      {!detail.data && <p>Loading history…</p>}
-      <div className="vertical-timeline">
-        {events.map((e, i) => (
-          <div key={i} className={i === events.length - 1 ? "current" : "done"}>
-            <span>{i < events.length - 1 ? <Check className="icon" size={12} /> : ""}</span>
-            <div>
-              <strong>
-                {orderStatusLabel(business, e.to)}
-                {e.reason && ` · ${e.reason}`}
-              </strong>
-              <small>
-                {placedLabel(e.at)} · {who(e)}
-              </small>
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
   )
 }

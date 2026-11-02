@@ -12,11 +12,12 @@ import {
   type Partner,
   type PartnerAvailability,
   type PartnerDecision,
+  type PartnerDraftRequest,
   type PartnerStatus,
   type UpdatePartnerRequest,
   type VehicleType,
 } from "@zoauro/shared"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useWizardUploads } from "./documents"
 import { fieldErrors, withoutBlanks } from "./vendors"
 
@@ -111,7 +112,10 @@ export function useCreatePartner() {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (body: CreatePartnerRequest) => api("post", "/partners", { body }),
-    onSuccess: () => client.invalidateQueries({ queryKey: ["partners"] }),
+    onSuccess: () => {
+      client.setQueryData(["partner-draft"], null)
+      return client.invalidateQueries({ queryKey: ["partners"] })
+    },
   })
 }
 
@@ -199,6 +203,7 @@ const stepFields: (keyof PartnerForm | string)[][] = [
  * Validates with the API's own schema so the wizard and server agree.
  */
 export function usePartnerWizard(defaultService: PartnerForm["service"], defaultZone = "") {
+  const client = useQueryClient()
   const [step, setStep] = useState(0)
   const [form, setForm] = useState<PartnerForm>({
     name: "",
@@ -222,6 +227,23 @@ export function usePartnerWizard(defaultService: PartnerForm["service"], default
     ifsc: "",
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const savedDraft = useQuery({
+    queryKey: ["partner-draft"],
+    queryFn: () => api("get", "/partners/draft"),
+  })
+  const [draftReady, setDraftReady] = useState(false)
+  useEffect(() => {
+    if (!savedDraft.isSuccess || savedDraft.isFetching || draftReady) return
+    if (savedDraft.data) {
+      setForm(savedDraft.data.form)
+      setStep(savedDraft.data.step)
+    }
+    setDraftReady(true)
+  }, [draftReady, savedDraft.data, savedDraft.isFetching, savedDraft.isSuccess])
+  const saveDraft = useMutation({
+    mutationFn: (body: PartnerDraftRequest) => api("put", "/partners/draft", { body }),
+    onSuccess: (draft) => client.setQueryData(["partner-draft"], draft),
+  })
   const create = useCreatePartner()
   // Identity and vehicle documents, uploaded once the application exists.
   const uploads = useWizardUploads("partners")
@@ -290,5 +312,24 @@ export function usePartnerWizard(defaultService: PartnerForm["service"], default
     })
   }
 
-  return { step, form, set, errors, next, back, goTo, submit, create, uploads }
+  function save() {
+    saveDraft.mutate({ step, form })
+  }
+
+  return {
+    step,
+    form,
+    set,
+    errors,
+    next,
+    back,
+    goTo,
+    submit,
+    create,
+    uploads,
+    savedDraft,
+    draftReady,
+    saveDraft,
+    save,
+  }
 }

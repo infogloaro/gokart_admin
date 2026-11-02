@@ -5,6 +5,8 @@ import {
   ChangeOrderStatusRequest,
   Order,
   OrderDetail,
+  OrderFilterOptions,
+  OrderFilterOptionsQuery,
   OrderListQuery,
   paged,
 } from "@zoauro/shared"
@@ -22,6 +24,14 @@ registry.registerPath({
   summary: "Orders in the member's businesses and zones",
   request: { query: OrderListQuery },
   responses: { 200: json(paged(OrderRef), "A page of orders"), ...errors(400, 401, 403) },
+})
+registry.registerPath({
+  method: "get",
+  path: "/orders/filters",
+  tags,
+  summary: "Admin and assigned delivery partner filters in the member's scope",
+  request: { query: OrderFilterOptionsQuery },
+  responses: { 200: json(OrderFilterOptions, "Order filters"), ...errors(401, 403) },
 })
 registry.registerPath({
   method: "get",
@@ -76,5 +86,24 @@ registry.registerPath({
   tags,
   summary: "Assign or reassign a delivery partner",
   request: { params: id, body: json(AssignPartnerRequest) },
+  responses: { 200: json(OrderRef, "Updated order"), ...errors(400, 401, 403, 404, 409) },
+})
+const assignBoySchema = z.object({ boyId: z.string().min(1), version: z.number().int() })
+
+registry.registerPath({
+  method: "post",
+  path: "/orders/{id}/assign-boy",
+  tags,
+  summary: "Assign a delivery boy to an order",
+  request: { params: id, body: json(assignBoySchema) },
+  responses: { 200: json(OrderRef, "Updated order"), ...errors(400, 401, 403, 404, 409) },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/orders/{id}/auto-assign-boy",
+  tags,
+  summary: "Assign the least busy eligible delivery boy to an order",
+  request: { params: id },
   responses: { 200: json(OrderRef, "Updated order"), ...errors(400, 401, 403, 404, 409) },
 })

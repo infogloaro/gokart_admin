@@ -8,6 +8,7 @@ import { json, errors, registry } from "../../openapi/registry"
 export const Zone = z.object({
   id: z.string(),
   district: z.string(),
+  districtId: z.string(),
   city: z.string(),
   location: z.string(),
 })
@@ -15,7 +16,7 @@ export const Zone = z.object({
 const listZones = (zoneIds: string[] | null) =>
   prisma.zone.findMany({
     where: { active: true, ...(zoneIds && { id: { in: zoneIds } }) },
-    select: { id: true, district: true, city: true, location: true },
+    select: { id: true, district: true, districtId: true, city: true, location: true },
     orderBy: [{ district: "asc" }, { city: "asc" }, { location: "asc" }],
   })
 

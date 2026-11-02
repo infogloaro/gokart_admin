@@ -22,6 +22,9 @@ type Scope = { businesses: Business[]; zoneIds: string[] | null }
 const zoneName = (z: { city: string; location: string }) => `${z.location}, ${z.city}`
 
 export function toDto(v: repo.VendorRow, s?: repo.OrderStats): Vendor {
+  const responsibleAdmin = v.zone.members.find((entry) =>
+    entry.member.businesses.some(({ business }) => business === v.business),
+  )?.member
   return {
     id: v.id,
     code: v.code,
@@ -33,6 +36,8 @@ export function toDto(v: repo.VendorRow, s?: repo.OrderStats): Vendor {
     address: v.address,
     zoneId: v.zoneId,
     zoneName: zoneName(v.zone),
+    responsibleAdminId: responsibleAdmin?.id ?? null,
+    responsibleAdminName: responsibleAdmin?.name ?? null,
     status: v.status,
     verification: v.verification,
     commissionPct: v.commissionBps / 100,
@@ -172,7 +177,14 @@ export async function update(id: string, scope: Scope, input: UpdateVendorReques
   for (const k of changed)
     if (k === "commissionPct") data.commissionBps = Math.round(input.commissionPct! * 100)
     else data[k] = input[k]
-  const updated = await repo.update(v, new Date(input.updatedAt), data, changed, actor)
+  const updated = await repo.update(
+    v,
+    new Date(input.updatedAt),
+    data,
+    changed,
+    input.reason,
+    actor,
+  )
   if (!updated) throw conflict("This vendor was updated by someone else. Reload to see the latest.")
   return toDetail(updated)
 }

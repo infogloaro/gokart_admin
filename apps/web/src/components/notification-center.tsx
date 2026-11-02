@@ -4,7 +4,12 @@ import { businessName, type Business, type Permission } from "@zoauro/shared"
 import { AlertCircle, Bell, Bike, Megaphone, PackageCheck, Store } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useMemo, useState } from "react"
-import { useMarkRead, useStoredNotifications } from "@/lib/operations"
+import {
+  useMarkActivityRead,
+  useMarkRead,
+  useNotificationActivityReads,
+  useStoredNotifications,
+} from "@/lib/operations"
 import { useOrders } from "@/lib/orders"
 import { usePartners } from "@/lib/partners"
 import { useVendors } from "@/lib/vendors"
@@ -124,20 +129,27 @@ export function useNotificationFeed(
     return result.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
   }, [business, orders.data, partners.data, portal, vendors.data, stored.data])
 
+  const activityKeys = items.filter((item) => item.kind !== "update").map((item) => item.id)
+  const activityReads = useNotificationActivityReads(activityKeys)
+  const readKeys = new Set(activityReads.data?.keys ?? [])
+  const visibleItems = items.filter((item) => item.kind === "update" || !readKeys.has(item.id))
   const count =
     (canViewVendors ? (vendors.data?.total ?? 0) : 0) +
     (canViewPartners ? (partners.data?.total ?? 0) : 0) +
     (canViewOrders ? (orders.data?.total ?? 0) : 0) +
-    (stored.data?.unread ?? 0)
+    (stored.data?.unread ?? 0) -
+    activityKeys.filter((key) => readKeys.has(key)).length
   const hasError =
     (canViewVendors && vendors.isError) ||
     (canViewPartners && partners.isError) ||
-    (canViewOrders && orders.isError)
+    (canViewOrders && orders.isError) ||
+    activityReads.isError
   const loading =
     (canViewVendors && vendors.isPending) ||
     (canViewPartners && partners.isPending) ||
-    (canViewOrders && orders.isPending)
-  return { items, count, hasError, loading }
+    (canViewOrders && orders.isPending) ||
+    activityReads.isPending
+  return { items: visibleItems, count, hasError, loading }
 }
 
 export function NotificationCenter({
@@ -153,10 +165,12 @@ export function NotificationCenter({
   const [open, setOpen] = useState(false)
   const { items, count, hasError, loading } = useNotificationFeed(business, permissions, portal)
   const markRead = useMarkRead()
+  const markActivityRead = useMarkActivityRead()
   const Icon = portal === "super" ? "super" : "admin"
 
   const openItem = (item: NotificationItem) => {
     if (item.storedId) markRead.mutate(item.storedId)
+    else if (item.kind !== "update") markActivityRead.mutate(item.id)
     setOpen(false)
     router.push(item.href)
   }

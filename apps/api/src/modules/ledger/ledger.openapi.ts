@@ -6,6 +6,7 @@ import {
   LedgerSummary,
   paged,
 } from "@zoauro/shared"
+import { z } from "zod"
 import { errors, json, registry } from "../../openapi/registry"
 
 registry.registerPath({
@@ -40,5 +41,28 @@ registry.registerPath({
   responses: {
     200: json(registry.register("Analytics", Analytics), "Analytics"),
     ...errors(400, 401, 403),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/reports/insights",
+  tags: ["Reports"],
+  summary: "Zones with unusually many orders today compared with their usual day",
+  responses: {
+    200: json(
+      z.array(
+        z.object({
+          zoneId: z.string(),
+          zoneName: z.string(),
+          today: z.number().int(),
+          usualPerDay: z.number(),
+          flagged: z.boolean(),
+          reason: z.string().nullable(),
+        }),
+      ),
+      "Zone insights",
+    ),
+    ...errors(401, 403),
   },
 })

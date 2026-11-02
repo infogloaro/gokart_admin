@@ -111,6 +111,13 @@ export const useStoredNotifications = (unreadOnly = false, limit = 20) =>
     refetchInterval: LIVE,
   })
 
+export const useNotificationActivityReads = (keys: string[]) =>
+  useQuery({
+    queryKey: ["notifications", "activity-read", keys],
+    queryFn: () => api("get", "/notifications/activity-read", { query: { keys: keys.join(",") } }),
+    enabled: keys.length > 0,
+  })
+
 export function useMarkRead() {
   const client = useQueryClient()
   return useMutation({
@@ -118,6 +125,14 @@ export function useMarkRead() {
       id === "all"
         ? api("post", "/notifications/read-all", {})
         : api("post", "/notifications/{id}/read", { params: { id } }),
+    onSettled: () => client.invalidateQueries({ queryKey: ["notifications"] }),
+  })
+}
+
+export function useMarkActivityRead() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (key: string) => api("post", "/notifications/activity-read", { body: { key } }),
     onSettled: () => client.invalidateQueries({ queryKey: ["notifications"] }),
   })
 }
@@ -226,3 +241,10 @@ export function deviceName(ua: string | null) {
             : ""
   return os ? `${browser} on ${os}` : browser
 }
+
+export const useComplaintSuggestions = (id: string | null) =>
+  useQuery({
+    queryKey: ["complaints", "suggestions", id],
+    queryFn: () => api("get", "/complaints/{id}/suggestions", { params: { id: id! } }),
+    enabled: Boolean(id),
+  })

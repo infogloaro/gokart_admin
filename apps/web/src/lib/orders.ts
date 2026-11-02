@@ -8,8 +8,16 @@ export type OrderQuery = {
   business?: Business | undefined
   status?: OrderStatus | undefined
   search?: string | undefined
+  districtId?: string | undefined
+  zoneId?: string | undefined
+  adminId?: string | undefined
+  deliveryFleetId?: string | undefined
+  deliveryPartnerId?: string | undefined
+  deliveryBoyId?: string | undefined
   partnerId?: string | undefined
   vendorId?: string | undefined
+  fromDate?: string | undefined
+  toDate?: string | undefined
   /** "true" for orders past their time limit (sent as a query string). */
   delayed?: "true" | undefined
   page: number
@@ -23,6 +31,12 @@ export const useOrders = (q: OrderQuery, enabled = true, refetchInterval?: numbe
     placeholderData: keepPreviousData,
     enabled,
     refetchInterval,
+  })
+
+export const useOrderFilterOptions = (business?: Business) =>
+  useQuery({
+    queryKey: ["orders", "filters", business],
+    queryFn: () => api("get", "/orders/filters", { query: { business } }),
   })
 
 /** One order with its status history. */
@@ -89,3 +103,29 @@ export const placedLabel = (iso: string) =>
     hour: "2-digit",
     minute: "2-digit",
   })
+
+/** Riders who could take this order now, least busy first. */
+export const useRiderSuggestions = (id: string | null) =>
+  useQuery({
+    queryKey: ["orders", "rider-suggestions", id],
+    queryFn: () => api("get", "/delivery/orders/{id}/suggestions", { params: { id: id! } }),
+    enabled: Boolean(id),
+  })
+
+/** Assigns a chosen rider, or the least busy one when no rider is given. */
+export function useAssignRider() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (v: { order: Order; boyId?: string }) =>
+      v.boyId
+        ? api("post", "/orders/{id}/assign-boy", {
+            params: { id: v.order.id },
+            body: { boyId: v.boyId, version: v.order.version },
+          })
+        : api("post", "/orders/{id}/auto-assign-boy", { params: { id: v.order.id } }),
+    onSettled: () => {
+      void client.invalidateQueries({ queryKey: ["orders"] })
+      void client.invalidateQueries({ queryKey: ["delivery"] })
+    },
+  })
+}

@@ -1,5 +1,6 @@
 import { Permission, type MfaMethod } from "@zoauro/shared"
 import { audit, type Actor } from "../../lib/audit"
+import { notify } from "../../lib/notify"
 import { prisma } from "../../lib/prisma"
 import type { MemberContext } from "../../middleware/auth"
 
@@ -46,14 +47,37 @@ export async function findMemberContext(id: string): Promise<MemberContext | nul
   }
 }
 
-/** Records the sign-in and remembers the method for next time. */
+const NEW_NETWORK_LOOKBACK_MS = 90 * 24 * 60 * 60 * 1000
+
+/** Records the sign-in and remembers the method for next time. A sign-in from a network this
+ *  member has not used in the last 90 days alerts them and every Super Admin. */
 export const recordSignIn = (actor: Actor, method: MfaMethod, via: "email" | "phone") =>
   prisma.$transaction(async (tx) => {
     await tx.member.update({
       where: { id: actor.id! },
       data: { lastLoginAt: new Date(), preferredMfa: method },
     })
+    const history = await tx.auditLog.findMany({
+      where: {
+        actorId: actor.id!,
+        action: "auth.signed_in",
+        at: { gte: new Date(Date.now() - NEW_NETWORK_LOOKBACK_MS) },
+      },
+      select: { ip: true },
+      take: 200,
+    })
     await audit(tx, actor, "auth.signed_in", { type: "member", id: actor.id! }, { method, via })
+    if (history.length > 0 && actor.ip && !history.some((row) => row.ip === actor.ip)) {
+      const supers = await tx.member.findMany({
+        where: { status: "active", role: "super_admin" },
+        select: { id: true },
+      })
+      await notify(tx, [actor.id!, ...supers.map((member) => member.id)], {
+        title: "Sign-in from a new network",
+        body: `${actor.name} signed in from ${actor.ip}, a network not seen in the last 90 days.`,
+        link: "/super/notifications",
+      })
+    }
   })
 
 export const recordSignOut = (actor: Actor) =>

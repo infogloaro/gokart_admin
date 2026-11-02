@@ -9,6 +9,7 @@ import type { Actor } from "../../lib/audit"
 import { badRequest, conflict, notFound } from "../../lib/errors"
 import * as repo from "./complaints.repository"
 import type { ComplaintFilter, Scope } from "./complaints.repository"
+import { suggestComplaintHandling } from "./suggestions"
 
 type Row = NonNullable<Awaited<ReturnType<typeof repo.findInScope>>>
 type Plain = Omit<Row, "notes">
@@ -206,4 +207,14 @@ export async function reopen(
 export async function note(id: string, s: Scope, body: string, actor: Actor) {
   await load(id, s)
   return detail(await repo.addNote(id, actor, body))
+}
+
+/** Suggested priority and reply wording for one complaint, from its category, claim and text. */
+export async function suggestions(id: string, s: Scope) {
+  const c = await load(id, s)
+  return suggestComplaintHandling({
+    category: c.category as ComplaintCategory,
+    claimPaise: c.claimPaise,
+    text: `${c.summary} ${c.details}`,
+  })
 }

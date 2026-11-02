@@ -250,13 +250,14 @@ function VendorsScreen({ initialSearch }: { initialSearch: string }) {
           <div className="table-wrap">
             <table className="partner-table vendor-table">
               <colgroup>
-                <col style={{ width: "23%" }} />
-                <col style={{ width: "13%" }} />
-                <col style={{ width: "13%" }} />
-                <col style={{ width: "15%" }} />
+                <col style={{ width: "20%" }} />
                 <col style={{ width: "11%" }} />
+                <col style={{ width: "11%" }} />
+                <col style={{ width: "12%" }} />
+                <col style={{ width: "13%" }} />
                 <col style={{ width: "10%" }} />
-                <col style={{ width: "10%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "9%" }} />
                 <col style={{ width: "5%" }} />
               </colgroup>
               <thead>
@@ -264,6 +265,7 @@ function VendorsScreen({ initialSearch }: { initialSearch: string }) {
                   <th>Vendor</th>
                   <th>Business</th>
                   <th>Owner</th>
+                  <th>Admin</th>
                   <th>Location</th>
                   <th>Verification</th>
                   <th>Status</th>
@@ -286,7 +288,7 @@ function VendorsScreen({ initialSearch }: { initialSearch: string }) {
                 {!vendors.data &&
                   Array.from({ length: 5 }, (_, i) => (
                     <tr key={i} className="skeleton-row">
-                      {Array.from({ length: 8 }, (_, j) => (
+                      {Array.from({ length: 9 }, (_, j) => (
                         <td key={j}>
                           <i />
                         </td>
@@ -312,6 +314,7 @@ function VendorsScreen({ initialSearch }: { initialSearch: string }) {
                       <Badge tone={v.business}>{businessName[v.business]}</Badge>
                     </td>
                     <td>{v.ownerName}</td>
+                    <td>{v.responsibleAdminName ?? "Unassigned"}</td>
                     <td>{v.zoneName}</td>
                     <td>
                       <Badge tone={verificationTone(v.verification)}>
@@ -340,7 +343,7 @@ function VendorsScreen({ initialSearch }: { initialSearch: string }) {
                 ))}
                 {vendors.data?.items.length === 0 && (
                   <tr>
-                    <td colSpan={8}>No vendors match these filters.</td>
+                    <td colSpan={9}>No vendors match these filters.</td>
                   </tr>
                 )}
               </tbody>
@@ -474,6 +477,7 @@ export function VendorDrawer({
   const [decision, setDecision] = useState<Decision | null>(null)
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState<EditForm | null>(null)
+  const [editReason, setEditReason] = useState("")
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [menu, setMenu] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
@@ -489,6 +493,7 @@ export function VendorDrawer({
   const startEdit = () => {
     if (!v) return
     setForm(formOf(v))
+    setEditReason("")
     setErrors({})
     update.reset()
     setEditing(true)
@@ -508,7 +513,11 @@ export function VendorDrawer({
       setEditing(false)
       return setToast("No changes to save.")
     }
-    const parsed = UpdateVendorRequest.safeParse({ ...changed, updatedAt: v.updatedAt })
+    const parsed = UpdateVendorRequest.safeParse({
+      ...changed,
+      updatedAt: v.updatedAt,
+      reason: editReason.trim(),
+    })
     if (!parsed.success) {
       const errs = fieldErrors(parsed.error.issues)
       if (errs.commissionPct) errs.commission = errs.commissionPct
@@ -535,7 +544,9 @@ export function VendorDrawer({
             {canDecide && v.status !== "rejected" && (
               <Button
                 icon={FileText}
-                onClick={editing ? () => (setEditing(false), setErrors({})) : startEdit}
+                onClick={
+                  editing ? () => (setEditing(false), setErrors({}), setEditReason("")) : startEdit
+                }
               >
                 {editing ? "Cancel editing" : "Edit details"}
               </Button>
@@ -606,6 +617,15 @@ export function VendorDrawer({
             </span>
           </div>
           <Tabs items={TABS} value={tab} onChange={setTab} />
+          {editing && (
+            <Input
+              label="Reason for editing *"
+              value={editReason}
+              maxLength={500}
+              error={errors.reason}
+              onChange={(event) => setEditReason(event.target.value)}
+            />
+          )}
           <main key={tab} className="tab-fade">
             {(update.isError || Object.keys(errors).length > 0) && (
               <ErrorBox icon={AlertTriangle}>
@@ -735,6 +755,7 @@ function VendorTab({
           <Value label="Mobile number" value={v.phone} />
           <Value label="Email address" value={v.email} />
           <Value label="Service area" value={v.zoneName} />
+          <Value label="Responsible Admin" value={v.responsibleAdminName ?? "Unassigned"} />
           <Value label="Address" value={v.address} />
           <Value label="Added" value={dateTimeLabel(v.createdAt)} />
         </Section>
