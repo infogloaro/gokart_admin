@@ -143,7 +143,6 @@ function OrdersScreen({
       />
       <section className="panel full-panel">
         <div className="toolbar">
-          <AdminBadge tone="danger">TEST MARKER - orders component rendering</AdminBadge>
           <div className="search-field">
             <Search className="icon" size={17} />
             <input
