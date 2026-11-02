@@ -1,5 +1,6 @@
 import type { PrismaClient } from "../../generated/client/index.js"
-import { groupGeography } from "../geography.js"
+import { groupGeography, mergeGeography } from "../geography.js"
+import { INDIA_GEOGRAPHY } from "../geography-catalog.js"
 import { createDashboardRepository } from "./dashboard.repository.js"
 import {
   DISTRIBUTION_LABELS,
@@ -606,7 +607,7 @@ export function createDashboardService(
     async getGeography(principal: WorkspacePrincipal, workspaceSlug: string) {
       const workspaces = await resolveWorkspaces(principal, workspaceSlug)
       const rows = await repository.listGeography(workspaces.map((workspace) => workspace.id))
-      return { states: groupGeography(rows) }
+      return { states: mergeGeography(INDIA_GEOGRAPHY, groupGeography(rows)) }
     },
 
     async getRevenue(

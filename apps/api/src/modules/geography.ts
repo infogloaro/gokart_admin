@@ -35,6 +35,19 @@ export function hasGeo(geo?: GeoFilter): boolean {
   return Boolean(geo?.state || geo?.district)
 }
 
+/** Union of two geography lists, so states/districts found in data but missing from the catalog still appear. */
+export function mergeGeography(base: GeographyState[], extra: GeographyState[]): GeographyState[] {
+  const byState = new Map<string, Set<string>>()
+  for (const item of [...base, ...extra]) {
+    const districts = byState.get(item.state) ?? new Set<string>()
+    for (const district of item.districts) districts.add(district)
+    byState.set(item.state, districts)
+  }
+  return [...byState.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([state, districts]) => ({ state, districts: [...districts].sort() }))
+}
+
 export function groupGeography(
   rows: Array<{ state: string | null; district: string | null }>,
 ): GeographyState[] {
