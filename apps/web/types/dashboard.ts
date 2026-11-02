@@ -140,3 +140,21 @@ export interface DateRangeInput {
   start: string
   end: string
 }
+
+export interface GeoSelection {
+  state?: string
+  district?: string
+}
+
+export interface GeographyState {
+  state: string
+  districts: string[]
+}
+
+export interface GeographyData {
+  states: GeographyState[]
+}
+
+export interface GeographyResponse {
+  data: GeographyData
+}

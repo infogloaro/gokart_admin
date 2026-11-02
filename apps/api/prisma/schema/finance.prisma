@@ -39,6 +39,8 @@ model AdminAccount {
   incentiveAmount   Decimal  @default(0) @db.Decimal(12, 2)
   onTimeThreshold   Decimal  @default(90) @db.Decimal(5, 2)
   createdAt         DateTime @default(now())
+  state             String?
+  district          String?
 
   workspace      Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   partners       DeliveryPartner[]
@@ -48,6 +50,7 @@ model AdminAccount {
 
   @@unique([workspaceId, accountCode])
   @@index([workspaceId])
+  @@index([workspaceId, state, district])
 }
 
 model PartnerRemittance {

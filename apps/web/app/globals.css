@@ -2048,3 +2048,42 @@ body {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* State / district filter (Finance + Reports) */
+.geo-filter {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.geo-filter label {
+  display: grid;
+  gap: 4px;
+  color: #71809a;
+  font-size: 12px;
+  font-weight: 600;
+}
+.geo-filter select {
+  min-width: 190px;
+  padding: 10px 14px;
+  border: 1px solid #dbe3ee;
+  border-radius: 10px;
+  background: #fff;
+  color: #182b4f;
+  font: inherit;
+  font-weight: 400;
+}
+.geo-filter select:disabled {
+  background: #f3f6fa;
+  color: #9aa7bb;
+}
+.geo-filter-clear {
+  padding: 10px 16px;
+  border: 1px solid #dbe3ee;
+  border-radius: 10px;
+  background: #fff;
+  color: #182b4f;
+  font: inherit;
+  cursor: pointer;
+}

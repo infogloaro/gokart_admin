@@ -42,12 +42,15 @@ model Vendor {
   name           String
   approvalStatus VendorApprovalStatus @default(PENDING)
   createdAt      DateTime             @default(now())
+  state          String?
+  district       String?
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   orders    Order[]
 
   @@index([workspaceId])
   @@index([workspaceId, approvalStatus])
+  @@index([workspaceId, state, district])
 }
 
 model DeliveryPartner {
@@ -63,6 +66,8 @@ model DeliveryPartner {
   fixedPay        Decimal               @default(0) @db.Decimal(12, 2)
   perDeliveryRate Decimal               @default(0) @db.Decimal(12, 2)
   feeSharePercent Decimal               @default(0) @db.Decimal(5, 2)
+  state           String?
+  district        String?
 
   workspace      Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   admin          AdminAccount?       @relation(fields: [adminId], references: [id], onDelete: SetNull)
@@ -75,6 +80,7 @@ model DeliveryPartner {
 
   @@index([workspaceId])
   @@index([workspaceId, status])
+  @@index([workspaceId, state, district])
 }
 
 model Order {
@@ -96,6 +102,8 @@ model Order {
   readyAt           DateTime?
   deliveredAt       DateTime?
   rating            Int?
+  state             String?
+  district          String?
 
   workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   vendor          Vendor?          @relation(fields: [vendorId], references: [id], onDelete: SetNull)
@@ -105,6 +113,7 @@ model Order {
   @@unique([workspaceId, orderNumber])
   @@index([workspaceId, placedAt])
   @@index([workspaceId, status])
+  @@index([workspaceId, state, district])
 }
 
 model Complaint {

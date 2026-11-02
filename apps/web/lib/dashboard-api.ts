@@ -2,6 +2,9 @@ import type {
   DashboardData,
   DashboardResponse,
   DateRangeInput,
+  GeographyData,
+  GeographyResponse,
+  GeoSelection,
   NotificationsData,
   NotificationsResponse,
   OverviewData,
@@ -75,10 +78,20 @@ export async function fetchReports(
   workspaceId: string,
   period: ReportPeriod,
   range: DateRangeInput,
+  geo: GeoSelection = {},
 ): Promise<ReportsData> {
   const params = new URLSearchParams({ start: range.start, end: range.end, period })
+  if (geo.state) params.set("state", geo.state)
+  if (geo.state && geo.district) params.set("district", geo.district)
   const result = await request<ReportsResponse>(
     `/api/workspaces/${encodeURIComponent(workspaceId)}/reports?${params.toString()}`,
+  )
+  return result.data
+}
+
+export async function fetchGeography(workspaceId: string): Promise<GeographyData> {
+  const result = await request<GeographyResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/geography`,
   )
   return result.data
 }

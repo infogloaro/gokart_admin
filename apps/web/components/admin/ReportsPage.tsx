@@ -2,7 +2,9 @@
 import { useEffect, useState } from "react"
 import { fetchReports } from "@/lib/dashboard-api"
 import { downloadCsv } from "@/lib/csv"
-import type { DateRangeInput, ReportPeriod, ReportsData } from "@/types/dashboard"
+import { geoLabel } from "@/lib/geo"
+import type { DateRangeInput, GeoSelection, ReportPeriod, ReportsData } from "@/types/dashboard"
+import GeoFilter from "./GeoFilter"
 import { RevenueTrendChart } from "./TrendChart"
 
 const PERIODS: Array<{ key: ReportPeriod; label: string }> = [
@@ -15,10 +17,14 @@ export default function ReportsPage({
   workspaceId,
   dateRange,
   refreshKey,
+  geo,
+  onGeoChange,
 }: {
   workspaceId: string
   dateRange: DateRangeInput
   refreshKey: string | null
+  geo: GeoSelection
+  onGeoChange: (next: GeoSelection) => void
 }) {
   const [period, setPeriod] = useState<ReportPeriod>("monthly")
   const [data, setData] = useState<ReportsData | null>(null)
@@ -29,7 +35,7 @@ export default function ReportsPage({
     let cancelled = false
     setLoading(true)
     setError(null)
-    fetchReports(workspaceId, period, dateRange)
+    fetchReports(workspaceId, period, dateRange, geo)
       .then((result) => {
         if (!cancelled) setData(result)
       })
@@ -42,7 +48,7 @@ export default function ReportsPage({
     return () => {
       cancelled = true
     }
-  }, [workspaceId, period, dateRange, refreshKey])
+  }, [workspaceId, period, dateRange, refreshKey, geo.state, geo.district])
 
   function exportReport() {
     if (!data) return
@@ -64,7 +70,13 @@ export default function ReportsPage({
       ]),
     ]
     downloadCsv(
-      `reports-${period}-${dateRange.start}-to-${dateRange.end}`,
+      `reports-${period}-${dateRange.start}-to-${dateRange.end}${
+        geo.state
+          ? `-${geoLabel(geo)
+              .replace(/[^a-z0-9]+/gi, "-")
+              .toLowerCase()}`
+          : ""
+      }`,
       ["Section", "Item", "Value", "Detail"],
       rows,
     )
@@ -76,6 +88,8 @@ export default function ReportsPage({
   return (
     <>
       {error && <div className="revenue-error">⚠ {error}</div>}
+
+      <GeoFilter workspaceId={workspaceId} value={geo} onChange={onGeoChange} />
 
       <div className="reports-toolbar">
         <div className="reports-tabs" role="tablist">

@@ -2,6 +2,7 @@
 import { useState } from "react"
 import { financeGet, financePost, financePut } from "@/lib/finance-api"
 import { inr } from "@/lib/format"
+import { geoParams } from "@/lib/geo"
 import type {
   AdminPayoutRow,
   AdminPayoutsData,
@@ -273,10 +274,20 @@ function Modals({
   )
 }
 
-export function PartnerPayoutsTab({ workspaceId, cycle, version, onChanged }: FinanceTabProps) {
+export function PartnerPayoutsTab({
+  workspaceId,
+  geo,
+  cycle,
+  version,
+  onChanged,
+}: FinanceTabProps) {
   const { data, loading, error } = useFinanceData(
-    () => financeGet<PartnerPayoutsData>(workspaceId, "partner-payouts", { cycle }),
-    [workspaceId, cycle, version],
+    () =>
+      financeGet<PartnerPayoutsData>(workspaceId, "partner-payouts", {
+        cycle,
+        ...geoParams(geo),
+      }),
+    [workspaceId, cycle, geo.state, geo.district, version],
   )
   const [target, setTarget] = useState<Target | null>(null)
 
@@ -354,10 +365,10 @@ export function PartnerPayoutsTab({ workspaceId, cycle, version, onChanged }: Fi
   )
 }
 
-export function AdminPayoutsTab({ workspaceId, cycle, version, onChanged }: FinanceTabProps) {
+export function AdminPayoutsTab({ workspaceId, geo, cycle, version, onChanged }: FinanceTabProps) {
   const { data, loading, error } = useFinanceData(
-    () => financeGet<AdminPayoutsData>(workspaceId, "admin-payouts", { cycle }),
-    [workspaceId, cycle, version],
+    () => financeGet<AdminPayoutsData>(workspaceId, "admin-payouts", { cycle, ...geoParams(geo) }),
+    [workspaceId, cycle, geo.state, geo.district, version],
   )
   const [target, setTarget] = useState<Target | null>(null)
   const rows = data?.rows ?? []

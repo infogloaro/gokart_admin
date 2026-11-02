@@ -1,5 +1,6 @@
 import type { PrismaClient } from "../../generated/client/index.js"
 import type { ResolveAccessibleWorkspaceIds, WorkspacePrincipal } from "../workspace.types.js"
+import { geoWhere, hasGeo, type GeoFilter } from "../geography.js"
 import {
   accrualFactor,
   adminPlanLabel,
@@ -61,15 +62,19 @@ export function createFinanceService(
     await prisma.financeAuditLog.create({ data: { workspaceId, actor: ACTOR, action, detail } })
   }
 
-  async function loadData(ids: string[], range: DateRange) {
+  async function loadData(ids: string[], range: DateRange, geo: GeoFilter = {}) {
+    const geoFilter = geoWhere(geo)
+    const geoOnAccount = hasGeo(geo)
+      ? { OR: [{ partner: { is: geoFilter } }, { admin: { is: geoFilter } }] }
+      : {}
     const [partners, admins, orders, remittances, adjustments] = await Promise.all([
       prisma.deliveryPartner.findMany({
-        where: { workspaceId: { in: ids } },
+        where: { workspaceId: { in: ids }, ...geoFilter },
         include: { admin: { select: { name: true } } },
         orderBy: { code: "asc" },
       }),
       prisma.adminAccount.findMany({
-        where: { workspaceId: { in: ids } },
+        where: { workspaceId: { in: ids }, ...geoFilter },
         orderBy: { accountCode: "asc" },
       }),
       prisma.order.findMany({
@@ -77,6 +82,7 @@ export function createFinanceService(
           workspaceId: { in: ids },
           status: "DELIVERED",
           deliveredAt: { gte: range.start, lte: range.end },
+          ...geoFilter,
         },
         select: {
           workspaceId: true,
@@ -90,11 +96,18 @@ export function createFinanceService(
         },
       }),
       prisma.partnerRemittance.findMany({
-        where: { workspaceId: { in: ids } },
+        where: {
+          workspaceId: { in: ids },
+          ...(hasGeo(geo) ? { partner: { is: geoFilter } } : {}),
+        },
         orderBy: { remittedAt: "desc" },
       }),
       prisma.payAdjustment.findMany({
-        where: { workspaceId: { in: ids }, createdAt: { gte: range.start, lte: range.end } },
+        where: {
+          workspaceId: { in: ids },
+          createdAt: { gte: range.start, lte: range.end },
+          ...geoOnAccount,
+        },
       }),
     ])
     return { partners, admins, orders, remittances, adjustments }
@@ -223,11 +236,12 @@ export function createFinanceService(
     principal: WorkspacePrincipal,
     workspaceSlug: string,
     cycle?: string,
+    geo: GeoFilter = {},
   ) {
     const scope = await resolveScope(principal, workspaceSlug)
     const key = cycle ?? cycleKeyOf(new Date())
     const range = cycleRange(key)
-    const data = await loadData(scope.ids, range)
+    const data = await loadData(scope.ids, range, geo)
     const result = compute(data, range, !range.open)
     return {
       ...scope,
@@ -246,9 +260,20 @@ export function createFinanceService(
       : `APO-${compact}-ADM${accountRef.replace(/\D/g, "")}`
   }
 
-  async function payoutRows(ids: string[], where: Record<string, unknown> = {}) {
+  async function payoutRows(
+    ids: string[],
+    where: Record<string, unknown> = {},
+    geo: GeoFilter = {},
+  ) {
+    const geoFilter = geoWhere(geo)
     return prisma.payout.findMany({
-      where: { workspaceId: { in: ids }, ...where },
+      where: {
+        workspaceId: { in: ids },
+        ...where,
+        ...(hasGeo(geo)
+          ? { OR: [{ partner: { is: geoFilter } }, { admin: { is: geoFilter } }] }
+          : {}),
+      },
       include: {
         partner: { select: { name: true, code: true } },
         admin: { select: { name: true, accountCode: true } },
@@ -294,10 +319,10 @@ export function createFinanceService(
   }
 
   return {
-    async getCycles(principal: WorkspacePrincipal, workspaceSlug: string) {
+    async getCycles(principal: WorkspacePrincipal, workspaceSlug: string, geo: GeoFilter = {}) {
       const { ids } = await resolveScope(principal, workspaceSlug)
       const oldest = await prisma.order.aggregate({
-        where: { workspaceId: { in: ids } },
+        where: { workspaceId: { in: ids }, ...geoWhere(geo) },
         _min: { placedAt: true },
       })
       const current = new Date()
@@ -312,10 +337,15 @@ export function createFinanceService(
       return { cycles }
     },
 
-    async getSettlements(principal: WorkspacePrincipal, workspaceSlug: string, cycle?: string) {
-      const ctx = await cycleContext(principal, workspaceSlug, cycle)
+    async getSettlements(
+      principal: WorkspacePrincipal,
+      workspaceSlug: string,
+      cycle?: string,
+      geo: GeoFilter = {},
+    ) {
+      const ctx = await cycleContext(principal, workspaceSlug, cycle, geo)
       const { totals, partners, admins } = ctx.result
-      const payouts = await payoutRows(ctx.ids, { cycle: ctx.key })
+      const payouts = await payoutRows(ctx.ids, { cycle: ctx.key }, geo)
       const pending = payouts.filter(
         (payout) => payout.status === "PENDING_APPROVAL" || payout.status === "APPROVED",
       )
@@ -370,8 +400,13 @@ export function createFinanceService(
       }
     },
 
-    async getCollections(principal: WorkspacePrincipal, workspaceSlug: string, cycle?: string) {
-      const ctx = await cycleContext(principal, workspaceSlug, cycle)
+    async getCollections(
+      principal: WorkspacePrincipal,
+      workspaceSlug: string,
+      cycle?: string,
+      geo: GeoFilter = {},
+    ) {
+      const ctx = await cycleContext(principal, workspaceSlug, cycle, geo)
       return {
         cycle: ctx.cycle,
         rows: ctx.result.partners.map((row) => ({
@@ -393,9 +428,14 @@ export function createFinanceService(
       }
     },
 
-    async getPartnerPayouts(principal: WorkspacePrincipal, workspaceSlug: string, cycle?: string) {
-      const ctx = await cycleContext(principal, workspaceSlug, cycle)
-      const payouts = await payoutRows(ctx.ids, { cycle: ctx.key, kind: "PARTNER" })
+    async getPartnerPayouts(
+      principal: WorkspacePrincipal,
+      workspaceSlug: string,
+      cycle?: string,
+      geo: GeoFilter = {},
+    ) {
+      const ctx = await cycleContext(principal, workspaceSlug, cycle, geo)
+      const payouts = await payoutRows(ctx.ids, { cycle: ctx.key, kind: "PARTNER" }, geo)
       const rows = ctx.result.partners.map((row) => {
         const payout = payouts.find((item) => item.partnerId === row.partner.id)
         return {
@@ -421,9 +461,14 @@ export function createFinanceService(
       return { cycle: ctx.cycle, rows }
     },
 
-    async getAdminPayouts(principal: WorkspacePrincipal, workspaceSlug: string, cycle?: string) {
-      const ctx = await cycleContext(principal, workspaceSlug, cycle)
-      const payouts = await payoutRows(ctx.ids, { cycle: ctx.key, kind: "ADMIN" })
+    async getAdminPayouts(
+      principal: WorkspacePrincipal,
+      workspaceSlug: string,
+      cycle?: string,
+      geo: GeoFilter = {},
+    ) {
+      const ctx = await cycleContext(principal, workspaceSlug, cycle, geo)
+      const payouts = await payoutRows(ctx.ids, { cycle: ctx.key, kind: "ADMIN" }, geo)
       const rows = ctx.result.admins.map((row) => {
         const payout = payouts.find((item) => item.adminId === row.admin.id)
         return {
@@ -453,9 +498,10 @@ export function createFinanceService(
       principal: WorkspacePrincipal,
       workspaceSlug: string,
       filters: { account?: string; status?: string; cycle?: string },
+      geo: GeoFilter = {},
     ) {
       const { ids } = await resolveScope(principal, workspaceSlug)
-      const all = (await payoutRows(ids)).map((payout) => shapePayout(payout))
+      const all = (await payoutRows(ids, {}, geo)).map((payout) => shapePayout(payout))
       const sum = (status: string) => {
         const matching = all.filter((payout) => payout.status === status)
         return {
@@ -488,10 +534,15 @@ export function createFinanceService(
       }
     },
 
-    async getReports(principal: WorkspacePrincipal, workspaceSlug: string, period: ReportPeriod) {
+    async getReports(
+      principal: WorkspacePrincipal,
+      workspaceSlug: string,
+      period: ReportPeriod,
+      geo: GeoFilter = {},
+    ) {
       const { ids } = await resolveScope(principal, workspaceSlug)
       const oldest = await prisma.order.aggregate({
-        where: { workspaceId: { in: ids } },
+        where: { workspaceId: { in: ids }, ...geoWhere(geo) },
         _min: { placedAt: true },
       })
       const now = new Date()
@@ -500,7 +551,7 @@ export function createFinanceService(
         start: new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), 1)),
         end: now,
       }
-      const data = await loadData(ids, range)
+      const data = await loadData(ids, range, geo)
       const rows = buildPeriodBuckets(range, period).map((bucket) => {
         const result = compute(data, bucket, false)
         let incentives = 0
@@ -537,12 +588,15 @@ export function createFinanceService(
       return { period, rows, total }
     },
 
-    async getApprovals(principal: WorkspacePrincipal, workspaceSlug: string) {
+    async getApprovals(principal: WorkspacePrincipal, workspaceSlug: string, geo: GeoFilter = {}) {
       const { ids } = await resolveScope(principal, workspaceSlug)
       const [payouts, requests, audit] = await Promise.all([
-        payoutRows(ids, { status: "PENDING_APPROVAL" }),
+        payoutRows(ids, { status: "PENDING_APPROVAL" }, geo),
         prisma.payChangeRequest.findMany({
-          where: { workspaceId: { in: ids } },
+          where: {
+            workspaceId: { in: ids },
+            ...(hasGeo(geo) ? { partner: { is: geoWhere(geo) } } : {}),
+          },
           include: {
             partner: true,
             requestedBy: { select: { name: true, location: true } },

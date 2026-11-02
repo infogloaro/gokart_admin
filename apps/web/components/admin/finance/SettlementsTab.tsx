@@ -1,6 +1,7 @@
 "use client"
 import { financeGet, financePost } from "@/lib/finance-api"
 import { inr } from "@/lib/format"
+import { geoParams } from "@/lib/geo"
 import type { SettlementsData } from "@/types/finance"
 import {
   ErrorNote,
@@ -14,14 +15,15 @@ import {
 
 export default function SettlementsTab({
   workspaceId,
+  geo,
   cycle,
   version,
   onChanged,
   goTo,
 }: FinanceTabProps & { goTo: (tab: string) => void }) {
   const { data, loading, error } = useFinanceData(
-    () => financeGet<SettlementsData>(workspaceId, "settlements", { cycle }),
-    [workspaceId, cycle, version],
+    () => financeGet<SettlementsData>(workspaceId, "settlements", { cycle, ...geoParams(geo) }),
+    [workspaceId, cycle, geo.state, geo.district, version],
   )
   const action = useAction(onChanged)
 

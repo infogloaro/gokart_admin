@@ -2,6 +2,7 @@ import { Router } from "express"
 import type { NextFunction, Request, RequestHandler, Response } from "express"
 import type { PrismaClient } from "../../generated/client/index.js"
 import type { ResolveAccessibleWorkspaceIds, WorkspacePrincipal } from "../workspace.types.js"
+import { parseGeoFilter } from "../geography.js"
 import { createFinanceService } from "./finance.service.js"
 
 interface FinanceRouterDependencies {
@@ -57,46 +58,52 @@ export function createFinanceRouter(dependencies: FinanceRouterDependencies) {
 
   const body = (req: Request) => (req.body ?? {}) as Record<string, unknown>
   const cycle = (req: Request) => text(req.query.cycle)
+  const geo = (req: Request) => parseGeoFilter(req.query as Record<string, unknown>)
 
   router.use(dependencies.requireAuth)
 
   router.get(
     "/:workspaceId/finance/cycles",
-    handle((_r, p, w, s) => s.getCycles(p, w)),
+    handle((r, p, w, s) => s.getCycles(p, w, geo(r))),
   )
   router.get(
     "/:workspaceId/finance/settlements",
-    handle((r, p, w, s) => s.getSettlements(p, w, cycle(r))),
+    handle((r, p, w, s) => s.getSettlements(p, w, cycle(r), geo(r))),
   )
   router.get(
     "/:workspaceId/finance/collections",
-    handle((r, p, w, s) => s.getCollections(p, w, cycle(r))),
+    handle((r, p, w, s) => s.getCollections(p, w, cycle(r), geo(r))),
   )
   router.get(
     "/:workspaceId/finance/partner-payouts",
-    handle((r, p, w, s) => s.getPartnerPayouts(p, w, cycle(r))),
+    handle((r, p, w, s) => s.getPartnerPayouts(p, w, cycle(r), geo(r))),
   )
   router.get(
     "/:workspaceId/finance/admin-payouts",
-    handle((r, p, w, s) => s.getAdminPayouts(p, w, cycle(r))),
+    handle((r, p, w, s) => s.getAdminPayouts(p, w, cycle(r), geo(r))),
   )
   router.get(
     "/:workspaceId/finance/payments",
     handle((r, p, w, s) =>
-      s.getPayments(p, w, {
-        account: text(r.query.account),
-        status: text(r.query.status),
-        cycle: cycle(r),
-      }),
+      s.getPayments(
+        p,
+        w,
+        {
+          account: text(r.query.account),
+          status: text(r.query.status),
+          cycle: cycle(r),
+        },
+        geo(r),
+      ),
     ),
   )
   router.get(
     "/:workspaceId/finance/reports",
-    handle((r, p, w, s) => s.getReports(p, w, parsePeriod(r.query.period))),
+    handle((r, p, w, s) => s.getReports(p, w, parsePeriod(r.query.period), geo(r))),
   )
   router.get(
     "/:workspaceId/finance/approvals",
-    handle((_r, p, w, s) => s.getApprovals(p, w)),
+    handle((r, p, w, s) => s.getApprovals(p, w, geo(r))),
   )
 
   router.post(

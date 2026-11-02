@@ -1,4 +1,5 @@
 import type { PrismaClient } from "../../generated/client/index.js"
+import { groupGeography } from "../geography.js"
 import { createDashboardRepository } from "./dashboard.repository.js"
 import {
   DISTRIBUTION_LABELS,
@@ -16,6 +17,7 @@ import type {
   AttentionItem,
   DashboardResponse,
   DateRange,
+  GeoFilter,
   NotificationItem,
   NotificationsResponse,
   OverviewResponse,
@@ -379,10 +381,10 @@ export function createDashboardService(
     }))
   }
 
-  async function buildReportMetrics(workspaceIds: string[], range: DateRange) {
+  async function buildReportMetrics(workspaceIds: string[], range: DateRange, geo: GeoFilter) {
     const [current, previous] = await Promise.all([
-      repository.aggregateRevenue(workspaceIds, range),
-      repository.aggregateRevenue(workspaceIds, previousRange(range)),
+      repository.aggregateRevenue(workspaceIds, range, geo),
+      repository.aggregateRevenue(workspaceIds, previousRange(range), geo),
     ])
     const read = (aggregate: typeof current) => {
       const orders = aggregate._count._all
@@ -424,10 +426,12 @@ export function createDashboardService(
     workspaces: ResolvedWorkspace[],
     range: DateRange,
     period: ReportPeriod,
+    geo: GeoFilter,
   ) {
     const orders = await repository.listOrdersForTrend(
       workspaces.map((workspace) => workspace.id),
       range,
+      geo,
     )
     const periodBuckets = buildPeriodBuckets(range, period)
     // A period wider than the range (e.g. monthly over 30 days) yields a single
@@ -454,11 +458,16 @@ export function createDashboardService(
     return { days: buckets.map((bucket) => bucket.label), series }
   }
 
-  async function buildTopVendors(workspaces: ResolvedWorkspace[], range: DateRange) {
+  async function buildTopVendors(
+    workspaces: ResolvedWorkspace[],
+    range: DateRange,
+    geo: GeoFilter,
+  ) {
     const grouped = await repository.groupOrdersByVendor(
       workspaces.map((workspace) => workspace.id),
       range,
       TOP_VENDORS_LIMIT,
+      geo,
     )
     const vendorIds = grouped.flatMap((row) => (row.vendorId ? [row.vendorId] : []))
     const vendors = await repository.findVendorsByIds(vendorIds)
@@ -580,17 +589,24 @@ export function createDashboardService(
       workspaceSlug: string,
       range: DateRange,
       period: ReportPeriod,
+      geo: GeoFilter = {},
     ): Promise<ReportsResponse> {
       const workspaces = await resolveWorkspaces(principal, workspaceSlug)
       const workspaceIds = workspaces.map((workspace) => workspace.id)
 
       const [metrics, comparison, topVendors] = await Promise.all([
-        buildReportMetrics(workspaceIds, range),
-        buildReportComparison(workspaces, range, period),
-        buildTopVendors(workspaces, range),
+        buildReportMetrics(workspaceIds, range, geo),
+        buildReportComparison(workspaces, range, period, geo),
+        buildTopVendors(workspaces, range, geo),
       ])
 
       return { period, metrics, comparison, topVendors }
+    },
+
+    async getGeography(principal: WorkspacePrincipal, workspaceSlug: string) {
+      const workspaces = await resolveWorkspaces(principal, workspaceSlug)
+      const rows = await repository.listGeography(workspaces.map((workspace) => workspace.id))
+      return { states: groupGeography(rows) }
     },
 
     async getRevenue(

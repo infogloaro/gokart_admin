@@ -154,6 +154,8 @@ const ADMIN_ACCOUNTS: Record<
   Array<{
     name: string
     location: string
+    state: string
+    district: string
     accountCode: string
     monthlySalary: number
     commissionPercent: number
@@ -165,6 +167,8 @@ const ADMIN_ACCOUNTS: Record<
     {
       name: "Priya Shankar",
       location: "Chennai · Food operations",
+      state: "Tamil Nadu",
+      district: "Chennai",
       accountCode: "ADA-70104",
       monthlySalary: 45000,
       commissionPercent: 2,
@@ -174,21 +178,47 @@ const ADMIN_ACCOUNTS: Record<
     {
       name: "Fathima Begum",
       location: "Coimbatore · Food operations",
+      state: "Tamil Nadu",
+      district: "Coimbatore",
       accountCode: "ADA-70138",
       monthlySalary: 38000,
       commissionPercent: 2,
       incentiveAmount: 5000,
       onTimeThreshold: 93,
     },
+    {
+      name: "Kiran Gowda",
+      location: "Bengaluru · Food operations",
+      state: "Karnataka",
+      district: "Bengaluru Urban",
+      accountCode: "ADA-70152",
+      monthlySalary: 42000,
+      commissionPercent: 2,
+      incentiveAmount: 6000,
+      onTimeThreshold: 92,
+    },
   ],
   "gloaro-mart": [
     {
       name: "Ravi Chandran",
       location: "Madurai · Mart operations",
+      state: "Tamil Nadu",
+      district: "Madurai",
       accountCode: "ADA-70121",
       monthlySalary: 40000,
       commissionPercent: 1.5,
       incentiveAmount: 6000,
+      onTimeThreshold: 90,
+    },
+    {
+      name: "Anitha Menon",
+      location: "Kochi · Mart operations",
+      state: "Kerala",
+      district: "Ernakulam",
+      accountCode: "ADA-70166",
+      monthlySalary: 39000,
+      commissionPercent: 1.5,
+      incentiveAmount: 5000,
       onTimeThreshold: 90,
     },
   ],
@@ -214,11 +244,18 @@ async function seedWorkspace(config: (typeof WORKSPACES)[number]) {
     create: { name: config.name, slug: config.slug, status: "ACTIVE" },
   })
 
+  const geographies = (ADMIN_ACCOUNTS[config.slug] ?? []).map(({ state, district }) => ({
+    state,
+    district,
+  }))
+  const pickGeography = () => (geographies.length > 0 ? pick(geographies) : null)
+
   const vendors = await Promise.all(
     VENDOR_NAMES.slice(0, 18).map((name, index) =>
       prisma.vendor.create({
         data: {
           workspaceId: workspace.id,
+          ...pickGeography(),
           name: `${name} ${config.businessType === "FOOD" ? "Kitchen" : "Store"}`,
           approvalStatus: index < 14 ? "APPROVED" : index < 16 ? "PENDING" : "REJECTED",
           createdAt: daysAgo(randomInt(1, 60)),
@@ -245,6 +282,8 @@ async function seedWorkspace(config: (typeof WORKSPACES)[number]) {
           code: `DP-${codeBase + index}`,
           accountCode: `DPA-${40200 + index * 13 + (config.businessType === "FOOD" ? 0 : 500)}`,
           adminId: admins.length > 0 ? admins[index % admins.length]!.id : null,
+          state: admins.length > 0 ? admins[index % admins.length]!.state : null,
+          district: admins.length > 0 ? admins[index % admins.length]!.district : null,
           ...PARTNER_PAY_PLANS[index % PARTNER_PAY_PLANS.length]!,
         },
       }),
@@ -289,9 +328,13 @@ async function seedWorkspace(config: (typeof WORKSPACES)[number]) {
       status === "PLACED" || status === "CANCELLED" ? null : pick(activePartners)
 
     const paymentMethod = pickPaymentMethod()
+    const orderGeography = assignedPartner?.state
+      ? { state: assignedPartner.state, district: assignedPartner.district }
+      : pickGeography()
     const order = await prisma.order.create({
       data: {
         workspaceId: workspace.id,
+        ...orderGeography,
         orderNumber: `${config.orderPrefix}-${(88000 + i).toString()}`,
         paymentMethod,
         vendorId: approvedVendors.length > 0 ? pick(approvedVendors).id : null,

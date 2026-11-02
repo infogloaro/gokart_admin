@@ -1,5 +1,6 @@
 import type { PrismaClient } from "../../generated/client/index.js"
-import type { DateRange } from "./dashboard.types.js"
+import { geoWhere } from "../geography.js"
+import type { DateRange, GeoFilter } from "./dashboard.types.js"
 
 const PENDING_ORDER_STATUSES = ["PLACED", "PREPARING", "ON_THE_WAY"] as const
 
@@ -79,11 +80,12 @@ export function createDashboardRepository(prisma: PrismaClient) {
       })
     },
 
-    listOrdersForTrend(workspaceIds: string[], range: DateRange) {
+    listOrdersForTrend(workspaceIds: string[], range: DateRange, geo?: GeoFilter) {
       return prisma.order.findMany({
         where: {
           workspaceId: { in: workspaceIds },
           placedAt: { gte: range.start, lte: range.end },
+          ...geoWhere(geo),
         },
         select: { workspaceId: true, placedAt: true, platformRevenue: true },
       })
@@ -105,11 +107,12 @@ export function createDashboardRepository(prisma: PrismaClient) {
       })
     },
 
-    aggregateRevenue(workspaceIds: string[], range: DateRange) {
+    aggregateRevenue(workspaceIds: string[], range: DateRange, geo?: GeoFilter) {
       return prisma.order.aggregate({
         where: {
           workspaceId: { in: workspaceIds },
           placedAt: { gte: range.start, lte: range.end },
+          ...geoWhere(geo),
         },
         _count: { _all: true },
         _sum: {
@@ -153,19 +156,33 @@ export function createDashboardRepository(prisma: PrismaClient) {
       })
     },
 
-    groupOrdersByVendor(workspaceIds: string[], range: DateRange, limit: number) {
+    groupOrdersByVendor(workspaceIds: string[], range: DateRange, limit: number, geo?: GeoFilter) {
       return prisma.order.groupBy({
         by: ["vendorId"],
         where: {
           workspaceId: { in: workspaceIds },
           vendorId: { not: null },
           placedAt: { gte: range.start, lte: range.end },
+          ...geoWhere(geo),
         },
         _count: { _all: true },
         _sum: { grossValue: true },
         orderBy: { _sum: { grossValue: "desc" } },
         take: limit,
       })
+    },
+
+    async listGeography(workspaceIds: string[]) {
+      const where = { workspaceId: { in: workspaceIds }, state: { not: null } }
+      const select = { state: true, district: true } as const
+      const distinct: Array<"state" | "district"> = ["state", "district"]
+      const [orders, partners, admins, vendors] = await Promise.all([
+        prisma.order.findMany({ where, select, distinct }),
+        prisma.deliveryPartner.findMany({ where, select, distinct }),
+        prisma.adminAccount.findMany({ where, select, distinct }),
+        prisma.vendor.findMany({ where, select, distinct }),
+      ])
+      return [...orders, ...partners, ...admins, ...vendors]
     },
 
     findVendorsByIds(ids: string[]) {

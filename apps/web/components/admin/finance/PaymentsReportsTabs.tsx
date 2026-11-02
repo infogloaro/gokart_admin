@@ -3,6 +3,7 @@ import { useState } from "react"
 import { downloadCsv } from "@/lib/csv"
 import { financeGet, financePost } from "@/lib/finance-api"
 import { formatDate, inr } from "@/lib/format"
+import { geoParams } from "@/lib/geo"
 import type { FinanceReportsData, PaymentsData } from "@/types/finance"
 import {
   ErrorNote,
@@ -16,7 +17,7 @@ import {
 
 const STATUS_OPTIONS = ["Pending approval", "Approved", "Paid", "Overdue", "Settled", "Rejected"]
 
-export function PaymentTrackingTab({ workspaceId, version, onChanged }: FinanceTabProps) {
+export function PaymentTrackingTab({ workspaceId, geo, version, onChanged }: FinanceTabProps) {
   const [account, setAccount] = useState("")
   const [status, setStatus] = useState("")
   const [cycle, setCycle] = useState("")
@@ -26,8 +27,9 @@ export function PaymentTrackingTab({ workspaceId, version, onChanged }: FinanceT
         account: account || undefined,
         status: status || undefined,
         cycle: cycle || undefined,
+        ...geoParams(geo),
       }),
-    [workspaceId, account, status, cycle, version],
+    [workspaceId, account, status, cycle, geo.state, geo.district, version],
   )
   const action = useAction(onChanged)
 
@@ -208,11 +210,11 @@ const PERIODS: Array<{ key: "daily" | "weekly" | "monthly"; label: string }> = [
   { key: "monthly", label: "Monthly" },
 ]
 
-export function FinanceReportsTab({ workspaceId, version }: FinanceTabProps) {
+export function FinanceReportsTab({ workspaceId, geo, version }: FinanceTabProps) {
   const [period, setPeriod] = useState<"daily" | "weekly" | "monthly">("monthly")
   const { data, loading, error } = useFinanceData(
-    () => financeGet<FinanceReportsData>(workspaceId, "reports", { period }),
-    [workspaceId, period, version],
+    () => financeGet<FinanceReportsData>(workspaceId, "reports", { period, ...geoParams(geo) }),
+    [workspaceId, period, geo.state, geo.district, version],
   )
 
   function exportCsv() {

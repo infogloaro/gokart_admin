@@ -3,7 +3,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { fetchDashboard, fetchOverview } from "@/lib/dashboard-api"
-import type { DashboardData, OverviewData } from "@/types/dashboard"
+import type { DashboardData, GeoSelection, OverviewData } from "@/types/dashboard"
 import { downloadCsv } from "@/lib/csv"
 import TransactionLedger from "./TransactionLedger"
 import { RevenueTrendChart } from "./TrendChart"
@@ -459,6 +459,7 @@ export default function AdministrationView({
   const router = useRouter()
   const [query, setQuery] = useState("")
   const [businessMenuOpen, setBusinessMenuOpen] = useState(false)
+  const [geo, setGeo] = useState<GeoSelection>({})
   const [dateRange, setDateRange] = useState(() => defaultDateRange())
   const [dateDraft, setDateDraft] = useState(dateRange)
   const [datePickerOpen, setDatePickerOpen] = useState(false)
@@ -917,12 +918,16 @@ export default function AdministrationView({
               workspaceId={workspaceId}
               dateRange={dateRange}
               refreshKey={lastRefreshed}
+              geo={geo}
+              onGeoChange={setGeo}
             />
           ) : current === "Reports" ? (
             <ReportsPage
               workspaceId={workspaceId}
               dateRange={dateRange}
               refreshKey={lastRefreshed}
+              geo={geo}
+              onGeoChange={setGeo}
             />
           ) : current === "Transaction ledger" ? (
             <TransactionLedger workspaceId={workspaceId} dateRange={dateRange} />

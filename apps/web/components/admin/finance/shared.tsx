@@ -1,8 +1,10 @@
 "use client"
 import { useEffect, useRef, useState, type ReactNode } from "react"
+import type { GeoSelection } from "@/types/dashboard"
 
 export interface FinanceTabProps {
   workspaceId: string
+  geo: GeoSelection
   cycle: string | undefined
   version: number
   onChanged: () => void

@@ -1,3 +1,4 @@
+import { parseGeoFilter } from "../geography.js"
 import type { DashboardQuery, ReportPeriod, ReportsQuery, RevenueQuery } from "./dashboard.types.js"
 
 const DEFAULT_RANGE_DAYS = 30
@@ -49,7 +50,7 @@ export function parseDashboardQuery(
     range = { start: startDate, end: endDate }
   }
 
-  return { workspaceSlug: workspaceSlug.trim(), range }
+  return { workspaceSlug: workspaceSlug.trim(), range, geo: parseGeoFilter(query) }
 }
 
 export function parseRevenueQuery(

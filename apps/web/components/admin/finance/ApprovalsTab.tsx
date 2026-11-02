@@ -2,6 +2,7 @@
 import { useState } from "react"
 import { financeGet, financePost } from "@/lib/finance-api"
 import { formatDate, formatDateTime, inr } from "@/lib/format"
+import { geoParams } from "@/lib/geo"
 import type { ApprovalsData, PayoutRecord } from "@/types/finance"
 import {
   ErrorNote,
@@ -42,10 +43,10 @@ function ReviewModal({ payout, onClose }: { payout: PayoutRecord; onClose: () =>
   )
 }
 
-export default function ApprovalsTab({ workspaceId, version, onChanged }: FinanceTabProps) {
+export default function ApprovalsTab({ workspaceId, geo, version, onChanged }: FinanceTabProps) {
   const { data, loading, error } = useFinanceData(
-    () => financeGet<ApprovalsData>(workspaceId, "approvals"),
-    [workspaceId, version],
+    () => financeGet<ApprovalsData>(workspaceId, "approvals", geoParams(geo)),
+    [workspaceId, geo.state, geo.district, version],
   )
   const action = useAction(onChanged)
   const [review, setReview] = useState<PayoutRecord | null>(null)

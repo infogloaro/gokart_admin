@@ -1,4 +1,7 @@
+import type { GeoFilter } from "../geography.js"
+
 export type { ResolveAccessibleWorkspaceIds, WorkspacePrincipal } from "../workspace.types.js"
+export type { GeoFilter, GeographyState } from "../geography.js"
 
 export interface DateRange {
   start: Date
@@ -8,6 +11,7 @@ export interface DateRange {
 export interface DashboardQuery {
   workspaceSlug: string
   range: DateRange
+  geo: GeoFilter
 }
 
 export interface MetricRow {

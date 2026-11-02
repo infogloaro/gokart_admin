@@ -1,8 +1,10 @@
 "use client"
 import { useCallback, useEffect, useState } from "react"
 import { financeGet } from "@/lib/finance-api"
-import type { DateRangeInput } from "@/types/dashboard"
+import { geoParams } from "@/lib/geo"
+import type { DateRangeInput, GeoSelection } from "@/types/dashboard"
 import type { ApprovalsData, FinanceCycle } from "@/types/finance"
+import GeoFilter from "../GeoFilter"
 import ApprovalsTab from "./ApprovalsTab"
 import CollectionsTab from "./CollectionsTab"
 import { FinanceReportsTab, PaymentTrackingTab } from "./PaymentsReportsTabs"
@@ -27,10 +29,14 @@ export default function FinancePage({
   workspaceId,
   dateRange,
   refreshKey,
+  geo,
+  onGeoChange,
 }: {
   workspaceId: string
   dateRange: DateRangeInput
   refreshKey: string | null
+  geo: GeoSelection
+  onGeoChange: (next: GeoSelection) => void
 }) {
   const [tab, setTab] = useState<Tab>("Settlements")
   const [cycles, setCycles] = useState<FinanceCycle[]>([])
@@ -47,11 +53,15 @@ export default function FinancePage({
 
   useEffect(() => {
     let cancelled = false
-    financeGet<{ cycles: FinanceCycle[] }>(workspaceId, "cycles")
+    financeGet<{ cycles: FinanceCycle[] }>(workspaceId, "cycles", geoParams(geo))
       .then((result) => {
         if (cancelled) return
         setCycles(result.cycles)
-        setCycle((current) => current ?? result.cycles[0]?.key)
+        setCycle((current) =>
+          current && result.cycles.some((item) => item.key === current)
+            ? current
+            : result.cycles[0]?.key,
+        )
       })
       .catch((err) => {
         if (!cancelled) setLoadError(err instanceof Error ? err.message : "Unable to load cycles.")
@@ -59,11 +69,11 @@ export default function FinancePage({
     return () => {
       cancelled = true
     }
-  }, [workspaceId])
+  }, [workspaceId, geo.state, geo.district])
 
   useEffect(() => {
     let cancelled = false
-    financeGet<ApprovalsData>(workspaceId, "approvals")
+    financeGet<ApprovalsData>(workspaceId, "approvals", geoParams(geo))
       .then((result) => {
         if (!cancelled) setPendingCount(result.pendingCount)
       })
@@ -73,9 +83,9 @@ export default function FinancePage({
     return () => {
       cancelled = true
     }
-  }, [workspaceId, version])
+  }, [workspaceId, geo.state, geo.district, version])
 
-  const shared = { workspaceId, cycle, version, onChanged }
+  const shared = { workspaceId, geo, cycle, version, onChanged }
   const hasCycle =
     tab !== "Payment tracking" &&
     tab !== "Reports" &&
@@ -85,6 +95,7 @@ export default function FinancePage({
   return (
     <>
       {loadError && <div className="revenue-error">⚠ {loadError}</div>}
+      <GeoFilter workspaceId={workspaceId} value={geo} onChange={onGeoChange} />
       <div className="fin-approver">
         <span className="fin-approver-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24">

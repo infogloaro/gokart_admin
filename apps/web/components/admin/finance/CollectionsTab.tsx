@@ -2,6 +2,7 @@
 import { useState } from "react"
 import { financeGet, financePost } from "@/lib/finance-api"
 import { formatDate, inr } from "@/lib/format"
+import { geoParams } from "@/lib/geo"
 import type { CollectionRow, CollectionsData } from "@/types/finance"
 import {
   BusinessTag,
@@ -99,13 +100,14 @@ function RemittanceModal({
 
 export default function CollectionsTab({
   workspaceId,
+  geo,
   cycle,
   version,
   onChanged,
 }: FinanceTabProps) {
   const { data, loading, error } = useFinanceData(
-    () => financeGet<CollectionsData>(workspaceId, "collections", { cycle }),
-    [workspaceId, cycle, version],
+    () => financeGet<CollectionsData>(workspaceId, "collections", { cycle, ...geoParams(geo) }),
+    [workspaceId, cycle, geo.state, geo.district, version],
   )
   const [selected, setSelected] = useState<CollectionRow | null>(null)
 
