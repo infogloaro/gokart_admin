@@ -3,6 +3,8 @@
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@zoauro/api-client"
 import { Bike } from "lucide-react"
+import { useMemo, useState } from "react"
+import { LiveRidersMap, type MapRider } from "./live-riders-map"
 
 const when = (iso: string) => {
   const minutes = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60_000))
@@ -13,14 +15,34 @@ const when = (iso: string) => {
       : `${Math.round(minutes / 60)} hr ago`
 }
 
-/** Delivery boys who reported a position recently, with a map link for each. */
+type Rider = MapRider & {
+  fleetName: string
+  district: string
+  activeOrders: number
+  lastSeenAt: string
+}
+
+/** Delivery boys who reported a position recently, grouped by district, with a map. */
 export function LiveRiders() {
   const q = useQuery({
     queryKey: ["riders", "live"],
     queryFn: () => api("get", "/delivery/riders/live"),
     refetchInterval: 30_000,
   })
-  const riders = q.data ?? []
+  const riders = useMemo<Rider[]>(() => q.data ?? [], [q.data])
+  const [district, setDistrict] = useState("all")
+  const groups = useMemo(() => {
+    const byDistrict = new Map<string, Rider[]>()
+    for (const rider of riders)
+      byDistrict.set(rider.district, [...(byDistrict.get(rider.district) ?? []), rider])
+    return [...byDistrict.entries()].sort(([a], [b]) => a.localeCompare(b))
+  }, [riders])
+  const shown = useMemo(
+    () => (district === "all" ? groups : groups.filter(([name]) => name === district)),
+    [groups, district],
+  )
+  const shownRiders = useMemo(() => shown.flatMap(([, list]) => list), [shown])
+
   return (
     <section className="live-riders" aria-label="Live riders">
       <header>
@@ -42,49 +64,82 @@ export function LiveRiders() {
         <p className="lr-empty">No rider has reported a position yet.</p>
       )}
       {riders.length > 0 && (
-        <div className="lr-table-wrap">
-          <table className="lr-table">
-            <thead>
-              <tr>
-                <th>Rider</th>
-                <th>Partner</th>
-                <th>Zone</th>
-                <th>Status</th>
-                <th>Active orders</th>
-                <th>Last seen</th>
-                <th>Map</th>
-              </tr>
-            </thead>
-            <tbody>
-              {riders.map((rider) => (
-                <tr key={rider.id}>
-                  <td>
-                    <strong>{rider.name}</strong>
-                    <small>{rider.code}</small>
-                  </td>
-                  <td>{rider.fleetName}</td>
-                  <td>{rider.zoneName}</td>
-                  <td>
-                    <span className={`lr-status ${rider.availability}`}>
-                      {rider.availability.replaceAll("_", " ")}
-                    </span>
-                  </td>
-                  <td>{rider.activeOrders}</td>
-                  <td>{when(rider.lastSeenAt)}</td>
-                  <td>
-                    <a
-                      href={`https://www.openstreetmap.org/?mlat=${rider.lat}&mlon=${rider.lng}#map=16/${rider.lat}/${rider.lng}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Open map
-                    </a>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <div className="lr-districts" role="tablist" aria-label="Riders by district">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={district === "all"}
+              className={district === "all" ? "active" : ""}
+              onClick={() => setDistrict("all")}
+            >
+              All riders <span>{riders.length}</span>
+            </button>
+            {groups.map(([name, list]) => (
+              <button
+                type="button"
+                role="tab"
+                key={name}
+                aria-selected={district === name}
+                className={district === name ? "active" : ""}
+                onClick={() => setDistrict(name)}
+              >
+                {name} <span>{list.length}</span>
+              </button>
+            ))}
+          </div>
+          <LiveRidersMap riders={shownRiders} />
+          {shown.map(([name, list]) => (
+            <div className="lr-district" key={name}>
+              <h4>
+                {name} <small>{list.length} riders</small>
+              </h4>
+              <div className="lr-table-wrap">
+                <table className="lr-table">
+                  <thead>
+                    <tr>
+                      <th>Rider</th>
+                      <th>Partner</th>
+                      <th>Zone</th>
+                      <th>Status</th>
+                      <th>Active orders</th>
+                      <th>Last seen</th>
+                      <th>Map</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {list.map((rider) => (
+                      <tr key={rider.id}>
+                        <td>
+                          <strong>{rider.name}</strong>
+                          <small>{rider.code}</small>
+                        </td>
+                        <td>{rider.fleetName}</td>
+                        <td>{rider.zoneName}</td>
+                        <td>
+                          <span className={`lr-status ${rider.availability}`}>
+                            {rider.availability.replaceAll("_", " ")}
+                          </span>
+                        </td>
+                        <td>{rider.activeOrders}</td>
+                        <td>{when(rider.lastSeenAt)}</td>
+                        <td>
+                          <a
+                            href={`https://www.openstreetmap.org/?mlat=${rider.lat}&mlon=${rider.lng}#map=16/${rider.lat}/${rider.lng}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Open map
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+        </>
       )}
     </section>
   )

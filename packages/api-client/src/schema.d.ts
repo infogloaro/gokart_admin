@@ -8689,6 +8689,7 @@ export interface paths {
                             code: string;
                             name: string;
                             fleetName: string;
+                            district: string;
                             zoneName: string;
                             availability: string;
                             activeOrders: number;

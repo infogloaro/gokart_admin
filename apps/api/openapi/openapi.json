@@ -17098,6 +17098,9 @@
                       "fleetName": {
                         "type": "string"
                       },
+                      "district": {
+                        "type": "string"
+                      },
                       "zoneName": {
                         "type": "string"
                       },
@@ -17123,6 +17126,7 @@
                       "code",
                       "name",
                       "fleetName",
+                      "district",
                       "zoneName",
                       "availability",
                       "activeOrders",

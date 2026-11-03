@@ -367,6 +367,7 @@ registry.registerPath({
           code: z.string(),
           name: z.string(),
           fleetName: z.string(),
+          district: z.string(),
           zoneName: z.string(),
           availability: z.string(),
           activeOrders: z.number().int(),
