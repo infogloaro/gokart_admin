@@ -23,6 +23,7 @@ import {
 import {
   AlertTriangle,
   ArrowDownWideNarrow,
+  ArrowRight,
   Check,
   CheckCircle2,
   ChevronLeft,
@@ -33,7 +34,9 @@ import {
   ListOrdered,
   LocateFixed,
   MoreHorizontal,
+  Plus,
   RefreshCw,
+  Save,
   Search,
   ShieldCheck,
   ShoppingBag,
@@ -47,6 +50,7 @@ import { placedLabel, statusTone, useOrders } from "@/lib/orders"
 import {
   availabilityTone,
   initials,
+  PARTNER_STEPS,
   partnersCsv,
   partnerStatusTone,
   servicesLabel,
@@ -54,17 +58,17 @@ import {
   usePartnerDecision,
   usePartners,
   usePartnerSummary,
+  usePartnerWizard,
   useUpdatePartner,
   verificationOf,
   type PartnerQuery,
 } from "@/lib/partners"
-
-import { useMe } from "@/lib/session"
+import { useMe, useZones } from "@/lib/session"
 import { activityLabel, dateLabel, dateTimeLabel, fieldErrors } from "@/lib/vendors"
 import { AvailabilityButton } from "./availability"
 import { Count, HeadActions } from "./dashboard"
 import { DecisionDialog, type Decision } from "./decision"
-import { DocumentsPanel } from "./documents"
+import { DocumentsPanel, UploadCard, UploadSummary } from "./documents"
 import { useCsvExport } from "./export"
 import { useRefreshToast } from "@/components/refresh-toast"
 import { useBusinessFilter } from "./shell"
@@ -76,6 +80,7 @@ import {
   ErrorBox,
   IconButton,
   Input,
+  Logo,
   Panel,
   Section,
   Select,
@@ -115,11 +120,13 @@ function chipQuery(chip: Chip): Pick<PartnerQuery, "status" | "availability"> {
 export function SuperPartners() {
   // Global search links here with ?search=CODE; a new link starts the list over.
   const linked = useSearchParams().get("search") ?? ""
-  const [section, setSection] = useState<"Individual riders" | "Fleet delivery">("Fleet delivery")
+  const [section, setSection] = useState<"Individual riders" | "Fleet delivery">(
+    "Individual riders",
+  )
   return (
     <>
       <Tabs
-        items={["Fleet delivery", "Individual riders"] as const}
+        items={["Individual riders", "Fleet delivery"] as const}
         value={section}
         onChange={setSection}
       />
@@ -134,11 +141,13 @@ export function SuperPartners() {
 
 function PartnersScreen({ initialSearch }: { initialSearch: string }) {
   const business = useBusinessFilter()
+  const me = useMe()
   const [search, setSearch] = useState(initialSearch)
   const [chip, setChip] = useState<Chip>("all")
   const [sort, setSort] = useState<"newest" | "performance">("newest")
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState<string | null>(null)
+  const [adding, setAdding] = useState(false)
   const [flash, setFlash] = useState<string | null>(null)
   const csv = useCsvExport()
   const runRefresh = useRefreshToast()
@@ -212,7 +221,11 @@ function PartnersScreen({ initialSearch }: { initialSearch: string }) {
             Suspended <Count value={summary.data?.suspended} />
           </span>
         </div>
-        {/* New partners are created under Fleet delivery (a partner with its delivery boys). */}
+        {me.data?.permissions.includes("partners.manage") && (
+          <Button primary icon={Plus} onClick={() => setAdding(true)}>
+            Add delivery partner
+          </Button>
+        )}
       </div>
       <section className="panel table-panel">
         <div className="filters">
@@ -337,6 +350,12 @@ function PartnersScreen({ initialSearch }: { initialSearch: string }) {
       </section>
       {selected && (
         <PartnerDrawer id={selected} close={() => setSelected(null)} onChanged={setFlash} />
+      )}
+      {adding && (
+        <PartnerWizard
+          defaultService={business === "all" ? "food" : business}
+          close={() => setAdding(false)}
+        />
       )}
       {csv.toast && <Toast toast={csv.toast} close={csv.dismiss} />}
     </>
@@ -1102,5 +1121,312 @@ function Earnings({ p }: { p: PartnerDetail }) {
         <Value label="Bank KYC" value={p.bankVerified ? "Verified" : "Pending"} />
       </Section>
     </>
+  )
+}
+
+function PartnerWizard({
+  defaultService,
+  close,
+}: {
+  defaultService: "food" | "mart"
+  close: () => void
+}) {
+  const zones = useZones()
+  const w = usePartnerWizard(defaultService)
+  const { step, form, set, errors } = w
+  const field = (k: keyof typeof form, errKey: string = k) => ({
+    value: form[k],
+    onChange: (e: { target: { value: string } }) => set(k)(e.target.value),
+    error: errors[errKey],
+  })
+  const cards = (list: [kind: string, title: string, hint: string][]) => (
+    <div className="uploads">
+      {list.map(([kind, title, hint]) => (
+        <UploadCard
+          key={kind}
+          title={title}
+          hint={hint}
+          file={w.uploads.files[kind]}
+          error={w.uploads.errors[kind]}
+          onPick={(f) => w.uploads.choose(kind, f)}
+          onRemove={() => w.uploads.remove(kind)}
+        />
+      ))}
+    </div>
+  )
+
+  if (w.create.isSuccess)
+    return (
+      <div className="partner-wizard-screen">
+        <div className="partner-success">
+          <CheckCircle2 size={48} />
+          <strong>Partner application submitted</strong>
+          <p>
+            Application {w.create.data.code} is under review. The partner is not active until
+            verification is complete.
+          </p>
+          <UploadSummary uploads={w.uploads} owner="partner" />
+          <Badge tone="warning">Under Review</Badge>
+          <Button primary onClick={close}>
+            Return to delivery partners
+          </Button>
+        </div>
+      </div>
+    )
+
+  return (
+    <div className="partner-wizard-screen" role="dialog" aria-label="New delivery partner">
+      <header className="partner-wizard-header">
+        <Logo />
+        <Badge tone="gold">● Draft</Badge>
+        <Button
+          icon={Save}
+          className="draft-save-button"
+          aria-label="Save draft"
+          disabled={!w.draftReady || w.saveDraft.isPending || w.create.isPending}
+          onClick={w.save}
+        >
+          <span className="draft-save-label">
+            {w.saveDraft.isPending ? "Saving…" : "Save draft"}
+          </span>
+        </Button>
+        <IconButton icon={X} label="Close onboarding" onClick={close} />
+      </header>
+      <div className="partner-wizard-layout">
+        <aside className="partner-step-rail">
+          <small>PARTNER ONBOARDING</small>
+          <strong>New delivery partner</strong>
+          <p>Complete all required details. Verification is handled separately.</p>
+          <div>
+            {PARTNER_STEPS.map(([title, copy], i) => (
+              <button
+                type="button"
+                className={i === step ? "active" : i < step ? "done" : ""}
+                onClick={() => w.goTo(i)}
+                key={title}
+              >
+                <b>{i < step ? <Check size={14} /> : i + 1}</b>
+                <span>
+                  <strong>{title}</strong>
+                  <small>{copy}</small>
+                </span>
+              </button>
+            ))}
+          </div>
+          <section>
+            <ShieldCheck size={19} />
+            <span>
+              <b>Sensitive data protected</b>
+              Draft details are encrypted. Submitted account numbers are reduced to the last four
+              digits.
+            </span>
+          </section>
+        </aside>
+        <main className="partner-wizard-main">
+          {w.savedDraft.isError ? (
+            <ErrorBox icon={AlertTriangle}>
+              Couldn’t load the saved draft. Retry before continuing.{" "}
+              <Button onClick={() => void w.savedDraft.refetch()}>Retry</Button>
+            </ErrorBox>
+          ) : !w.draftReady ? (
+            <p role="status">Loading saved draft…</p>
+          ) : (
+            <>
+              {w.savedDraft.data && (
+                <p role="status">
+                  Saved draft loaded · Updated {dateTimeLabel(w.savedDraft.data.updatedAt)}. Select
+                  documents again when you resume.
+                </p>
+              )}
+              {w.saveDraft.isError && (
+                <ErrorBox icon={AlertTriangle}>
+                  {errorText(w.saveDraft.error, "Couldn't save the draft.")}
+                </ErrorBox>
+              )}
+              <small>STEP {step + 1} OF 5</small>
+              <div className="partner-wizard-title">{PARTNER_STEPS[step]![0]}</div>
+              <p>
+                {
+                  [
+                    "Enter the partner's personal, contact, address and service eligibility details.",
+                    "Record the driving licence. Identity documents are verified separately.",
+                    "Add the primary vehicle the partner will deliver with.",
+                    "Draft bank details are encrypted; only the last four digits are kept after submission.",
+                    "Confirm each section before submitting the application for review.",
+                  ][step]
+                }
+              </p>
+              {w.create.isError && (
+                <ErrorBox icon={AlertTriangle}>
+                  {errorText(w.create.error, "Couldn't submit the application.")}
+                </ErrorBox>
+              )}
+              <section className="partner-form-card">
+                <strong>{step === 4 ? "Application summary" : "Basic details"}</strong>
+                {step === 0 && (
+                  <div className="form-grid">
+                    <Input label="Full name *" {...field("name")} />
+                    <Input
+                      label="Mobile number *"
+                      inputMode="tel"
+                      placeholder="98765 43210"
+                      {...field("phone")}
+                    />
+                    <Input label="Email address" type="email" {...field("email")} />
+                    <Input label="Date of birth" type="date" {...field("dateOfBirth")} />
+                    <Select label="Gender" value={form.gender} onChange={set("gender")}>
+                      <option value="">Select gender</option>
+                      {GENDERS.map((g) => (
+                        <option key={g}>{g}</option>
+                      ))}
+                    </Select>
+                    <Input label="PIN code" inputMode="numeric" {...field("pinCode")} />
+                    <AreaSelect value={form.zoneId} onChange={set("zoneId")} />
+                    <Input label="Residential address" {...field("address")} />
+                    <Select
+                      label="Service eligibility *"
+                      value={form.service}
+                      onChange={set("service")}
+                    >
+                      <option value="food">ZOAURO FOOD</option>
+                      <option value="mart">GLOARO MART</option>
+                      <option value="both">Both businesses</option>
+                    </Select>
+                    {errors.zoneId && <em className="rejection-error">{errors.zoneId}</em>}
+                  </div>
+                )}
+                {step === 1 && (
+                  <>
+                    <div className="form-grid">
+                      <Input label="Driving licence number *" {...field("drivingLicence")} />
+                      <Input
+                        label="Licence valid until"
+                        type="date"
+                        {...field("licenceValidUntil")}
+                      />
+                    </div>
+                    {cards([
+                      ["aadhaar", "Aadhaar card", "Front and back"],
+                      ["driving_licence", "Driving licence", "Both sides"],
+                      ["photo", "Profile photo", "Clear face photo"],
+                    ])}
+                  </>
+                )}
+                {step === 2 && (
+                  <div className="form-grid">
+                    <Select
+                      label="Vehicle type *"
+                      value={form.vehicleType}
+                      onChange={set("vehicleType")}
+                    >
+                      {VEHICLE_TYPES.map((v) => (
+                        <option value={v} key={v}>
+                          {vehicleLabel[v]}
+                        </option>
+                      ))}
+                    </Select>
+                    <Input
+                      label="Registration number *"
+                      placeholder="TN 01 AB 4821"
+                      {...field("vehicleNumber")}
+                    />
+                    <Input
+                      label="Vehicle model"
+                      placeholder="Honda SP 125"
+                      {...field("vehicleModel")}
+                    />
+                  </div>
+                )}
+                {step === 2 &&
+                  cards([
+                    ["vehicle_rc", "Registration certificate", "Vehicle RC"],
+                    ["insurance", "Insurance", "Current policy"],
+                  ])}
+                {step === 3 && (
+                  <div className="form-grid">
+                    <Input
+                      label="Account holder name"
+                      {...field("holderName", "bank.holderName")}
+                    />
+                    <Input label="Bank name" {...field("bankName", "bank.bankName")} />
+                    <Input
+                      label="Account number"
+                      type="password"
+                      inputMode="numeric"
+                      {...field("accountNumber", "bank.accountNumber")}
+                    />
+                    <Input
+                      label="Confirm account number"
+                      type="password"
+                      inputMode="numeric"
+                      {...field("confirmAccount")}
+                    />
+                    <Input
+                      label="IFSC code"
+                      placeholder="HDFC0001284"
+                      {...field("ifsc", "bank.ifsc")}
+                    />
+                  </div>
+                )}
+                {step === 4 && (
+                  <WizardReview w={w} zoneName={zones.data?.find((z) => z.id === form.zoneId)} />
+                )}
+              </section>
+            </>
+          )}
+        </main>
+      </div>
+      <footer className="partner-wizard-footer">
+        <Button onClick={step === 0 ? close : w.back}>{step === 0 ? "Cancel" : "Back"}</Button>
+        <span />
+        {step < 4 ? (
+          <Button primary disabled={!w.draftReady} onClick={w.next}>
+            Continue <ArrowRight size={15} />
+          </Button>
+        ) : (
+          <Button primary disabled={!w.draftReady || w.create.isPending} onClick={w.submit}>
+            Submit for verification
+          </Button>
+        )}
+      </footer>
+    </div>
+  )
+}
+
+function WizardReview({
+  w,
+  zoneName,
+}: {
+  w: ReturnType<typeof usePartnerWizard>
+  zoneName: { location: string; city: string } | undefined
+}) {
+  const f = w.form
+  const rows: [string, string, number][] = [
+    ["Personal information", `${f.name || "Not provided"} · ${f.phone || "No mobile"}`, 0],
+    [
+      "Service eligibility",
+      `${f.service === "both" ? "Food + Mart" : businessName[f.service]} · ${zoneName ? `${zoneName.location}, ${zoneName.city}` : "No area"}`,
+      0,
+    ],
+    ["Identity & license", f.drivingLicence || "Not provided", 1],
+    ["Vehicle", `${vehicleLabel[f.vehicleType]} · ${f.vehicleNumber || "No registration"}`, 2],
+    [
+      "Bank account",
+      f.accountNumber ? `${f.bankName} · •••• ${f.accountNumber.slice(-4)}` : "Not provided",
+      3,
+    ],
+  ]
+  return (
+    <div className="review">
+      {rows.map(([a, b, c]) => (
+        <div key={a}>
+          <span>
+            <small>{a}</small>
+            <b>{b}</b>
+          </span>
+          <Button onClick={() => w.goTo(c)}>Edit</Button>
+        </div>
+      ))}
+    </div>
   )
 }
