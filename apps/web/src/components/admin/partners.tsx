@@ -1,94 +1,76 @@
 "use client"
-// Delivery partners for the Admin portal: partner cards, the profile drawer, rider reviews and
-// requests for new partners. New partners are sent to the Super Admin for approval.
+// Delivery riders for the Admin portal: the riders of the delivery companies that serve this
+// business, their availability and documents, and the review of new rider applications.
+// New partner companies are requested from the Super Admin.
 import * as Dialog from "@radix-ui/react-dialog"
 import { ApiError } from "@zoauro/api-client"
-import {
-  availabilityLabel,
-  businessName,
-  partnerStatusLabel,
-  vehicleLabel,
-  type Business,
-  type DeliveryBoy,
-  type PartnerAvailability,
-  type PartnerStatus,
-} from "@zoauro/shared"
-import { Eye, Lock, Plus, Search, ShieldCheck, X } from "lucide-react"
+import { businessName, vehicleLabel, type Business, type DeliveryBoy } from "@zoauro/shared"
+import { Eye, Plus, Search, ShieldCheck } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 import { useState } from "react"
-import {
-  initials,
-  maskPhone,
-  partnerStatusTone,
-  servicesLabel,
-  usePartner,
-  usePartners,
-  usePartnerSummary,
-  verificationOf,
-} from "@/lib/partners"
-import { useMe } from "@/lib/session"
+import { initials, maskPhone } from "@/lib/partners"
 import { useDeliveryBoys, useReviewDeliveryBoy, useVerifyBoyDocument } from "@/lib/delivery"
-import { activityLabel, dateLabel, dateTimeLabel } from "@/lib/vendors"
-import { AvailabilityControl } from "./availability"
-import { AdminDocuments } from "./documents"
+import { useMe } from "@/lib/session"
 import { AdminPartnerRequests, PartnerRequestDialog } from "./partner-request"
 import { AdminBadge, AdminButton, PageHeader } from "./ui"
 
-type Filter = "" | PartnerAvailability | "pending_approval"
+type Filter = "" | "active" | "pending_admin"
+
+const STATUS_LABEL: Record<string, string> = {
+  pending_admin: "Awaiting review",
+  pending_super: "Awaiting Super Admin",
+  corrections_requested: "Corrections requested",
+  rejected: "Rejected",
+  active: "Active",
+  suspended: "Suspended",
+}
+
+const STATUS_TONE: Record<string, "success" | "warning" | "danger" | "neutral"> = {
+  active: "success",
+  pending_admin: "warning",
+  pending_super: "warning",
+  corrections_requested: "warning",
+  rejected: "danger",
+  suspended: "danger",
+}
 
 export function AdminPartners({ business }: { business: Business }) {
   // Global search links here with ?search=CODE; a new link starts the list over.
   const linked = useSearchParams().get("search") ?? ""
-  return <PartnersScreen key={linked} business={business} initialSearch={linked} />
+  return <RidersScreen key={linked} business={business} initialSearch={linked} />
 }
 
-function PartnersScreen({
-  business,
-  initialSearch,
-}: {
-  business: Business
-  initialSearch: string
-}) {
+function RidersScreen({ business, initialSearch }: { business: Business; initialSearch: string }) {
   const me = useMe()
   const [search, setSearch] = useState(initialSearch)
   const [filter, setFilter] = useState<Filter>("")
-  const [selected, setSelected] = useState<string | null>(null)
+  const [reviewing, setReviewing] = useState(false)
   const [adding, setAdding] = useState(false)
-  const [reviewingRiders, setReviewingRiders] = useState(false)
-  const pending = filter === "pending_approval"
-  const partners = usePartners({
+  const [openId, setOpenId] = useState<string | null>(null)
+  const riders = useDeliveryBoys({
     business,
-    ...(filter &&
-      !pending && {
-        status: "active" as PartnerStatus,
-        availability: filter as PartnerAvailability,
-      }),
-    ...(pending && { status: "pending_approval" as PartnerStatus }),
+    status: filter || undefined,
     search: search.trim() || undefined,
     page: 1,
     pageSize: 100,
   })
-  const summary = usePartnerSummary(business)
-  const s = summary.data
+  const items = riders.data?.items ?? []
+  const open = items.find((boy) => boy.id === openId) ?? null
   const food = business === "food"
 
-  if (reviewingRiders)
-    return <AdminRiderApplications business={business} close={() => setReviewingRiders(false)} />
+  if (reviewing)
+    return <AdminRiderApplications business={business} close={() => setReviewing(false)} />
 
   return (
     <>
       <PageHeader
-        title={`${food ? "Food" : "Mart"} delivery partners`}
-        subtitle={`Availability, workload, verification and performance for ${food ? "food deliveries" : "parcel shipments"}.`}
+        title={`${food ? "Food" : "Mart"} delivery riders`}
+        subtitle="Riders of the delivery companies that serve this business: availability, documents and status."
         note={<span className="live-note">● Live data</span>}
       >
         {me.data?.permissions.includes("partners.manage") && (
           <>
-            <AdminButton
-              kind="secondary"
-              icon={ShieldCheck}
-              onClick={() => setReviewingRiders(true)}
-            >
+            <AdminButton kind="secondary" icon={ShieldCheck} onClick={() => setReviewing(true)}>
               Rider applications
             </AdminButton>
             <AdminButton icon={Plus} onClick={() => setAdding(true)}>
@@ -98,140 +80,87 @@ function PartnersScreen({
         )}
       </PageHeader>
       <AdminPartnerRequests business={business} />
-      <div className="partner-summary">
-        <div>
-          <i className="online" />
-          <span>
-            <b>{s ? s.available + s.onDelivery : "—"}</b> online
-          </span>
-        </div>
-        <div>
-          <i className="available" />
-          <span>
-            <b>{s?.available ?? "—"}</b> available
-          </span>
-        </div>
-        <div>
-          <i className="busy" />
-          <span>
-            <b>{s?.onDelivery ?? "—"}</b> on assignment
-          </span>
-        </div>
-        <div>
-          <i className="review" />
-          <span>
-            <b>{s?.pending ?? "—"}</b> pending verification
-          </span>
-        </div>
-      </div>
       <section className="panel full-panel">
         <div className="toolbar">
           <div className="search-field">
             <Search className="icon" size={17} />
             <input
-              placeholder="Search partner name, ID or mobile…"
+              placeholder="Search rider name, ID, mobile or company…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              aria-label="Search partners"
+              aria-label="Search riders"
             />
           </div>
-          <select
-            className="filter-button"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as Filter)}
-            aria-label="Availability"
-          >
-            <option value="">Availability: All</option>
-            <option value="available">Available</option>
-            <option value="on_delivery">On delivery</option>
-            <option value="offline">Offline</option>
-            <option value="pending_approval">Pending verification</option>
-          </select>
+          <div className="gk-segment" role="tablist" aria-label="Rider status">
+            {(["", "active", "pending_admin"] as const).map((value) => (
+              <button
+                type="button"
+                role="tab"
+                key={value || "all"}
+                aria-selected={filter === value}
+                className={filter === value ? "active" : ""}
+                onClick={() => setFilter(value)}
+              >
+                {value === "" ? "All" : value === "active" ? "Active" : "Awaiting review"}
+              </button>
+            ))}
+          </div>
         </div>
-        {partners.isError && (
-          <p style={{ padding: "1rem" }}>
-            {partners.error instanceof ApiError
-              ? partners.error.message
-              : "Couldn't load partners."}
-          </p>
+        {riders.isError && <p className="admin-empty">Couldn’t load riders. Try again.</p>}
+        {riders.data && items.length === 0 && (
+          <p className="admin-empty">No riders match these filters.</p>
         )}
-        {partners.data?.items.length === 0 && (
-          <p style={{ padding: "1rem" }}>No delivery partners match these filters.</p>
+        {items.length > 0 && (
+          <div className="table-wrap">
+            <table className="fp-table">
+              <thead>
+                <tr>
+                  <th>Rider</th>
+                  <th>Company</th>
+                  <th>Zone</th>
+                  <th>Vehicle</th>
+                  <th>Availability</th>
+                  <th>Status</th>
+                  <th>Documents</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((boy) => (
+                  <tr key={boy.id} onClick={() => setOpenId(boy.id)} className="clickable">
+                    <td>
+                      <strong>{boy.name}</strong>
+                      <br />
+                      <small>
+                        {boy.code} · {maskPhone(boy.phone)}
+                      </small>
+                    </td>
+                    <td>{boy.fleetName}</td>
+                    <td>
+                      {boy.zoneName}
+                      <br />
+                      <small>{boy.district}</small>
+                    </td>
+                    <td>
+                      {vehicleLabel[boy.vehicleType]} · {boy.vehicleNumber}
+                    </td>
+                    <td>{boy.availability.replaceAll("_", " ")}</td>
+                    <td>
+                      <AdminBadge tone={STATUS_TONE[boy.status] ?? "neutral"}>
+                        {STATUS_LABEL[boy.status] ?? boy.status}
+                      </AdminBadge>
+                    </td>
+                    <td>
+                      {boy.documents.filter((doc) => doc.verified).length} of {boy.documents.length}{" "}
+                      verified
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-        <div className="partner-cards">
-          {partners.data?.items.map((p, i) => {
-            const verify = verificationOf(p)
-            return (
-              <article className="partner-card" key={p.id}>
-                <div className="partner-card-head">
-                  <span className={`avatar a${i % 4}`}>{initials(p.name)}</span>
-                  <div>
-                    <h3>{p.name}</h3>
-                    <small>
-                      {p.code} · {maskPhone(p.phone)}
-                    </small>
-                  </div>
-                </div>
-                <div className="partner-badges">
-                  <AdminBadge tone={verify === "Verified" ? "success" : "warning"}>
-                    {verify}
-                  </AdminBadge>
-                  {p.status === "active" ? (
-                    <AdminBadge
-                      tone={
-                        p.availability === "available"
-                          ? "success"
-                          : p.availability === "on_delivery"
-                            ? "warning"
-                            : "neutral"
-                      }
-                    >
-                      {p.availability === "available"
-                        ? "Available"
-                        : availabilityLabel[p.availability]}
-                    </AdminBadge>
-                  ) : (
-                    <AdminBadge tone={partnerStatusTone(p.status)}>
-                      {partnerStatusLabel[p.status]}
-                    </AdminBadge>
-                  )}
-                  <AdminBadge tone="info">
-                    {p.businesses.length > 1
-                      ? "Food + Mart"
-                      : p.businesses[0] === "food"
-                        ? "Food"
-                        : "Mart"}
-                  </AdminBadge>
-                </div>
-                <div className="partner-stats">
-                  <div>
-                    <small>CURRENT {food ? "ORDER" : "SHIPMENT"}</small>
-                    <strong>{p.currentOrderCode ? `#${p.currentOrderCode}` : "—"}</strong>
-                  </div>
-                  <div>
-                    <small>VEHICLE</small>
-                    <strong>{vehicleLabel[p.vehicleType]}</strong>
-                  </div>
-                  <div>
-                    <small>COMPLETED</small>
-                    <strong>{p.deliveriesCompleted.toLocaleString("en-IN")}</strong>
-                  </div>
-                  <div>
-                    <small>RATING</small>
-                    <strong>{p.rating === null ? "—" : `★ ${p.rating.toFixed(1)}`}</strong>
-                  </div>
-                </div>
-                <div className="card-actions">
-                  <AdminButton kind="secondary" icon={Eye} onClick={() => setSelected(p.id)}>
-                    View profile
-                  </AdminButton>
-                </div>
-              </article>
-            )
-          })}
-        </div>
       </section>
-      {selected && <PartnerProfile id={selected} close={() => setSelected(null)} />}
+      {open && <AdminRiderReview boy={open} close={() => setOpenId(null)} />}
       {adding && <PartnerRequestDialog business={business} close={() => setAdding(false)} />}
     </>
   )
@@ -461,136 +390,6 @@ function AdminRiderReview({ boy, close }: { boy: DeliveryBoy; close: () => void 
               </AdminButton>
             </div>
           </div>
-        </Dialog.Content>
-      </Dialog.Overlay>
-    </Dialog.Root>
-  )
-}
-
-function PartnerProfile({ id, close }: { id: string; close: () => void }) {
-  const { data: p, isError, refetch } = usePartner(id)
-  const me = useMe()
-  return (
-    <Dialog.Root open onOpenChange={(open) => !open && close()}>
-      <Dialog.Overlay className="drawer-backdrop">
-        <Dialog.Content className="drawer" aria-describedby={undefined}>
-          <div className="drawer-head">
-            <div>
-              <small>DELIVERY PARTNER</small>
-              <Dialog.Title asChild>
-                <h2>{p?.name ?? "Loading…"}</h2>
-              </Dialog.Title>
-            </div>
-            <Dialog.Close aria-label="Close">
-              <X className="icon" size={20} />
-            </Dialog.Close>
-          </div>
-          {isError && <p>Couldn&apos;t load this partner.</p>}
-          {p && (
-            <>
-              <div className="drawer-status">
-                <AdminBadge tone={partnerStatusTone(p.status)}>
-                  {partnerStatusLabel[p.status]}
-                </AdminBadge>
-                <span>
-                  {p.code} · {servicesLabel(p.businesses)}
-                </span>
-              </div>
-              {p.status === "pending_approval" && (
-                <p className="security-note" style={{ display: "flex", gap: 8 }}>
-                  <Lock className="icon" size={16} />
-                  Waiting for Super Admin approval. The partner can&apos;t take orders yet.
-                </p>
-              )}
-              {p.decisionReason && (
-                <p style={{ fontSize: 13, color: "#b42318" }}>
-                  {partnerStatusLabel[p.status]}: {p.decisionReason}
-                </p>
-              )}
-              {p.status === "active" && (
-                <section className="drawer-section availability-box">
-                  <h3>Availability · {availabilityLabel[p.availability]}</h3>
-                  <AvailabilityControl partner={p} onDone={() => void refetch()} />
-                </section>
-              )}
-              <section className="drawer-section split-info">
-                <div>
-                  <small>MOBILE</small>
-                  <strong>{p.phone}</strong>
-                  <p>{p.email ?? "No email"}</p>
-                </div>
-                <div>
-                  <small>SERVICE AREA</small>
-                  <strong>{p.zoneName}</strong>
-                  <p>{p.address ?? ""}</p>
-                </div>
-              </section>
-              <section className="drawer-section split-info">
-                <div>
-                  <small>VEHICLE</small>
-                  <strong>
-                    {vehicleLabel[p.vehicleType]} · {p.vehicleNumber}
-                  </strong>
-                  <p>{p.vehicleModel ?? ""}</p>
-                </div>
-                <div>
-                  <small>DRIVING LICENCE</small>
-                  <strong>{p.drivingLicence}</strong>
-                  <p>
-                    {p.licenceValidUntil ? `Valid until ${dateLabel(p.licenceValidUntil)}` : ""}
-                  </p>
-                </div>
-              </section>
-              <section className="drawer-section split-info">
-                <div>
-                  <small>PAYOUT ACCOUNT</small>
-                  <strong>
-                    {p.bank ? `${p.bank.bankName ?? "Bank"} · ••${p.bank.last4}` : "Not added"}
-                  </strong>
-                  <p>{p.bank ? (p.bank.verified ? "Verified" : "Not verified") : ""}</p>
-                </div>
-                <div>
-                  <small>PERFORMANCE</small>
-                  <strong>
-                    {p.deliveriesCompleted.toLocaleString("en-IN")} deliveries ·{" "}
-                    {p.rating === null ? "No rating" : `★ ${p.rating.toFixed(1)}`}
-                  </strong>
-                  <p>{p.currentOrderCode ? `Carrying #${p.currentOrderCode}` : ""}</p>
-                </div>
-              </section>
-              <AdminDocuments
-                owner="partners"
-                id={p.id}
-                kinds={[
-                  "aadhaar",
-                  "driving_licence",
-                  "vehicle_rc",
-                  "insurance",
-                  "bank_proof",
-                  "photo",
-                ]}
-                documents={p.documents}
-                canUpload={Boolean(me.data?.permissions.includes("partners.manage"))}
-              />
-              {p.activity.length > 0 && (
-                <section className="drawer-section">
-                  <h3>Activity</h3>
-                  {p.activity.map((a, i) => (
-                    <div className="item-row" key={i}>
-                      <span />
-                      <div>
-                        <strong>{activityLabel(a.action)}</strong>
-                        <small>
-                          {dateTimeLabel(a.at)} · {a.actorName}
-                          {a.reason && ` · ${a.reason}`}
-                        </small>
-                      </div>
-                    </div>
-                  ))}
-                </section>
-              )}
-            </>
-          )}
         </Dialog.Content>
       </Dialog.Overlay>
     </Dialog.Root>

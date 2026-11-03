@@ -385,6 +385,8 @@ export type RequestDeliveryFleetRequest = z.infer<typeof RequestDeliveryFleetReq
 
 export const DeliveryBoyListQuery = z.object({
   status: DeliveryBoyStatus.optional(),
+  /** Riders of delivery companies that serve this business. */
+  business: Business.optional(),
   districtId: z.string().optional(),
   zoneId: z.string().optional(),
   fleetId: z.string().optional(),

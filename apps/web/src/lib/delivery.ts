@@ -32,6 +32,7 @@ export type DeliveryBoyQuery = {
     | "rejected"
     | "active"
     | "suspended"
+  business?: "food" | "mart"
   districtId?: string
   zoneId?: string
   fleetId?: string

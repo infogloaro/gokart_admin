@@ -6946,6 +6946,7 @@ export interface paths {
             parameters: {
                 query?: {
                     status?: "pending_admin" | "pending_super" | "corrections_requested" | "rejected" | "active" | "suspended";
+                    business?: "food" | "mart";
                     districtId?: string;
                     zoneId?: string;
                     fleetId?: string;

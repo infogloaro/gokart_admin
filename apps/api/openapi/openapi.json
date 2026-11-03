@@ -13900,6 +13900,15 @@
           },
           {
             "schema": {
+              "type": "string",
+              "enum": ["food", "mart"]
+            },
+            "required": false,
+            "name": "business",
+            "in": "query"
+          },
+          {
+            "schema": {
               "type": "string"
             },
             "required": false,

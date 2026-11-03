@@ -853,6 +853,7 @@ function boyWhere(
   return {
     ...(zoneIds && { zoneId: { in: zoneIds } }),
     ...(q.status && { status: q.status }),
+    ...(q.business && { fleet: { businesses: { some: { business: q.business } } } }),
     ...(q.districtId && { zone: { districtId: q.districtId } }),
     ...(q.zoneId && { zoneId: q.zoneId }),
     ...(q.fleetId && { fleetId: q.fleetId }),
