@@ -1834,6 +1834,13 @@ export async function fleetHistory(id: string, member: MemberContext) {
   return historyRows({ fleetId: id })
 }
 
+/** A partner sees its own riders' history, never another partner's. */
+export async function fleetBoyHistory(fleetId: string, id: string) {
+  const boy = await prisma.deliveryBoy.findFirst({ where: { id, fleetId }, select: { id: true } })
+  if (!boy) throw notFound("Delivery boy")
+  return historyRows({ boyId: id })
+}
+
 export async function boyHistory(id: string, member: MemberContext) {
   await loadBoy(id, member)
   return historyRows({ boyId: id })

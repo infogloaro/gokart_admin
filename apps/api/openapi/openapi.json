@@ -2311,7 +2311,8 @@
               "delayed_order",
               "payment_failed",
               "vendor_issue",
-              "security"
+              "security",
+              "document_expiry"
             ]
           },
           "business": {
@@ -2388,6 +2389,12 @@
           "openCount": {
             "type": "integer"
           },
+          "counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          },
           "volume": {
             "type": "array",
             "items": {
@@ -2432,6 +2439,7 @@
           "page",
           "pageSize",
           "openCount",
+          "counts",
           "volume"
         ]
       },
@@ -12171,6 +12179,21 @@
           },
           {
             "schema": {
+              "type": "string",
+              "enum": [
+                "delayed_order",
+                "payment_failed",
+                "vendor_issue",
+                "security",
+                "document_expiry"
+              ]
+            },
+            "required": false,
+            "name": "kind",
+            "in": "query"
+          },
+          {
+            "schema": {
               "type": "integer",
               "minimum": 1
             },
@@ -12196,6 +12219,87 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/OperationalAlertPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alerts/resolve-many": {
+      "post": {
+        "tags": [
+          "Alerts"
+        ],
+        "summary": "Mark several alerts resolved at once",
+        "requestBody": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1,
+                    "maxItems": 200
+                  }
+                },
+                "required": [
+                  "ids"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Number resolved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "resolved": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "resolved"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -14687,6 +14791,113 @@
           },
           "403": {
             "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/delivery/intake/fleet/me/boys/{id}/history": {
+      "get": {
+        "tags": [
+          "Delivery management"
+        ],
+        "summary": "A delivery boy's approval steps for this partner, oldest first in the timeline",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "x-partner-credential",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "action": {
+                        "type": "string"
+                      },
+                      "actorName": {
+                        "type": "string"
+                      },
+                      "actorRole": {
+                        "type": "string"
+                      },
+                      "reason": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "changes": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "additionalProperties": {
+                          "type": "object",
+                          "properties": {
+                            "from": {},
+                            "to": {}
+                          }
+                        }
+                      },
+                      "at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "action",
+                      "actorName",
+                      "actorRole",
+                      "reason",
+                      "changes",
+                      "at"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
             "content": {
               "application/json": {
                 "schema": {

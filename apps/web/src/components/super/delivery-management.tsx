@@ -36,7 +36,7 @@ import { useManagedDistricts, useManagedZones } from "@/lib/system"
 import { useMe } from "@/lib/session"
 import { Badge, Button, ErrorBox, Input, Modal, Select, Tabs, Toast } from "./ui"
 import { ReasonDialog } from "./reason-dialog"
-import { BoyHistory, FleetHistory } from "./history-list"
+import { BoyTimeline, FleetHistory } from "./history-list"
 
 const MANAGEMENT_TABS = ["Fleet partners", "Rider applications"] as const
 type ManagementTab = (typeof MANAGEMENT_TABS)[number]
@@ -1783,8 +1783,8 @@ function RiderReview({
           </section>
         )}
         <section>
-          <h3>Change history</h3>
-          <BoyHistory boyId={boy.id} />
+          <h3>Approval timeline</h3>
+          <BoyTimeline boyId={boy.id} />
         </section>
         {((superAdmin && boy.status === "pending_super") ||
           (!superAdmin && boy.status === "pending_admin")) && (

@@ -117,6 +117,14 @@ registry.registerPath({
 })
 registry.registerPath({
   method: "get",
+  path: "/delivery/intake/fleet/me/boys/{id}/history",
+  tags,
+  summary: "A delivery boy's approval steps for this partner, oldest first in the timeline",
+  request: { params: id, headers: fleetCredential },
+  responses: { 200: json(z.array(DeliveryHistoryEntry)), ...errors(401, 404) },
+})
+registry.registerPath({
+  method: "get",
   path: "/delivery/orders/{id}/suggestions",
   tags,
   summary: "Riders who could take this order now, least busy first",

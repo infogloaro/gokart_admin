@@ -54,6 +54,10 @@ export async function suggestRiders(req: Request<{ id: string }>, res: Response)
   res.json(await service.suggestRiders(req.params.id, currentMember(req)))
 }
 
+export async function fleetBoyHistory(req: Request<{ id: string }>, res: Response) {
+  res.json(await service.fleetBoyHistory(requiredFleetId(req), req.params.id))
+}
+
 export async function boyHistory(req: Request<{ id: string }>, res: Response) {
   res.json(await service.boyHistory(req.params.id, currentMember(req)))
 }

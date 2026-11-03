@@ -1,6 +1,7 @@
 "use client"
 
 import { useBoyHistory, useFleetHistory } from "@/lib/delivery"
+import { RiderTimeline } from "@/components/delivery/rider-timeline"
 
 const ACTION_LABEL: Record<string, string> = {
   "fleet.requested": "Partner requested by Admin",
@@ -76,4 +77,12 @@ export function FleetHistory({ fleetId }: { fleetId: string }) {
 
 export function BoyHistory({ boyId }: { boyId: string }) {
   return <HistoryRows query={useBoyHistory(boyId)} />
+}
+
+/** A rider's approval steps as a timeline. */
+export function BoyTimeline({ boyId }: { boyId: string }) {
+  const history = useBoyHistory(boyId)
+  if (history.isPending) return <p>Loading timeline…</p>
+  if (history.isError) return <p role="alert">The timeline couldn’t be loaded.</p>
+  return <RiderTimeline entries={history.data ?? []} />
 }
