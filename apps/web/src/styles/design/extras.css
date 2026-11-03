@@ -735,3 +735,31 @@
 .super-ui .history-changes code, .admin-ui .history-changes code { font-size: .7rem; }
 .super-ui .bulk-products, .admin-ui .bulk-products { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin: .5rem 0; }
 .super-ui .bulk-products ul, .admin-ui .bulk-products ul { margin: .4rem 0 0; padding-left: 1rem; font-size: .75rem; }
+
+/* Alerts page: open and resolved operational alerts, with unusual order volume. */
+.super-ui .alerts-page, .admin-ui .alerts-page { display: grid; gap: 1rem; padding: 1.25rem; }
+.super-ui .alerts-head h2, .admin-ui .alerts-head h2 { margin: 0; font-size: 1.35rem; font-weight: 800; color: var(--navy, #08224b); }
+.super-ui .alerts-head p, .admin-ui .alerts-head p { margin: .25rem 0 0; font-size: .8rem; color: var(--muted, #64748b); }
+.super-ui .alerts-tabs, .admin-ui .alerts-tabs { display: inline-flex; gap: .3rem; background: #eef2f7; border-radius: .6rem; padding: .25rem; width: max-content; }
+.super-ui .alerts-tabs button, .admin-ui .alerts-tabs button { border: 0; background: transparent; padding: .45rem .9rem; border-radius: .45rem; font-size: .75rem; font-weight: 650; color: #475569; cursor: pointer; }
+.super-ui .alerts-tabs button.active, .admin-ui .alerts-tabs button.active { background: #fff; color: var(--navy, #08224b); box-shadow: 0 1px 3px #0f172a1a; }
+.super-ui .alerts-volume, .admin-ui .alerts-volume { background: #fff; border: 1px solid var(--border, #e2e8f0); border-radius: var(--r, .8rem); padding: 1rem 1.1rem; }
+.super-ui .alerts-volume h3, .admin-ui .alerts-volume h3 { display: flex; align-items: center; gap: .4rem; margin: 0 0 .5rem; font-size: .85rem; font-weight: 750; color: var(--navy, #08224b); }
+.super-ui .alerts-volume ul, .admin-ui .alerts-volume ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .35rem; font-size: .78rem; color: #334155; }
+.super-ui .alerts-list, .admin-ui .alerts-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; }
+.super-ui .ops-alert, .admin-ui .ops-alert { display: grid; grid-template-columns: auto 1fr auto; gap: .8rem; align-items: start; background: #fff; border: 1px solid var(--border, #e2e8f0); border-left: 4px solid #d97706; border-radius: var(--r, .8rem); padding: .9rem 1rem; }
+.super-ui .ops-alert.security, .admin-ui .ops-alert.security { border-left-color: #7c3aed; }
+.super-ui .ops-alert.payment_failed, .admin-ui .ops-alert.payment_failed { border-left-color: #dc2626; }
+.super-ui .ops-alert-icon, .admin-ui .ops-alert-icon { color: #d97706; padding-top: .15rem; }
+.super-ui .ops-alert-copy, .admin-ui .ops-alert-copy { display: grid; gap: .15rem; min-width: 0; }
+.super-ui .ops-alert-kind, .admin-ui .ops-alert-kind { font-size: .62rem; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; color: var(--muted, #64748b); }
+.super-ui .ops-alert-copy strong, .admin-ui .ops-alert-copy strong { font-size: .85rem; color: var(--navy, #08224b); }
+.super-ui .ops-alert-copy p, .admin-ui .ops-alert-copy p { margin: 0; font-size: .78rem; color: #334155; }
+.super-ui .ops-alert-copy small, .admin-ui .ops-alert-copy small { font-size: .68rem; color: var(--muted, #64748b); }
+.super-ui .ops-alert-actions, .admin-ui .ops-alert-actions { display: grid; gap: .4rem; justify-items: end; }
+.super-ui .ops-alert-actions a, .admin-ui .ops-alert-actions a { font-size: .75rem; font-weight: 650; color: var(--navy, #08224b); }
+.super-ui .ops-alert-actions button, .admin-ui .ops-alert-actions button { border: 1px solid var(--border, #e2e8f0); background: #fff; border-radius: .5rem; padding: .4rem .7rem; font-size: .72rem; font-weight: 650; cursor: pointer; white-space: nowrap; }
+.super-ui .ops-alert-actions button:disabled, .admin-ui .ops-alert-actions button:disabled { opacity: .5; cursor: default; }
+.super-ui .alerts-empty, .admin-ui .alerts-empty { font-size: .85rem; color: var(--muted, #64748b); }
+.super-ui .alerts-pager, .admin-ui .alerts-pager { display: flex; align-items: center; gap: .8rem; font-size: .75rem; color: #475569; }
+.super-ui .alerts-pager button, .admin-ui .alerts-pager button { border: 1px solid var(--border, #e2e8f0); background: #fff; border-radius: .5rem; padding: .35rem .7rem; cursor: pointer; }

@@ -1,3 +1,4 @@
+import { AlertsPage } from "@/components/alerts-page"
 import { Business } from "@zoauro/shared"
 import { notFound } from "next/navigation"
 import { AdminComplaints } from "@/components/admin/complaints"
@@ -32,6 +33,7 @@ export default async function AdminPage({
   if (page === "finance") return <AdminFinance business={b} key={b} />
   if (page === "reports") return <AdminReports business={b} key={b} />
   if (page === "notifications") return <AdminNotifications business={b} key={b} />
+  if (page === "alerts") return <AlertsPage business={b} key={b} />
   if (page === "inventory") return b === "mart" ? <AdminInventory /> : notFound()
   if (page === "orders") return <AdminOrders business={b} />
   if (page === "complaints") return <AdminComplaints business={b} />

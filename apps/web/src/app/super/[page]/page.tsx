@@ -1,3 +1,4 @@
+import { AlertsPage } from "@/components/alerts-page"
 import { notFound } from "next/navigation"
 import { AdminPermissions } from "@/components/super/admin-permissions"
 import { AreasFees } from "@/components/super/areas-fees"
@@ -37,5 +38,6 @@ export default async function SuperPage({ params }: { params: Promise<{ page: st
   if (page === "admins") return <AdminPermissions />
   if (page === "settings") return <AreasFees />
   if (page === "audit") return <AuditLogs />
+  if (page === "alerts") return <AlertsPage />
   return <ScreenPlaceholder screen={screen} />
 }

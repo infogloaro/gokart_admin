@@ -1,0 +1,30 @@
+// Operational alerts: problems that need someone to act (delayed orders, failed payments,
+// suspended vendors with open orders, sign-ins from a new network). Kept apart from
+// notifications so the Notifications page stays the inbox for updates and approvals.
+
+enum AlertKind {
+  delayed_order
+  payment_failed
+  vendor_issue
+  security
+}
+
+model OperationalAlert {
+  id           String    @id @default(cuid())
+  /// One alert per problem per day, e.g. "delayed_order:<orderId>:2026-11-03".
+  key          String    @unique
+  kind         AlertKind
+  /// Null for security alerts, which only Super Admins see.
+  business     Business?
+  zoneId       String?
+  title        String
+  body         String
+  link         String?
+  createdAt    DateTime  @default(now())
+  resolvedAt   DateTime?
+  resolvedById String?
+
+  @@index([business, resolvedAt, createdAt])
+  @@index([zoneId, resolvedAt])
+  @@map("operational_alerts")
+}

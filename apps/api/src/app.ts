@@ -10,6 +10,7 @@ import { deliveryRoutes } from "./modules/delivery/delivery.routes"
 import { auditRoutes } from "./modules/audit/audit"
 import { complaintRoutes } from "./modules/complaints/complaints.routes"
 import { financeRoutes } from "./modules/finance/finance.routes"
+import { alertRoutes } from "./modules/alerts/alerts.routes"
 import { bulkRoutes } from "./modules/bulk/bulk"
 import { inventoryRoutes } from "./modules/inventory/inventory"
 import { ledgerRoutes } from "./modules/ledger/ledger.routes"
@@ -26,6 +27,7 @@ import { zoneRoutes } from "./modules/zones/zones"
 import "./modules/auth/auth.openapi"
 import "./modules/complaints/complaints.openapi"
 import "./modules/finance/finance.openapi"
+import "./modules/alerts/alerts.openapi"
 import "./modules/inventory/inventory.openapi"
 import "./modules/ledger/ledger.openapi"
 import "./modules/dashboard/dashboard.openapi"
@@ -59,6 +61,7 @@ export function createApp() {
   v1.use("/finance", financeRoutes)
   v1.use("/inventory", inventoryRoutes)
   v1.use("/bulk", bulkRoutes)
+  v1.use("/alerts", alertRoutes)
   v1.use("/ledger", ledgerRoutes)
   v1.use("/notifications", notificationRoutes)
   v1.use("/members", memberRoutes)

@@ -50,8 +50,6 @@ import { useSince } from "@/lib/motion"
 import { placedLabel, statusTone, useOrders } from "@/lib/orders"
 import { HeadActions } from "./dashboard"
 import { useCsvExport } from "./export"
-import { AlertsPanel } from "@/components/alerts-panel"
-import { ZoneInsights } from "@/components/zone-insights"
 import { useBusinessFilter, type BusinessFilter } from "./shell"
 import { Badge, Button, ErrorBox, Panel, Tabs, Toast } from "./ui"
 
@@ -448,8 +446,6 @@ export function CommandCenter() {
 
   return (
     <>
-      <AlertsPanel />
-      <ZoneInsights />
       <Controls
         range={range}
         setRange={setRange}

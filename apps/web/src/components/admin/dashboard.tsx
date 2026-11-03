@@ -52,7 +52,6 @@ import {
 import { download, useSince } from "@/lib/motion"
 import { placedLabel, statusTone, useOrders } from "@/lib/orders"
 import { useMe } from "@/lib/session"
-import { AlertsPanel } from "@/components/alerts-panel"
 import { AdminBadge, AdminButton, PageHeader } from "./ui"
 
 const href = (business: Business, page: string, extra = "") =>
@@ -398,7 +397,6 @@ export function AdminDashboard({ business }: { business: Business }) {
         </AdminButton>
       </PageHeader>
       {q.isError && <LoadError error={q.error} />}
-      <AlertsPanel />
       <div className="metrics-grid">
         <MetricCard
           label={food ? "Total food orders" : "Marketplace orders"}

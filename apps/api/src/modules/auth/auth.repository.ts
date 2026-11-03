@@ -1,6 +1,6 @@
 import { Permission, type MfaMethod } from "@zoauro/shared"
 import { audit, type Actor } from "../../lib/audit"
-import { notify } from "../../lib/notify"
+import { raiseAlert } from "../alerts/alerts"
 import { prisma } from "../../lib/prisma"
 import type { MemberContext } from "../../middleware/auth"
 
@@ -67,17 +67,16 @@ export const recordSignIn = (actor: Actor, method: MfaMethod, via: "email" | "ph
       take: 200,
     })
     await audit(tx, actor, "auth.signed_in", { type: "member", id: actor.id! }, { method, via })
-    if (history.length > 0 && actor.ip && !history.some((row) => row.ip === actor.ip)) {
-      const supers = await tx.member.findMany({
-        where: { status: "active", role: "super_admin" },
-        select: { id: true },
-      })
-      await notify(tx, [actor.id!, ...supers.map((member) => member.id)], {
+    if (history.length > 0 && actor.ip && !history.some((row) => row.ip === actor.ip))
+      await raiseAlert(tx, {
+        kind: "security",
+        subject: `${actor.id}:${actor.ip}`,
+        business: null,
+        zoneId: null,
         title: "Sign-in from a new network",
         body: `${actor.name} signed in from ${actor.ip}, a network not seen in the last 90 days.`,
-        link: "/super/notifications",
+        link: "/super/alerts",
       })
-    }
   })
 
 export const recordSignOut = (actor: Actor) =>
