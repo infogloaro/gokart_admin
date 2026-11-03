@@ -608,24 +608,79 @@ function AddRiderDialog({
   onAdded: (name: string) => void
 }) {
   const add = useAddDeliveryBoy()
+  const steps = ["Personal", "Identity", "Vehicle", "Payout", "Review"]
+  const [step, setStep] = useState(0)
   const [form, setForm] = useState({
     name: "",
-    phone: "",
+    phone: "+91",
     email: "",
+    dateOfBirth: "",
+    gender: "",
     address: "",
+    pinCode: "",
     zoneId: fleet.zones[0]?.id ?? "",
+    drivingLicence: "",
+    licenceValidUntil: "",
     vehicleType: "scooter" as VehicleType,
     vehicleNumber: "",
+    vehicleModel: "",
     registrationValidUntil: "",
+    holderName: "",
+    bankName: "",
+    accountNumber: "",
+    ifsc: "",
   })
+  type Field = keyof typeof form
   const [error, setError] = useState("")
+  const set = (key: Field, value: string) => setForm((current) => ({ ...current, [key]: value }))
+  const requiredByStep: Field[][] = [
+    ["name", "phone", "address", "zoneId"],
+    ["drivingLicence"],
+    ["vehicleNumber"],
+    [],
+    [],
+  ]
+  const requiredLabel: Partial<Record<Field, string>> = {
+    name: "Full name",
+    phone: "Mobile",
+    address: "Address",
+    zoneId: "Zone",
+    drivingLicence: "Driving licence",
+    vehicleNumber: "Vehicle number",
+  }
+  const payload = () => ({
+    name: form.name.trim(),
+    phone: form.phone.trim(),
+    ...(form.email.trim() && { email: form.email.trim() }),
+    ...(form.dateOfBirth && { dateOfBirth: form.dateOfBirth }),
+    ...(form.gender && { gender: form.gender }),
+    address: form.address.trim(),
+    ...(form.pinCode.trim() && { pinCode: form.pinCode.trim() }),
+    zoneId: form.zoneId,
+    ...(form.drivingLicence.trim() && { drivingLicence: form.drivingLicence.trim() }),
+    ...(form.licenceValidUntil && { licenceValidUntil: form.licenceValidUntil }),
+    vehicleType: form.vehicleType,
+    vehicleNumber: form.vehicleNumber.trim().toUpperCase(),
+    ...(form.vehicleModel.trim() && { vehicleModel: form.vehicleModel.trim() }),
+    ...(form.registrationValidUntil && { registrationValidUntil: form.registrationValidUntil }),
+    ...(form.accountNumber && {
+      payout: {
+        holderName: form.holderName.trim(),
+        ...(form.bankName.trim() && { bankName: form.bankName.trim() }),
+        accountNumber: form.accountNumber,
+        ifsc: form.ifsc.trim().toUpperCase(),
+      },
+    }),
+  })
+  const next = () => {
+    const missing = requiredByStep[step]?.find((key) => !String(form[key]).trim())
+    if (missing) return setError(`${requiredLabel[missing]} is required.`)
+    setError("")
+    setStep(step + 1)
+  }
   const submit = async () => {
     setError("")
-    const parsed = DeliveryBoyApplicationRequest.safeParse({
-      ...form,
-      email: form.email || undefined,
-      registrationValidUntil: form.registrationValidUntil || undefined,
-    })
+    const parsed = DeliveryBoyApplicationRequest.safeParse(payload())
     if (!parsed.success)
       return setError(parsed.error.issues[0]?.message ?? "Check the delivery boy details.")
     try {
@@ -635,75 +690,207 @@ function AddRiderDialog({
       setError(errorText(cause))
     }
   }
+  const zoneName = fleet.zones.find((zone) => zone.id === form.zoneId)?.name ?? ""
   return (
-    <Modal title="Add delivery boy" subtitle={`${fleet.name} · ${fleet.code}`} close={close} wide>
+    <Modal
+      title="Add delivery boy"
+      subtitle={`${fleet.name} · ${fleet.code} · Step ${step + 1} of ${steps.length}`}
+      close={close}
+      wide
+    >
       <div className="modal-body">
-        <div className="form-grid">
-          <Input
-            label="Full name *"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-          />
-          <Input
-            label="Mobile *"
-            value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-          />
-          <Input
-            label="Email"
-            type="email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-          />
-          <Input
-            label="Address *"
-            value={form.address}
-            onChange={(e) => setForm({ ...form, address: e.target.value })}
-          />
-          <Select
-            label="Zone *"
-            value={form.zoneId}
-            onChange={(zoneId) => setForm({ ...form, zoneId })}
-          >
-            {fleet.zones.map((zone) => (
-              <option key={zone.id} value={zone.id}>
-                {zone.name}
-              </option>
-            ))}
-          </Select>
-          <Select
-            label="Vehicle *"
-            value={form.vehicleType}
-            onChange={(value) => setForm({ ...form, vehicleType: value as VehicleType })}
-          >
-            {VEHICLE_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {vehicleLabel[type]}
-              </option>
-            ))}
-          </Select>
-          <Input
-            label="Vehicle number *"
-            value={form.vehicleNumber}
-            onChange={(e) => setForm({ ...form, vehicleNumber: e.target.value })}
-          />
-          <Input
-            label="Registration valid until"
-            type="date"
-            value={form.registrationValidUntil}
-            onChange={(e) => setForm({ ...form, registrationValidUntil: e.target.value })}
-          />
+        <div className="tabs" role="tablist" aria-label="Delivery boy onboarding steps">
+          {steps.map((label, index) => (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={step === index}
+              className={step === index ? "active" : ""}
+              key={label}
+              onClick={() => index < step && setStep(index)}
+            >
+              {label}
+            </button>
+          ))}
         </div>
-        <p>
-          The delivery boy is sent to the zone Admin for review. Documents are uploaded from the
-          partner portal or the review screen.
-        </p>
+        {step === 0 && (
+          <div className="form-grid">
+            <Input
+              label="Full name *"
+              value={form.name}
+              onChange={(e) => set("name", e.target.value)}
+            />
+            <Input
+              label="Mobile *"
+              value={form.phone}
+              onChange={(e) => set("phone", e.target.value)}
+            />
+            <Input
+              label="Email"
+              type="email"
+              value={form.email}
+              onChange={(e) => set("email", e.target.value)}
+            />
+            <Input
+              label="Date of birth"
+              type="date"
+              value={form.dateOfBirth}
+              onChange={(e) => set("dateOfBirth", e.target.value)}
+            />
+            <Select label="Gender" value={form.gender} onChange={(value) => set("gender", value)}>
+              <option value="">Not specified</option>
+              {GENDERS.map((gender) => (
+                <option key={gender}>{gender}</option>
+              ))}
+            </Select>
+            <Input
+              label="PIN code"
+              value={form.pinCode}
+              onChange={(e) => set("pinCode", e.target.value)}
+            />
+            <Input
+              label="Address *"
+              value={form.address}
+              onChange={(e) => set("address", e.target.value)}
+            />
+            <Select label="Zone *" value={form.zoneId} onChange={(value) => set("zoneId", value)}>
+              {fleet.zones.map((zone) => (
+                <option key={zone.id} value={zone.id}>
+                  {zone.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+        )}
+        {step === 1 && (
+          <div className="form-grid">
+            <Input
+              label="Driving licence *"
+              value={form.drivingLicence}
+              onChange={(e) => set("drivingLicence", e.target.value)}
+            />
+            <Input
+              label="Licence expiry"
+              type="date"
+              value={form.licenceValidUntil}
+              onChange={(e) => set("licenceValidUntil", e.target.value)}
+            />
+          </div>
+        )}
+        {step === 2 && (
+          <div className="form-grid">
+            <Select
+              label="Vehicle type *"
+              value={form.vehicleType}
+              onChange={(value) => set("vehicleType", value)}
+            >
+              {VEHICLE_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {vehicleLabel[type]}
+                </option>
+              ))}
+            </Select>
+            <Input
+              label="Vehicle number *"
+              value={form.vehicleNumber}
+              onChange={(e) => set("vehicleNumber", e.target.value)}
+            />
+            <Input
+              label="Vehicle model"
+              value={form.vehicleModel}
+              onChange={(e) => set("vehicleModel", e.target.value)}
+            />
+            <Input
+              label="Registration valid until"
+              type="date"
+              value={form.registrationValidUntil}
+              onChange={(e) => set("registrationValidUntil", e.target.value)}
+            />
+          </div>
+        )}
+        {step === 3 && (
+          <>
+            <p>Payout is optional. Enter an account number to save the payout details.</p>
+            <div className="form-grid">
+              <Input
+                label="Account holder"
+                value={form.holderName}
+                onChange={(e) => set("holderName", e.target.value)}
+              />
+              <Input
+                label="Bank name"
+                value={form.bankName}
+                onChange={(e) => set("bankName", e.target.value)}
+              />
+              <Input
+                label="Account number"
+                type="password"
+                value={form.accountNumber}
+                onChange={(e) => set("accountNumber", e.target.value)}
+              />
+              <Input label="IFSC" value={form.ifsc} onChange={(e) => set("ifsc", e.target.value)} />
+            </div>
+          </>
+        )}
+        {step === 4 && (
+          <>
+            <p>
+              <b>Personal</b>
+              <br />
+              {form.name} · {form.phone}
+              <br />
+              {form.address}
+              {zoneName && ` · ${zoneName}`}
+            </p>
+            <p>
+              <b>Identity</b>
+              <br />
+              Licence {form.drivingLicence || "not given"}
+              {form.licenceValidUntil && ` · valid until ${form.licenceValidUntil}`}
+            </p>
+            <p>
+              <b>Vehicle</b>
+              <br />
+              {vehicleLabel[form.vehicleType]} · {form.vehicleNumber}
+              {form.registrationValidUntil &&
+                ` · registration until ${form.registrationValidUntil}`}
+            </p>
+            <p>
+              <b>Payout</b>
+              <br />
+              {form.accountNumber
+                ? `${form.holderName} · ending ${form.accountNumber.slice(-4)}`
+                : "Not added"}
+            </p>
+            <p>
+              The delivery boy is sent to the zone Admin for review. Documents are uploaded from the
+              partner portal or the review screen.
+            </p>
+          </>
+        )}
         {error && <ErrorBox icon={AlertTriangle}>{error}</ErrorBox>}
         <footer>
-          <Button onClick={close}>Cancel</Button>
-          <Button primary disabled={add.isPending} onClick={() => void submit()}>
-            {add.isPending ? "Adding…" : "Add delivery boy"}
-          </Button>
+          {step === 0 ? (
+            <Button onClick={close}>Cancel</Button>
+          ) : (
+            <Button
+              onClick={() => {
+                setError("")
+                setStep(step - 1)
+              }}
+            >
+              Previous
+            </Button>
+          )}
+          {step < steps.length - 1 ? (
+            <Button primary onClick={next}>
+              Continue
+            </Button>
+          ) : (
+            <Button primary disabled={add.isPending} onClick={() => void submit()}>
+              {add.isPending ? "Adding…" : "Add delivery boy"}
+            </Button>
+          )}
         </footer>
       </div>
     </Modal>
