@@ -161,20 +161,30 @@
     sans-serif;
 }
 
-.gk-cluster {
-  width: 40px;
-  height: 40px;
+/* A cluster is a rider pin with a count badge on its bubble. */
+.gk-rider-cluster {
+  --ring: #061a38;
+}
+.gk-rider-cluster .gk-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
   display: grid;
   place-items: center;
-  border: 3px solid #fff;
-  border-radius: 50%;
+  border: 2px solid #fff;
+  border-radius: 999px;
   background: #061a38;
   color: #fff;
-  box-shadow: 0 6px 16px rgba(6, 26, 56, 0.3);
   font:
-    700 12px/1 Inter,
+    700 11px/1 Inter,
     system-ui,
     sans-serif;
+}
+.gk-rider-cluster .gk-rider-bubble {
+  position: relative;
 }
 .gk-map-legend {
   position: absolute;

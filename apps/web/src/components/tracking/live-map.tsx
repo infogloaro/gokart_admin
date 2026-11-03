@@ -243,11 +243,12 @@ export function LiveMap({
               return at ? [[at.lat, at.lng] as [number, number]] : []
             })
             const center = mod.latLngBounds(points).getCenter()
+            // A cluster is the rider pin with a count badge, so it reads as riders on the map.
             const icon = mod.divIcon({
-              html: `<span class="gk-cluster" aria-label="${group.length} delivery partners">${group.length}</span>`,
+              html: `<span class="gk-rider gk-rider-cluster" aria-label="${group.length} delivery partners"><span class="gk-rider-bubble"><img src="/rider-pin.png" alt=""></span><i class="gk-rider-tip"></i><b class="gk-count">${group.length}</b></span>`,
               className: "gk-cluster-wrap",
-              iconSize: [42, 42],
-              iconAnchor: [21, 21],
+              iconSize: [PIN.w, PIN.h],
+              iconAnchor: [PIN.w / 2, PIN.h],
             })
             let marker = clusters.current.get(clusterId)
             if (!marker) {
