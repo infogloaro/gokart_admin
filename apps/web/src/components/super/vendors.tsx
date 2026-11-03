@@ -4,7 +4,6 @@
 // row's ••• button (edit details, approve / reject, suspend / reactivate); and the
 // add-vendor wizard.
 import { VendorScorecards } from "@/components/vendor-scorecards"
-import { ExportCsvLink } from "@/components/export-csv-link"
 import { ApiError } from "@zoauro/api-client"
 import {
   businessName,
@@ -163,7 +162,6 @@ function VendorsScreen({ initialSearch }: { initialSearch: string }) {
   return (
     <>
       <HeadActions>
-        <ExportCsvLink href="/api/v1/bulk/vendors.csv" label="Export CSV" />
         <span className="updated-note" aria-live="polite">
           Updated {since}
         </span>
