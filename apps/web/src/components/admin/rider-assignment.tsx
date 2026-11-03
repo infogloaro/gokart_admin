@@ -54,6 +54,7 @@ export function RiderAssignment({ order }: { order: Order }) {
                 <span>
                   {index === 0 && <b className="best-tag">Best match</b>} {rider.name} ·{" "}
                   {rider.fleetName} · {rider.activeOrders}/{rider.maxActiveOrders} active
+                  {rider.distanceKm !== null && ` · ${rider.distanceKm} km away`}
                 </span>
                 <AdminButton
                   kind="secondary"

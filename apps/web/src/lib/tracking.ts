@@ -24,6 +24,7 @@ export const useTrackingZones = () =>
 export const useTrackedPartners = (business?: Business) =>
   useQuery({
     queryKey: partnersKey(business),
+    refetchInterval: 30_000,
     queryFn: async () => {
       const partners = await api("get", "/tracking/partners", {
         query: business ? { business } : {},

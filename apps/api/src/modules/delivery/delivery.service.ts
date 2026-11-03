@@ -37,6 +37,7 @@ import {
   tooMany,
   unauthorized,
 } from "../../lib/errors"
+import { distanceKm } from "../../lib/geo"
 import { linkFor, notify } from "../../lib/notify"
 import { prisma } from "../../lib/prisma"
 import { rateLimit } from "../../lib/rate-limit"
@@ -1863,6 +1864,12 @@ export async function suggestRiders(orderId: string, member: MemberContext) {
   if (!order || (member.role !== "super_admin" && !member.zoneIds.includes(order.zoneId)))
     throw notFound("Order")
   if (order.deliveryBoyId) return []
+  // Riders are ranked by distance to the order's zone centre (the pickup area). A rider with no
+  // recent position is still listed, after the riders we can place.
+  const zone = await prisma.zone.findUnique({
+    where: { id: order.zoneId },
+    select: { lat: true, lng: true },
+  })
   const riders = await prisma.deliveryBoy.findMany({
     where: {
       zoneId: order.zoneId,
@@ -1887,15 +1894,31 @@ export async function suggestRiders(orderId: string, member: MemberContext) {
           rider.documents.some((document) => document.kind === kind),
         ) && rider.assignments.length < rider.maxActiveOrders,
     )
-    .map((rider) => ({
-      id: rider.id,
-      code: rider.code,
-      name: rider.name,
-      fleetName: rider.fleet.name,
-      activeOrders: rider.assignments.length,
-      maxActiveOrders: rider.maxActiveOrders,
-    }))
-    .sort((a, b) => a.activeOrders - b.activeOrders || a.name.localeCompare(b.name))
+    .map((rider) => {
+      const placed =
+        zone?.lat != null &&
+        zone.lng != null &&
+        rider.lastLat !== null &&
+        rider.lastLng !== null &&
+        rider.lastLocationAt !== null
+          ? distanceKm({ lat: rider.lastLat, lng: rider.lastLng }, { lat: zone.lat, lng: zone.lng })
+          : null
+      return {
+        id: rider.id,
+        code: rider.code,
+        name: rider.name,
+        fleetName: rider.fleet.name,
+        activeOrders: rider.assignments.length,
+        maxActiveOrders: rider.maxActiveOrders,
+        distanceKm: placed === null ? null : Math.round(placed * 10) / 10,
+      }
+    })
+    .sort(
+      (a, b) =>
+        (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity) ||
+        a.activeOrders - b.activeOrders ||
+        a.name.localeCompare(b.name),
+    )
     .slice(0, 10)
 }
 

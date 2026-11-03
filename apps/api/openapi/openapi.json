@@ -4929,6 +4929,10 @@
       "TrackedPartner": {
         "type": "object",
         "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["partner", "rider"]
+          },
           "id": {
             "type": "string"
           },
@@ -10578,6 +10582,149 @@
         }
       }
     },
+    "/finance/reconciliation": {
+      "get": {
+        "tags": ["Finance & payouts"],
+        "summary": "Check every payout against its lines, its payment record and the ledger",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "required": false,
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "required": false,
+            "name": "to",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "rows": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "accountType": {
+                            "type": "string"
+                          },
+                          "payee": {
+                            "type": "string"
+                          },
+                          "cycle": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "dueDate": {
+                            "type": "string"
+                          },
+                          "payoutPaise": {
+                            "type": "integer"
+                          },
+                          "linesPaise": {
+                            "type": "integer"
+                          },
+                          "ledgerPaise": {
+                            "type": ["integer", "null"]
+                          },
+                          "differencePaise": {
+                            "type": "integer"
+                          },
+                          "issues": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "code",
+                          "accountType",
+                          "payee",
+                          "cycle",
+                          "status",
+                          "dueDate",
+                          "payoutPaise",
+                          "linesPaise",
+                          "ledgerPaise",
+                          "differencePaise",
+                          "issues"
+                        ]
+                      }
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "payouts": {
+                          "type": "integer"
+                        },
+                        "clean": {
+                          "type": "integer"
+                        },
+                        "withIssues": {
+                          "type": "integer"
+                        },
+                        "payoutPaise": {
+                          "type": "integer"
+                        },
+                        "postedPaise": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": ["payouts", "clean", "withIssues", "payoutPaise", "postedPaise"]
+                    }
+                  },
+                  "required": ["rows", "summary"]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/alerts": {
       "get": {
         "tags": ["Alerts"],
@@ -13116,7 +13263,7 @@
     "/delivery/orders/{id}/suggestions": {
       "get": {
         "tags": ["Delivery management"],
-        "summary": "Riders who could take this order now, least busy first",
+        "summary": "Riders who could take this order now, nearest to the zone first",
         "parameters": [
           {
             "schema": {
@@ -13154,6 +13301,9 @@
                       },
                       "maxActiveOrders": {
                         "type": "integer"
+                      },
+                      "distanceKm": {
+                        "type": ["number", "null"]
                       }
                     },
                     "required": [
@@ -13162,7 +13312,8 @@
                       "name",
                       "fleetName",
                       "activeOrders",
-                      "maxActiveOrders"
+                      "maxActiveOrders",
+                      "distanceKm"
                     ]
                   }
                 }
@@ -17158,6 +17309,115 @@
                       "lat",
                       "lng",
                       "lastSeenAt"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/delivery/performance": {
+      "get": {
+        "tags": ["Delivery management"],
+        "summary": "Rider performance over a period: deliveries, on-time rate, declined jobs and a score",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "required": false,
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "required": false,
+            "name": "to",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "boyId": {
+                        "type": "string"
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "fleetName": {
+                        "type": "string"
+                      },
+                      "deliveries": {
+                        "type": "integer"
+                      },
+                      "declined": {
+                        "type": "integer"
+                      },
+                      "onTime": {
+                        "type": "integer"
+                      },
+                      "onTimeRate": {
+                        "type": ["integer", "null"]
+                      },
+                      "completionRate": {
+                        "type": ["integer", "null"]
+                      },
+                      "avgMinutes": {
+                        "type": ["integer", "null"]
+                      },
+                      "score": {
+                        "type": ["integer", "null"]
+                      }
+                    },
+                    "required": [
+                      "boyId",
+                      "code",
+                      "name",
+                      "fleetName",
+                      "deliveries",
+                      "declined",
+                      "onTime",
+                      "onTimeRate",
+                      "completionRate",
+                      "avgMinutes",
+                      "score"
                     ]
                   }
                 }

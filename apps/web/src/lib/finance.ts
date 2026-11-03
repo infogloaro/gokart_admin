@@ -80,6 +80,12 @@ export const usePayRequests = () =>
   useQuery({ queryKey: ["finance", "requests"], queryFn: () => api("get", "/finance/requests") })
 export const useMovements = () =>
   useQuery({ queryKey: ["finance", "movements"], queryFn: () => api("get", "/finance/movements") })
+export const useReconciliation = (range: { from?: string; to?: string }) =>
+  useQuery({
+    queryKey: ["finance", "reconciliation", range],
+    queryFn: () => api("get", "/finance/reconciliation", { query: range }),
+    placeholderData: keepPreviousData,
+  })
 export const useFinanceReport = (period: ReportPeriod, geo: Geo = {}) =>
   useQuery({
     queryKey: ["finance", "report", period, geo],

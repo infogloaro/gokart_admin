@@ -4366,6 +4366,85 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/finance/reconciliation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Check every payout against its lines, its payment record and the ledger */
+        get: {
+            parameters: {
+                query?: {
+                    from?: string;
+                    to?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            rows: {
+                                id: string;
+                                code: string;
+                                accountType: string;
+                                payee: string;
+                                cycle: string;
+                                status: string;
+                                dueDate: string;
+                                payoutPaise: number;
+                                linesPaise: number;
+                                ledgerPaise: number | null;
+                                differencePaise: number;
+                                issues: string[];
+                            }[];
+                            summary: {
+                                payouts: number;
+                                clean: number;
+                                withIssues: number;
+                                payoutPaise: number;
+                                postedPaise: number;
+                            };
+                        };
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/alerts": {
         parameters: {
             query?: never;
@@ -6414,7 +6493,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Riders who could take this order now, least busy first */
+        /** Riders who could take this order now, nearest to the zone first */
         get: {
             parameters: {
                 query?: never;
@@ -6439,6 +6518,7 @@ export interface paths {
                             fleetName: string;
                             activeOrders: number;
                             maxActiveOrders: number;
+                            distanceKm: number | null;
                         }[];
                     };
                 };
@@ -8725,6 +8805,75 @@ export interface paths {
                             lng: number;
                             /** Format: date-time */
                             lastSeenAt: string;
+                        }[];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/performance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Rider performance over a period: deliveries, on-time rate, declined jobs and a score */
+        get: {
+            parameters: {
+                query?: {
+                    from?: string;
+                    to?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            boyId: string;
+                            code: string;
+                            name: string;
+                            fleetName: string;
+                            deliveries: number;
+                            declined: number;
+                            onTime: number;
+                            onTimeRate: number | null;
+                            completionRate: number | null;
+                            avgMinutes: number | null;
+                            score: number | null;
                         }[];
                     };
                 };
@@ -13217,6 +13366,8 @@ export interface components {
             verified: boolean;
         };
         TrackedPartner: {
+            /** @enum {string} */
+            kind?: "partner" | "rider";
             id: string;
             code: string;
             name: string;

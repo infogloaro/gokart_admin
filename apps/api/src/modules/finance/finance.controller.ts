@@ -19,6 +19,8 @@ import { parse } from "../../lib/errors"
 import { actorOf, currentMember } from "../../middleware/auth"
 import { GeoQuery, geoZoneIds } from "../geography"
 import * as service from "./finance.service"
+import { reconcile } from "./reconciliation"
+import { z } from "zod"
 
 type Id = Request<{ id: string }>
 const cycleFrom = (req: Request) => parse(CycleQuery, req.query).cycle ?? cycleOf(service.today())
@@ -137,4 +139,12 @@ export async function report(req: Request, res: Response) {
 
 export async function auditTrail(_req: Request, res: Response) {
   res.json(await service.auditTrail())
+}
+
+export async function reconciliation(req: Request, res: Response) {
+  const range = parse(
+    z.object({ from: z.iso.date().optional(), to: z.iso.date().optional() }),
+    req.query,
+  )
+  res.json(await reconcile(range))
 }

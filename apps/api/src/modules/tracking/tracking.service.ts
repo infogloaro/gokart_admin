@@ -19,6 +19,7 @@ import {
 } from "@zoauro/shared"
 import type { Actor } from "../../lib/audit"
 import { badRequest, forbidden, notFound } from "../../lib/errors"
+import { prisma } from "../../lib/prisma"
 import { emitToZone } from "../../lib/realtime"
 import * as orders from "../orders/orders.repository"
 import * as repo from "./tracking.repository"
@@ -172,6 +173,7 @@ function toTracked(
 ): TrackedPartner {
   const o = current.get(p.id)
   return {
+    kind: "partner",
     id: p.id,
     code: p.code,
     name: p.name,
@@ -187,11 +189,88 @@ function toTracked(
   }
 }
 
+/** Fleet riders' availability, in the terms the partner list uses. */
+const RIDER_AVAILABILITY = {
+  available: "available",
+  on_delivery: "on_delivery",
+  on_break: "offline",
+  offline: "offline",
+  suspended: "offline",
+} as const
+
+/**
+ * Delivery boys from delivery partner companies, in the same shape as individual partners, so
+ * both kinds appear in one list and on one map. Only active riders in the member's scope.
+ */
+async function fleetRiders(scope: Scope, zoneId?: string): Promise<TrackedPartner[]> {
+  const riders = await prisma.deliveryBoy.findMany({
+    where: {
+      status: "active",
+      ...(zoneId ? { zoneId } : scope.zoneIds ? { zoneId: { in: scope.zoneIds } } : {}),
+      fleet: { status: "active", businesses: { some: { business: { in: scope.businesses } } } },
+    },
+    select: {
+      id: true,
+      code: true,
+      name: true,
+      phone: true,
+      zoneId: true,
+      vehicleType: true,
+      vehicleNumber: true,
+      availability: true,
+      lastLat: true,
+      lastLng: true,
+      lastLocationAt: true,
+      zone: { select: { location: true, city: true } },
+      fleet: { select: { businesses: { select: { business: true } } } },
+      assignments: {
+        where: { endedAt: null },
+        take: 1,
+        select: { order: { select: { id: true, code: true, business: true, status: true } } },
+      },
+    },
+    take: 500,
+  })
+  return riders.map((rider) => {
+    const order = rider.assignments[0]?.order
+    return {
+      kind: "rider",
+      id: rider.id,
+      code: rider.code,
+      name: rider.name,
+      phone: rider.phone,
+      businesses: rider.fleet.businesses.map((row) => row.business),
+      zoneId: rider.zoneId,
+      zoneName: `${rider.zone.location}, ${rider.zone.city}`,
+      vehicleType: rider.vehicleType,
+      vehicleNumber: rider.vehicleNumber,
+      availability: RIDER_AVAILABILITY[rider.availability],
+      currentOrder: order
+        ? { id: order.id, code: order.code, business: order.business, status: order.status }
+        : null,
+      location:
+        rider.lastLat !== null && rider.lastLng !== null && rider.lastLocationAt !== null
+          ? {
+              lat: rider.lastLat,
+              lng: rider.lastLng,
+              speedKmh: null,
+              heading: null,
+              at: rider.lastLocationAt.toISOString(),
+            }
+          : null,
+    }
+  })
+}
+
 export async function partners(scope: Scope, zoneId?: string) {
   const rows = await repo.listApproved({ ...scope, zoneId })
   const ids = rows.map((p) => p.id)
-  const [current, locations] = await Promise.all([repo.carrying(ids), repo.latest(ids)])
-  return rows.map((p) => toTracked(p, current, locations))
+  const [current, locations, riders] = await Promise.all([
+    repo.carrying(ids),
+    repo.latest(ids),
+    fleetRiders(scope, zoneId),
+  ])
+  return [...rows.map((p) => toTracked(p, current, locations)), ...riders]
 }
 
 async function loadInScope(id: string, scope: Scope) {

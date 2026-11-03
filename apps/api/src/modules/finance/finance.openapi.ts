@@ -168,3 +168,43 @@ get(
   { query: z.object({ period: ReportPeriod.optional(), ...GeoFields.shape }) },
 )
 get("/finance/audit", "Finance audit trail", z.array(FinanceAuditEntry))
+
+registry.registerPath({
+  method: "get",
+  path: "/finance/reconciliation",
+  tags,
+  summary: "Check every payout against its lines, its payment record and the ledger",
+  request: {
+    query: z.object({ from: z.iso.date().optional(), to: z.iso.date().optional() }),
+  },
+  responses: {
+    200: json(
+      z.object({
+        rows: z.array(
+          z.object({
+            id: z.string(),
+            code: z.string(),
+            accountType: z.string(),
+            payee: z.string(),
+            cycle: z.string(),
+            status: z.string(),
+            dueDate: z.string(),
+            payoutPaise: z.number().int(),
+            linesPaise: z.number().int(),
+            ledgerPaise: z.number().int().nullable(),
+            differencePaise: z.number().int(),
+            issues: z.array(z.string()),
+          }),
+        ),
+        summary: z.object({
+          payouts: z.number().int(),
+          clean: z.number().int(),
+          withIssues: z.number().int(),
+          payoutPaise: z.number().int(),
+          postedPaise: z.number().int(),
+        }),
+      }),
+    ),
+    ...errors(401, 403),
+  },
+})

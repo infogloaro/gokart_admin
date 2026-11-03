@@ -4,6 +4,7 @@
 import { FULFILMENT_STATUSES, ORDER_SLA_MINUTES, type Business } from "@zoauro/shared"
 import type { AlertKind, Prisma } from "../../generated/prisma/client"
 import { prisma } from "../../lib/prisma"
+import { distanceKm } from "../../lib/geo"
 import { linkFor, notify } from "../../lib/notify"
 import { delayedWhere } from "../orders/orders.repository"
 
@@ -218,16 +219,6 @@ export const ESCALATE_AFTER_MINUTES = 30
 export const RIDER_ZONE_RADIUS_KM = 8
 /** Only positions reported this recently are checked against the zone. */
 const POSITION_FRESH_MINUTES = 30
-
-export function distanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
-  const toRad = (degrees: number) => (degrees * Math.PI) / 180
-  const dLat = toRad(b.lat - a.lat)
-  const dLng = toRad(b.lng - a.lng)
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2
-  return 2 * 6371 * Math.asin(Math.sqrt(h))
-}
 
 /** Riders who reported a recent position well outside their zone. Admins of the zone see them. */
 export async function checkRiderGeofence(now = Date.now()) {

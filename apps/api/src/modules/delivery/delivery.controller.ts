@@ -21,6 +21,7 @@ import { z } from "zod"
 import { notFound, parse, unauthorized } from "../../lib/errors"
 import { actorOf, currentMember } from "../../middleware/auth"
 import * as service from "./delivery.service"
+import { riderPerformance } from "./performance"
 
 export async function fleets(req: Request, res: Response) {
   res.json(await service.listFleets(parse(DeliveryFleetListQuery, req.query), currentMember(req)))
@@ -225,4 +226,12 @@ export async function reportLocation(req: Request<{ id: string }>, res: Response
 
 export async function live(req: Request, res: Response) {
   res.json(await service.liveRiders(currentMember(req)))
+}
+
+export async function performance(req: Request, res: Response) {
+  const range = parse(
+    z.object({ from: z.iso.date().optional(), to: z.iso.date().optional() }),
+    req.query,
+  )
+  res.json(await riderPerformance(currentMember(req), range))
 }

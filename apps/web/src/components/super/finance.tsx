@@ -56,6 +56,7 @@ import {
 } from "@/lib/finance"
 import { useMe } from "@/lib/session"
 import { GeoFilter } from "./geo-filter"
+import { Reconciliation } from "./reconciliation"
 import { TransactionLedger } from "./ledger"
 import {
   Badge,
@@ -79,6 +80,7 @@ const TABS = [
   "Admin payouts",
   "Payment tracking",
   "Reports",
+  "Reconciliation",
   "Approvals",
   "Platform revenue",
 ] as const
@@ -477,6 +479,7 @@ export function FinancePayouts() {
       )}
 
       {tab === "Reports" && <Reports geo={geo} />}
+      {tab === "Reconciliation" && <Reconciliation />}
 
       {tab === "Approvals" && (
         <div className="fp-stack">

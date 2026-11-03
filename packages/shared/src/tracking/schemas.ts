@@ -34,6 +34,8 @@ export const TrackedLocation = Coordinates.extend({
 export type TrackedLocation = z.infer<typeof TrackedLocation>
 
 export const TrackedPartner = z.object({
+  /** partner: an individual partner; rider: a delivery boy from a delivery partner company. */
+  kind: z.enum(["partner", "rider"]).optional(),
   id: z.string(),
   code: z.string(),
   name: z.string(),

@@ -128,7 +128,7 @@ registry.registerPath({
   method: "get",
   path: "/delivery/orders/{id}/suggestions",
   tags,
-  summary: "Riders who could take this order now, least busy first",
+  summary: "Riders who could take this order now, nearest to the zone first",
   request: { params: id },
   responses: {
     200: json(
@@ -140,6 +140,7 @@ registry.registerPath({
           fleetName: z.string(),
           activeOrders: z.number().int(),
           maxActiveOrders: z.number().int(),
+          distanceKm: z.number().nullable(),
         }),
       ),
     ),
@@ -375,6 +376,36 @@ registry.registerPath({
           lat: z.number(),
           lng: z.number(),
           lastSeenAt: z.iso.datetime(),
+        }),
+      ),
+    ),
+    ...errors(401, 403),
+  },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/delivery/performance",
+  tags,
+  summary: "Rider performance over a period: deliveries, on-time rate, declined jobs and a score",
+  request: {
+    query: z.object({ from: z.iso.date().optional(), to: z.iso.date().optional() }),
+  },
+  responses: {
+    200: json(
+      z.array(
+        z.object({
+          boyId: z.string(),
+          code: z.string(),
+          name: z.string(),
+          fleetName: z.string(),
+          deliveries: z.number().int(),
+          declined: z.number().int(),
+          onTime: z.number().int(),
+          onTimeRate: z.number().int().nullable(),
+          completionRate: z.number().int().nullable(),
+          avgMinutes: z.number().int().nullable(),
+          score: z.number().int().nullable(),
         }),
       ),
     ),

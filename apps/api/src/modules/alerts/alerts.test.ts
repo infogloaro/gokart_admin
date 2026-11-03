@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest"
 import { prisma } from "../../lib/prisma"
 import { redis } from "../../lib/redis"
-import { distanceKm, escalateOverdueAlerts, raiseAlert, runAlertChecks } from "./alerts"
+import { distanceKm } from "../../lib/geo"
+import { escalateOverdueAlerts, raiseAlert, runAlertChecks } from "./alerts"
 
 // Runs against the seeded database and Redis. Skipped when they are not reachable.
 describe("operational alerts", () => {
