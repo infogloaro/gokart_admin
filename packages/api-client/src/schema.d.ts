@@ -5949,6 +5949,8 @@ export interface paths {
                             drivingLicence: string;
                             /** Format: date */
                             licenceValidUntil?: string;
+                            /** Format: date */
+                            registrationValidUntil?: string;
                             /** @enum {string} */
                             vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
                             vehicleNumber: string;
@@ -6942,6 +6944,8 @@ export interface paths {
                             drivingLicence: string | null;
                             /** Format: date */
                             licenceValidUntil: string | null;
+                            /** Format: date */
+                            registrationValidUntil: string | null;
                             /** @enum {string} */
                             vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
                             vehicleNumber: string;
@@ -7089,6 +7093,8 @@ export interface paths {
                             drivingLicence: string | null;
                             /** Format: date */
                             licenceValidUntil: string | null;
+                            /** Format: date */
+                            registrationValidUntil: string | null;
                             /** @enum {string} */
                             vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
                             vehicleNumber: string;
@@ -7493,6 +7499,8 @@ export interface paths {
                         drivingLicence?: string;
                         /** Format: date */
                         licenceValidUntil?: string;
+                        /** Format: date */
+                        registrationValidUntil?: string;
                         /** @enum {string} */
                         vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
                         vehicleNumber: string;
@@ -7537,6 +7545,8 @@ export interface paths {
                             drivingLicence: string | null;
                             /** Format: date */
                             licenceValidUntil: string | null;
+                            /** Format: date */
+                            registrationValidUntil: string | null;
                             /** @enum {string} */
                             vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
                             vehicleNumber: string;
@@ -8146,6 +8156,8 @@ export interface paths {
                         drivingLicence?: string;
                         /** Format: date */
                         licenceValidUntil?: string;
+                        /** Format: date */
+                        registrationValidUntil?: string;
                         /** @enum {string} */
                         vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
                         vehicleNumber: string;
@@ -8188,6 +8200,8 @@ export interface paths {
                             drivingLicence: string | null;
                             /** Format: date */
                             licenceValidUntil: string | null;
+                            /** Format: date */
+                            registrationValidUntil: string | null;
                             /** @enum {string} */
                             vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
                             vehicleNumber: string;
@@ -8419,6 +8433,8 @@ export interface paths {
                         drivingLicence?: string;
                         /** Format: date */
                         licenceValidUntil?: string;
+                        /** Format: date */
+                        registrationValidUntil?: string;
                         /** @enum {string} */
                         vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
                         vehicleNumber: string;
@@ -8460,6 +8476,8 @@ export interface paths {
                             drivingLicence: string | null;
                             /** Format: date */
                             licenceValidUntil: string | null;
+                            /** Format: date */
+                            registrationValidUntil: string | null;
                             /** @enum {string} */
                             vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
                             vehicleNumber: string;
@@ -8559,6 +8577,150 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/intake/fleet/me/boys/{id}/location": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** A rider app reports the rider's current position (partner key) */
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    "x-partner-credential": string;
+                };
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        lat: number;
+                        lng: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/riders/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Riders who reported a position in the last six hours, in the member's zones */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            code: string;
+                            name: string;
+                            fleetName: string;
+                            zoneName: string;
+                            availability: string;
+                            activeOrders: number;
+                            lat: number;
+                            lng: number;
+                            /** Format: date-time */
+                            lastSeenAt: string;
+                        }[];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -12494,6 +12656,8 @@ export interface components {
                 drivingLicence: string | null;
                 /** Format: date */
                 licenceValidUntil: string | null;
+                /** Format: date */
+                registrationValidUntil: string | null;
                 /** @enum {string} */
                 vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
                 vehicleNumber: string;
@@ -12633,6 +12797,8 @@ export interface components {
             drivingLicence: string | null;
             /** Format: date */
             licenceValidUntil: string | null;
+            /** Format: date */
+            registrationValidUntil: string | null;
             /** @enum {string} */
             vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
             vehicleNumber: string;

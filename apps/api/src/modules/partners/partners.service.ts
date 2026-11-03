@@ -207,6 +207,7 @@ const EDITABLE = [
   "gender",
   "address",
   "pinCode",
+  "deliveryBoyCount",
   "zoneId",
   "vehicleType",
   "vehicleNumber",
@@ -226,6 +227,7 @@ export async function update(id: string, scope: Scope, input: UpdatePartnerReque
     gender: p.gender,
     address: p.address,
     pinCode: p.pinCode,
+    deliveryBoyCount: String(p.deliveryBoyCount),
     zoneId: p.zoneId,
     vehicleType: p.vehicleType,
     vehicleNumber: p.vehicleNumber,
@@ -233,7 +235,9 @@ export async function update(id: string, scope: Scope, input: UpdatePartnerReque
     drivingLicence: p.drivingLicence,
     licenceValidUntil: isoDate(p.licenceValidUntil),
   }
-  const changed = EDITABLE.filter((k) => input[k] !== undefined && input[k] !== current[k])
+  const changed = EDITABLE.filter(
+    (k) => input[k] !== undefined && (input[k] === null ? null : String(input[k])) !== current[k],
+  )
   const was = p.businesses.map((b) => b.business).sort()
   const businesses =
     input.businesses && [...new Set(input.businesses)].sort().join() !== was.join()

@@ -144,29 +144,57 @@ export async function checkUnconfirmedPayments(now = Date.now()) {
   return orders.length
 }
 
-/** Riders whose driving licence has expired or expires within 30 days. */
+/** Riders whose driving licence or vehicle registration has expired or expires within 30 days. */
 export async function checkDocumentExpiry(now = Date.now()) {
   const soon = new Date(now + 30 * 24 * 60 * 60 * 1000)
+  const statuses = ["pending_admin", "pending_super", "active", "corrections_requested"] as const
   const riders = await prisma.deliveryBoy.findMany({
     where: {
-      status: { in: ["pending_admin", "pending_super", "active", "corrections_requested"] },
-      licenceValidUntil: { lte: soon },
+      status: { in: [...statuses] },
+      OR: [{ licenceValidUntil: { lte: soon } }, { registrationValidUntil: { lte: soon } }],
     },
-    select: { id: true, name: true, code: true, zoneId: true, licenceValidUntil: true },
+    select: {
+      id: true,
+      name: true,
+      code: true,
+      zoneId: true,
+      licenceValidUntil: true,
+      registrationValidUntil: true,
+    },
     take: 200,
   })
   for (const rider of riders) {
-    const expired = rider.licenceValidUntil !== null && rider.licenceValidUntil.getTime() < now
-    await raiseAlert(prisma, {
-      kind: "document_expiry",
-      subject: rider.id,
-      business: null,
-      zoneId: rider.zoneId,
-      title: expired ? "Driving licence expired" : "Driving licence expires soon",
-      body: `${rider.name} (${rider.code}) ${expired ? "has an expired licence" : "licence expires on " + rider.licenceValidUntil?.toISOString().slice(0, 10)}. Ask the partner for a renewed copy.`,
-      link: null,
-      now,
-    })
+    const licence =
+      rider.licenceValidUntil !== null && rider.licenceValidUntil.getTime() <= soon.getTime()
+    const registration =
+      rider.registrationValidUntil !== null &&
+      rider.registrationValidUntil.getTime() <= soon.getTime()
+    if (licence) {
+      const expired = rider.licenceValidUntil!.getTime() < now
+      await raiseAlert(prisma, {
+        kind: "document_expiry",
+        subject: `${rider.id}:licence`,
+        business: null,
+        zoneId: rider.zoneId,
+        title: expired ? "Driving licence expired" : "Driving licence expires soon",
+        body: `${rider.name} (${rider.code}): licence ${expired ? "has expired" : "expires on " + rider.licenceValidUntil!.toISOString().slice(0, 10)}. Ask the partner for a renewed copy.`,
+        link: null,
+        now,
+      })
+    }
+    if (registration) {
+      const expired = rider.registrationValidUntil!.getTime() < now
+      await raiseAlert(prisma, {
+        kind: "document_expiry",
+        subject: `${rider.id}:registration`,
+        business: null,
+        zoneId: rider.zoneId,
+        title: expired ? "Vehicle registration expired" : "Vehicle registration expires soon",
+        body: `${rider.name} (${rider.code}): vehicle registration ${expired ? "has expired" : "expires on " + rider.registrationValidUntil!.toISOString().slice(0, 10)}.`,
+        link: null,
+        now,
+      })
+    }
   }
   return riders.length
 }

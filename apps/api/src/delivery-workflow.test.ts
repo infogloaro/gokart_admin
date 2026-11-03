@@ -90,13 +90,25 @@ describe("delivery partner approval workflow", () => {
         })
       ).map((row) => row.zoneId),
     )
-    const targetZone = await prisma.zone.findFirst({
-      where: {
-        id: { in: adminMember.zones.map((row) => row.zoneId).filter((id) => !occupiedIds.has(id)) },
-        active: true,
-      },
+    const adminZoneIds = adminMember.zones.map((row) => row.zoneId)
+    let targetZone = await prisma.zone.findFirst({
+      where: { id: { in: adminZoneIds.filter((id) => !occupiedIds.has(id)) }, active: true },
     })
-    expect(targetZone, "the Admin needs a zone without a primary partner").not.toBeNull()
+    // The sample data gives every zone a partner. If none is free, step one partner aside for this
+    // test and put it back afterwards.
+    let displaced: Awaited<ReturnType<typeof prisma.deliveryFleetZone.findFirst>> = null
+    if (!targetZone) {
+      displaced = await prisma.deliveryFleetZone.findFirst({
+        where: { zoneId: { in: adminZoneIds }, endedAt: null },
+      })
+      expect(displaced, "the Admin needs a zone in their area").not.toBeNull()
+      await prisma.deliveryFleetZone.update({
+        where: { id: displaced!.id },
+        data: { endedAt: new Date() },
+      })
+      targetZone = await prisma.zone.findUnique({ where: { id: displaced!.zoneId } })
+    }
+    expect(targetZone).not.toBeNull()
     const zoneId = targetZone!.id
 
     // 1. Admin requests the partner. It stays pending.
@@ -293,5 +305,15 @@ describe("delivery partner approval workflow", () => {
     await prisma.deliveryFleetZone.deleteMany({ where: { fleetId } })
     await prisma.deliveryFleetBusiness.deleteMany({ where: { fleetId } })
     await prisma.deliveryFleet.delete({ where: { id: fleetId } })
+    if (displaced)
+      await prisma.deliveryFleetZone.create({
+        data: {
+          fleetId: displaced.fleetId,
+          zoneId: displaced.zoneId,
+          assignedById: displaced.assignedById,
+          notes: displaced.notes,
+          assignedAt: displaced.assignedAt,
+        },
+      })
   })
 })

@@ -1,6 +1,7 @@
 "use client"
 // Live partner tracking for the Super Admin portal: the prototype's partner list beside
 // a real OpenStreetMap, updated over Socket.IO as the partner app reports locations.
+import { LiveRiders } from "@/components/live-riders"
 import {
   availabilityLabel,
   orderStatusLabel,
@@ -97,6 +98,7 @@ export function SuperTracking() {
 
   return (
     <>
+      <LiveRiders />
       <div className="filters track-filters">
         <Input
           icon={Search}

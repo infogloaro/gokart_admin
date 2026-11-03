@@ -616,6 +616,7 @@ function AddRiderDialog({
     zoneId: fleet.zones[0]?.id ?? "",
     vehicleType: "scooter" as VehicleType,
     vehicleNumber: "",
+    registrationValidUntil: "",
   })
   const [error, setError] = useState("")
   const submit = async () => {
@@ -623,6 +624,7 @@ function AddRiderDialog({
     const parsed = DeliveryBoyApplicationRequest.safeParse({
       ...form,
       email: form.email || undefined,
+      registrationValidUntil: form.registrationValidUntil || undefined,
     })
     if (!parsed.success)
       return setError(parsed.error.issues[0]?.message ?? "Check the delivery boy details.")
@@ -684,6 +686,12 @@ function AddRiderDialog({
             label="Vehicle number *"
             value={form.vehicleNumber}
             onChange={(e) => setForm({ ...form, vehicleNumber: e.target.value })}
+          />
+          <Input
+            label="Registration valid until"
+            type="date"
+            value={form.registrationValidUntil}
+            onChange={(e) => setForm({ ...form, registrationValidUntil: e.target.value })}
           />
         </div>
         <p>

@@ -17,6 +17,7 @@ import {
   UpdateDeliveryFleetRequest,
 } from "@zoauro/shared"
 import type { Request, Response } from "express"
+import { z } from "zod"
 import { notFound, parse, unauthorized } from "../../lib/errors"
 import { actorOf, currentMember } from "../../middleware/auth"
 import * as service from "./delivery.service"
@@ -212,4 +213,16 @@ async function fleetActor(req: Request) {
 export async function addBoy(req: Request<{ id: string }>, res: Response) {
   const body = parse(DeliveryBoyApplicationRequest, req.body)
   res.status(201).json(await service.addBoyToFleet(req.params.id, body, actorOf(req)))
+}
+
+export async function reportLocation(req: Request<{ id: string }>, res: Response) {
+  const body = parse(
+    z.object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }),
+    req.body,
+  )
+  res.json(await service.reportBoyLocation(requiredFleetId(req), req.params.id, body))
+}
+
+export async function live(req: Request, res: Response) {
+  res.json(await service.liveRiders(currentMember(req)))
 }

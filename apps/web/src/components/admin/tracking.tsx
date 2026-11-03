@@ -2,6 +2,7 @@
 // Live tracking for the Admin portal (prototype "Food live tracking" / "Shipment
 // tracking"): a real OpenStreetMap of the admin's zones with the selected partner's
 // order progress beside it, updated over Socket.IO.
+import { LiveRiders } from "@/components/live-riders"
 import {
   availabilityLabel,
   orderStatusLabel,
@@ -91,6 +92,7 @@ export function AdminTracking({ business }: { business: Business }) {
 
   return (
     <>
+      <LiveRiders />
       <PageHeader
         title={food ? "Food live tracking" : "Shipment tracking"}
         subtitle={`Monitor ${food ? "active deliveries" : "parcel movement"} and partner availability in your zones.`}

@@ -13,6 +13,7 @@ import {
 import type { Prisma } from "../src/generated/prisma/client"
 import { prisma } from "../src/lib/prisma"
 import * as finance from "../src/modules/finance/finance.service"
+import { DEV_PARTNER_KEY, seedRiders } from "./seed-riders"
 import { syncZones } from "./sync-zones"
 
 if (process.env.NODE_ENV === "production") {
@@ -46,9 +47,10 @@ async function clear() {
     prisma.ledgerTransaction.deleteMany(),
     prisma.orderEvent.deleteMany(),
     prisma.orderItem.deleteMany(),
+    // Assignments point at orders and riders, so they go before both.
+    prisma.deliveryAssignment.deleteMany(),
     prisma.order.deleteMany(),
     // Delivery partners reference orders, zones and members, so they go before members.
-    prisma.deliveryAssignment.deleteMany(),
     prisma.deliveryHistory.deleteMany(),
     prisma.deliveryBoyNotification.deleteMany(),
     prisma.deliveryBoyReview.deleteMany(),
@@ -1333,6 +1335,12 @@ async function main() {
     },
     priya,
     "admin",
+  )
+
+  // ---- sample delivery partners and riders ----
+  const riders = await seedRiders(prisma, Object.values(zones), superId)
+  console.info(
+    `Sample partners: ${riders.partners}, riders: ${riders.riders}. Dev partner key: ${DEV_PARTNER_KEY}`,
   )
 
   await prisma.auditLog.create({

@@ -448,6 +448,7 @@ type EditForm = {
   gender: string
   address: string
   pinCode: string
+  deliveryBoyCount: string
   zoneId: string
   vehicleType: string
   vehicleNumber: string
@@ -465,6 +466,7 @@ const formOf = (p: PartnerDetail): EditForm => ({
   gender: p.gender ?? "",
   address: p.address ?? "",
   pinCode: p.pinCode ?? "",
+  deliveryBoyCount: String(p.deliveryBoyCount),
   zoneId: p.zoneId,
   vehicleType: p.vehicleType,
   vehicleNumber: p.vehicleNumber,
@@ -538,6 +540,11 @@ export function PartnerDrawer({
       setEditing(false)
       return setToast("No changes to save.")
     }
+    if ("deliveryBoyCount" in changed)
+      changed.deliveryBoyCount =
+        String(changed.deliveryBoyCount).trim() === ""
+          ? undefined
+          : Number(changed.deliveryBoyCount)
     const parsed = UpdatePartnerRequest.safeParse({
       ...changed,
       updatedAt: p.updatedAt,
@@ -865,6 +872,7 @@ function DrawerTab({
           ))}
         </Select>
         {field("pinCode", "PIN code")}
+        {field("deliveryBoyCount", "Number of delivery boys (0–20)")}
         {field("address", "Residential address")}
       </div>
     ) : (

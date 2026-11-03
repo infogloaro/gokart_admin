@@ -120,6 +120,7 @@ function deliveryBoyData(input: DeliveryBoyApplicationInput) {
     drivingLicence,
     licenceValidUntil,
     vehicleModel,
+    registrationValidUntil,
     payout,
     email,
     ...profile
@@ -132,6 +133,9 @@ function deliveryBoyData(input: DeliveryBoyApplicationInput) {
     ...(pinCode !== undefined && { pinCode }),
     ...(drivingLicence !== undefined && { drivingLicence }),
     ...(licenceValidUntil !== undefined && { licenceValidUntil: day(licenceValidUntil) }),
+    ...(registrationValidUntil !== undefined && {
+      registrationValidUntil: day(registrationValidUntil),
+    }),
     ...(vehicleModel !== undefined && { vehicleModel }),
     ...(payout && {
       payoutHolderName: payout.holderName,
@@ -800,6 +804,7 @@ function boyDto(boy: BoyRow) {
     pinCode: boy.pinCode,
     drivingLicence: boy.drivingLicence,
     licenceValidUntil: boy.licenceValidUntil?.toISOString().slice(0, 10) ?? null,
+    registrationValidUntil: boy.registrationValidUntil?.toISOString().slice(0, 10) ?? null,
     vehicleType: boy.vehicleType,
     vehicleNumber: boy.vehicleNumber,
     vehicleModel: boy.vehicleModel,
@@ -1978,4 +1983,58 @@ export async function addBoyToFleet(
       throw conflict("A delivery boy with this phone number already exists.")
     throw error
   }
+}
+
+/** A rider's position, reported by the rider app with the partner's key. */
+export async function reportBoyLocation(
+  fleetId: string,
+  id: string,
+  input: { lat: number; lng: number },
+) {
+  const boy = await prisma.deliveryBoy.findFirst({ where: { id, fleetId }, select: { id: true } })
+  if (!boy) throw notFound("Delivery boy")
+  await prisma.deliveryBoy.update({
+    where: { id },
+    data: { lastLat: input.lat, lastLng: input.lng, lastLocationAt: new Date() },
+  })
+  return { ok: true as const }
+}
+
+/** Riders who have reported a position recently, in the member's zones. */
+export async function liveRiders(member: MemberContext) {
+  const rows = await prisma.deliveryBoy.findMany({
+    where: {
+      status: "active",
+      lastLocationAt: { not: null, gte: new Date(Date.now() - 6 * 60 * 60 * 1000) },
+      ...(member.role !== "super_admin" && { zoneId: { in: member.zoneIds } }),
+    },
+    select: {
+      id: true,
+      code: true,
+      name: true,
+      availability: true,
+      lastLat: true,
+      lastLng: true,
+      lastLocationAt: true,
+      fleet: { select: { name: true } },
+      zone: { select: { location: true, city: true } },
+      _count: { select: { assignments: { where: { endedAt: null } } } },
+    },
+    orderBy: { lastLocationAt: "desc" },
+    take: 200,
+  })
+  return rows
+    .filter((row) => row.lastLat !== null && row.lastLng !== null && row.lastLocationAt !== null)
+    .map((row) => ({
+      id: row.id,
+      code: row.code,
+      name: row.name,
+      fleetName: row.fleet.name,
+      zoneName: `${row.zone.location}, ${row.zone.city}`,
+      availability: row.availability,
+      activeOrders: row._count.assignments,
+      lat: row.lastLat!,
+      lng: row.lastLng!,
+      lastSeenAt: row.lastLocationAt!.toISOString(),
+    }))
 }

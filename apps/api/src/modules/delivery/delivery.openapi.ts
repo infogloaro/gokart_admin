@@ -340,3 +340,42 @@ registry.registerPath({
   request: { params: id, body: json(DeliveryBoyApplicationRequest) },
   responses: { 201: json(DeliveryBoy), ...errors(400, 401, 403, 404, 409) },
 })
+
+registry.registerPath({
+  method: "post",
+  path: "/delivery/intake/fleet/me/boys/{id}/location",
+  tags,
+  summary: "A rider app reports the rider's current position (partner key)",
+  request: {
+    params: id,
+    headers: fleetCredential,
+    body: json(z.object({ lat: z.number(), lng: z.number() })),
+  },
+  responses: { 200: json(z.object({ ok: z.literal(true) })), ...errors(400, 401, 404) },
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/delivery/riders/live",
+  tags,
+  summary: "Riders who reported a position in the last six hours, in the member's zones",
+  responses: {
+    200: json(
+      z.array(
+        z.object({
+          id: z.string(),
+          code: z.string(),
+          name: z.string(),
+          fleetName: z.string(),
+          zoneName: z.string(),
+          availability: z.string(),
+          activeOrders: z.number().int(),
+          lat: z.number(),
+          lng: z.number(),
+          lastSeenAt: z.iso.datetime(),
+        }),
+      ),
+    ),
+    ...errors(401, 403),
+  },
+})

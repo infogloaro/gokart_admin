@@ -252,6 +252,7 @@ export const DeliveryBoy = z.object({
   pinCode: z.string().nullable(),
   drivingLicence: z.string().nullable(),
   licenceValidUntil: z.iso.date().nullable(),
+  registrationValidUntil: z.iso.date().nullable(),
   vehicleType: VehicleType,
   vehicleNumber: z.string(),
   vehicleModel: z.string().nullable(),
@@ -291,6 +292,7 @@ export const DeliveryBoyApplicationRequest = z.object({
   zoneId: z.string().min(1),
   drivingLicence: z.string().trim().max(80).optional(),
   licenceValidUntil: z.iso.date().optional(),
+  registrationValidUntil: z.iso.date().optional(),
   vehicleType: VehicleType,
   vehicleNumber: z
     .string()

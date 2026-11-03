@@ -186,6 +186,11 @@ model DeliveryBoy {
   vehicleType     VehicleType
   vehicleNumber   String
   vehicleModel    String?
+  registrationValidUntil DateTime? @db.Date
+  /// Last position the rider app reported, for the live riders panel.
+  lastLat         Float?
+  lastLng         Float?
+  lastLocationAt  DateTime?
   payoutHolderName String?
   payoutBankName  String?
   payoutLast4     String?

@@ -908,3 +908,43 @@
 .super-ui .vc-riders, .admin-ui .vc-riders { display: inline-flex; align-items: center; gap: .25rem; font-weight: 700; color: var(--navy, #08224b); }
 .super-ui .vc-empty, .admin-ui .vc-empty, .super-ui .vc-error, .admin-ui .vc-error { font-size: .76rem; color: var(--muted, #64748b); margin: 0; }
 .super-ui .vc-error, .admin-ui .vc-error { color: #b91c1c; }
+
+/* Live riders panel on the tracking pages. */
+.super-ui .live-riders, .admin-ui .live-riders { background: #fff; border: 1px solid var(--border, #e2e8f0); border-radius: var(--r, .8rem); padding: 1rem 1.1rem; margin: 0 0 1rem; box-shadow: 0 1px 2px #0f172a0a; }
+.super-ui .live-riders h3, .admin-ui .live-riders h3 { display: flex; align-items: center; gap: .4rem; margin: 0; font-size: .85rem; font-weight: 750; color: var(--navy, #08224b); }
+.super-ui .live-riders header p, .admin-ui .live-riders header p { margin: .2rem 0 .6rem; font-size: .74rem; color: var(--muted, #64748b); }
+.super-ui .lr-table-wrap, .admin-ui .lr-table-wrap { overflow-x: auto; }
+.super-ui .lr-table, .admin-ui .lr-table { width: 100%; border-collapse: collapse; font-size: .76rem; }
+.super-ui .lr-table th, .admin-ui .lr-table th { text-align: left; font-size: .64rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted, #64748b); padding: .45rem .5rem; border-bottom: 1px solid var(--border, #e2e8f0); }
+.super-ui .lr-table td, .admin-ui .lr-table td { padding: .5rem; border-bottom: 1px solid #f1f5f9; }
+.super-ui .lr-table td small, .admin-ui .lr-table td small { display: block; color: var(--muted, #64748b); font-size: .66rem; }
+.super-ui .lr-status, .admin-ui .lr-status { font-size: .64rem; font-weight: 700; text-transform: capitalize; border-radius: 999px; padding: .12rem .5rem; background: #f1f5f9; color: #475569; }
+.super-ui .lr-status.available, .admin-ui .lr-status.available { background: #ecfdf3; color: #15803d; }
+.super-ui .lr-status.on_delivery, .admin-ui .lr-status.on_delivery { background: #eff6ff; color: #1d4ed8; }
+.super-ui .lr-empty, .admin-ui .lr-empty, .super-ui .lr-error, .admin-ui .lr-error { font-size: .76rem; color: var(--muted, #64748b); margin: 0; }
+.super-ui .lr-error, .admin-ui .lr-error { color: #b91c1c; }
+
+/* Partner portal on phones: keep every card inside the screen and let long text wrap. */
+@media (max-width: 640px) {
+  .super-ui.partner-portal { overflow-x: hidden; }
+  .super-ui.partner-portal .summary,
+  .super-ui.partner-portal .summary > div,
+  .super-ui.partner-portal .panel { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; }
+  .super-ui.partner-portal .summary b { overflow-wrap: anywhere; white-space: normal; font-size: .95rem; }
+  .super-ui.partner-portal td,
+  .super-ui.partner-portal th { white-space: normal; overflow-wrap: anywhere; min-width: 0; }
+  .super-ui.partner-portal .partner-table tr { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .super-ui.partner-portal .summary .btn { margin: 0; max-width: 100%; box-sizing: border-box; }
+  .super-ui.partner-portal .partner-table td > * { max-width: 100%; }
+}
+
+@media (max-width: 640px) {
+  .super-ui.partner-portal .partner-table * { white-space: normal !important; overflow-wrap: anywhere; }
+}
+
+@media (max-width: 640px) {
+  .super-ui.partner-portal .partner-table { min-width: 0 !important; width: 100%; }
+}

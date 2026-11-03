@@ -318,7 +318,7 @@ export function DeliveryPartnerPortal() {
                 onChange={(event) => setCredentialInput(event.target.value)}
               />
               {error && <ErrorBox icon={AlertTriangle}>{error}</ErrorBox>}
-              <Button primary disabled={loading || !credentialInput.trim()}>
+              <Button type="submit" primary disabled={loading || !credentialInput.trim()}>
                 {loading ? "Connecting…" : "Continue"}
               </Button>
             </form>
