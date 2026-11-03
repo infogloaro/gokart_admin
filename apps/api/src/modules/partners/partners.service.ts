@@ -31,6 +31,7 @@ export function toDto(p: repo.PartnerRow, currentOrderCode: string | null = null
   return {
     id: p.id,
     code: p.code,
+    deliveryBoyCount: p.deliveryBoyCount,
     name: p.name,
     phone: p.phone,
     businesses: p.businesses.map((b) => b.business),
@@ -176,6 +177,7 @@ export async function create(input: CreatePartnerRequest, scope: Scope, actor: A
       gender: rest.gender ?? null,
       address: rest.address ?? null,
       pinCode: rest.pinCode ?? null,
+      deliveryBoyCount: rest.deliveryBoyCount ?? 0,
       vehicleModel: rest.vehicleModel ?? null,
       dateOfBirth: day(dateOfBirth),
       licenceValidUntil: day(licenceValidUntil),

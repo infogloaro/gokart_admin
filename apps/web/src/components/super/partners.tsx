@@ -877,6 +877,7 @@ function DrawerTab({
         <Value label="Residential Address" value={p.address} />
         <Value label="District" value={p.district} />
         <Value label="PIN Code" value={p.pinCode} />
+        <Value label="Delivery boys" value={p.deliveryBoyCount} />
       </Section>
     )
 
@@ -1281,6 +1282,11 @@ function PartnerWizard({
                       ))}
                     </Select>
                     <Input label="PIN code" inputMode="numeric" {...field("pinCode")} />
+                    <Input
+                      label="Number of delivery boys (0–20)"
+                      inputMode="numeric"
+                      {...field("deliveryBoyCount")}
+                    />
                     <AreaSelect value={form.zoneId} onChange={set("zoneId")} />
                     <Input label="Residential address" {...field("address")} />
                     <Select

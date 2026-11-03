@@ -5477,6 +5477,9 @@
           "code": {
             "type": "string"
           },
+          "deliveryBoyCount": {
+            "type": "integer"
+          },
           "name": {
             "type": "string"
           },
@@ -5563,6 +5566,7 @@
         "required": [
           "id",
           "code",
+          "deliveryBoyCount",
           "name",
           "phone",
           "businesses",
@@ -5589,6 +5593,9 @@
           },
           "code": {
             "type": "string"
+          },
+          "deliveryBoyCount": {
+            "type": "integer"
           },
           "name": {
             "type": "string"
@@ -5913,6 +5920,7 @@
         "required": [
           "id",
           "code",
+          "deliveryBoyCount",
           "name",
           "phone",
           "businesses",
@@ -5991,6 +5999,11 @@
               "pinCode": {
                 "type": "string",
                 "maxLength": 32
+              },
+              "deliveryBoyCount": {
+                "type": "string",
+                "maxLength": 3,
+                "default": ""
               },
               "service": {
                 "type": "string",
@@ -20710,6 +20723,11 @@
                         "type": "string",
                         "maxLength": 32
                       },
+                      "deliveryBoyCount": {
+                        "type": "string",
+                        "maxLength": 3,
+                        "default": ""
+                      },
                       "service": {
                         "type": "string",
                         "enum": [
@@ -21050,6 +21068,11 @@
                     },
                     "minItems": 1
                   },
+                  "deliveryBoyCount": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 20
+                  },
                   "zoneId": {
                     "type": "string",
                     "minLength": 1
@@ -21373,6 +21396,11 @@
                       ]
                     },
                     "minItems": 1
+                  },
+                  "deliveryBoyCount": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 20
                   },
                   "zoneId": {
                     "type": "string",

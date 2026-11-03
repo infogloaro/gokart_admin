@@ -36,6 +36,8 @@ model Partner {
   gender              String?
   address             String?
   pinCode             String?
+  /// Delivery boys this partner has (0 to 20).
+  deliveryBoyCount    Int                 @default(0)
   status              PartnerStatus       @default(pending_approval)
   availability        PartnerAvailability @default(offline)
   kycVerified         Boolean             @default(false)

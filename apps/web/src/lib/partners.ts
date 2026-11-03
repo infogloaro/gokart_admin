@@ -176,6 +176,7 @@ export type PartnerForm = {
   gender: string
   address: string
   pinCode: string
+  deliveryBoyCount: string
   service: "food" | "mart" | "both"
   zoneId: string
   drivingLicence: string
@@ -192,7 +193,18 @@ export type PartnerForm = {
 
 /** Fields checked before leaving each wizard step. */
 const stepFields: (keyof PartnerForm | string)[][] = [
-  ["name", "phone", "email", "dateOfBirth", "gender", "address", "pinCode", "businesses", "zoneId"],
+  [
+    "name",
+    "phone",
+    "email",
+    "dateOfBirth",
+    "gender",
+    "address",
+    "pinCode",
+    "deliveryBoyCount",
+    "businesses",
+    "zoneId",
+  ],
   ["drivingLicence", "licenceValidUntil"],
   ["vehicleType", "vehicleNumber", "vehicleModel"],
   ["bank.holderName", "bank.bankName", "bank.accountNumber", "bank.ifsc", "confirmAccount"],
@@ -213,6 +225,7 @@ export function usePartnerWizard(defaultService: PartnerForm["service"], default
     gender: "",
     address: "",
     pinCode: "",
+    deliveryBoyCount: "",
     service: defaultService,
     zoneId: defaultZone,
     drivingLicence: "",
@@ -235,7 +248,7 @@ export function usePartnerWizard(defaultService: PartnerForm["service"], default
   useEffect(() => {
     if (!savedDraft.isSuccess || savedDraft.isFetching || draftReady) return
     if (savedDraft.data) {
-      setForm(savedDraft.data.form)
+      setForm((current) => ({ ...current, ...savedDraft.data.form }))
       setStep(savedDraft.data.step)
     }
     setDraftReady(true)
@@ -265,6 +278,9 @@ export function usePartnerWizard(defaultService: PartnerForm["service"], default
         "licenceValidUntil",
       ]),
       businesses: service === "both" ? ["food", "mart"] : [service],
+      ...(form.deliveryBoyCount.trim() !== "" && {
+        deliveryBoyCount: Number(form.deliveryBoyCount),
+      }),
       ...(hasBank && { bank: { holderName, bankName, accountNumber, ifsc } }),
     }
   }

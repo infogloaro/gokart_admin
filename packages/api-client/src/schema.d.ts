@@ -9456,6 +9456,8 @@ export interface paths {
                             gender: string;
                             address: string;
                             pinCode: string;
+                            /** @default  */
+                            deliveryBoyCount?: string;
                             /** @enum {string} */
                             service: "food" | "mart" | "both";
                             zoneId: string;
@@ -9611,6 +9613,7 @@ export interface paths {
                         address?: string;
                         pinCode?: string;
                         businesses: ("food" | "mart")[];
+                        deliveryBoyCount?: number;
                         zoneId: string;
                         /** @enum {string} */
                         vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
@@ -9824,6 +9827,7 @@ export interface paths {
                         address?: string;
                         pinCode?: string;
                         businesses?: ("food" | "mart")[];
+                        deliveryBoyCount?: number;
                         zoneId?: string;
                         /** @enum {string} */
                         vehicleType?: "motorcycle" | "scooter" | "e_bike" | "bicycle";
@@ -12823,6 +12827,7 @@ export interface components {
         Partner: {
             id: string;
             code: string;
+            deliveryBoyCount: number;
             name: string;
             phone: string;
             businesses: ("food" | "mart")[];
@@ -12847,6 +12852,7 @@ export interface components {
         PartnerDetail: {
             id: string;
             code: string;
+            deliveryBoyCount: number;
             name: string;
             phone: string;
             businesses: ("food" | "mart")[];
@@ -12931,6 +12937,8 @@ export interface components {
                 gender: string;
                 address: string;
                 pinCode: string;
+                /** @default  */
+                deliveryBoyCount: string;
                 /** @enum {string} */
                 service: "food" | "mart" | "both";
                 zoneId: string;

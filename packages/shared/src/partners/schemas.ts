@@ -40,6 +40,7 @@ export const vehicleLabel: Record<VehicleType, string> = {
 export const Partner = z.object({
   id: z.string(),
   code: z.string(), // DP-2381
+  deliveryBoyCount: z.number().int(),
   name: z.string(),
   phone: z.string(),
   businesses: z.array(Business),
@@ -467,6 +468,7 @@ export const CreatePartnerRequest = z.object({
     .regex(/^[1-9]\d{5}$/, "PIN codes have 6 digits")
     .optional(),
   businesses: z.array(Business).min(1, "Choose at least one business"),
+  deliveryBoyCount: z.number().int().min(0).max(20).optional(),
   zoneId: z.string().min(1, "Choose a service area"),
   vehicleType: VehicleType,
   vehicleNumber: z
@@ -501,6 +503,7 @@ const PartnerDraftForm = z
     gender: z.string().max(64),
     address: z.string().max(1000),
     pinCode: z.string().max(32),
+    deliveryBoyCount: z.string().max(3).default(""),
     service: z.enum(["food", "mart", "both"]),
     zoneId: z.string().max(128),
     drivingLicence: z.string().max(128),
