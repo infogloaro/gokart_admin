@@ -186,6 +186,20 @@
 .gk-rider-cluster .gk-rider-bubble {
   position: relative;
 }
+/* Partner pin: initials in the status colour, on the white bubble. */
+.gk-initials {
+  color: var(--ring);
+  font:
+    800 15px/1 Inter,
+    system-ui,
+    sans-serif;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+.gk-rider-cluster .gk-initials {
+  color: #061a38;
+  font-size: 17px;
+}
 .gk-map-legend {
   position: absolute;
   z-index: 1001;

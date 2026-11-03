@@ -39,14 +39,21 @@ type PinState = {
   approximate: boolean
 }
 
+/** The partner's initials, for the pin: "Divya M" becomes "DM". */
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase()
+
 /**
- * A Rapido-style rider pin: the delivery-rider image in a white bubble with a status
- * ring and a pointer tip. The rider faces the direction of travel (the image is drawn
- * facing east, so it flips for westward headings instead of rotating sideways).
+ * A partner pin: the partner's initials in a white bubble with a status ring and a
+ * pointer tip. The ring colour shows availability.
  */
 function iconHtml(p: TrackedPartner, s: PinState, zoneName: string | undefined) {
-  const heading = p.location?.heading
-  const westward = typeof heading === "number" && heading > 180 && heading < 360
   const classes = [
     "gk-rider",
     p.availability,
@@ -66,7 +73,7 @@ function iconHtml(p: TrackedPartner, s: PinState, zoneName: string | undefined) 
   const label = s.selected
     ? `<span class="gk-rider-name">${escapeHtml(p.name)}<small>${detail}</small></span>`
     : ""
-  return `<span class="${classes}"><span class="gk-rider-bubble">${pulse ? '<i class="gk-rider-pulse"></i>' : ""}<img src="/rider-pin.png" alt="" draggable="false"${westward ? ' class="west"' : ""}></span><i class="gk-rider-tip"></i></span>${label}`
+  return `<span class="${classes}"><span class="gk-rider-bubble">${pulse ? '<i class="gk-rider-pulse"></i>' : ""}<span class="gk-initials">${escapeHtml(initials(p.name))}</span></span><i class="gk-rider-tip"></i></span>${label}`
 }
 
 export function LiveMap({
@@ -245,7 +252,7 @@ export function LiveMap({
             const center = mod.latLngBounds(points).getCenter()
             // A cluster is the rider pin with a count badge, so it reads as riders on the map.
             const icon = mod.divIcon({
-              html: `<span class="gk-rider gk-rider-cluster" aria-label="${group.length} delivery partners"><span class="gk-rider-bubble"><img src="/rider-pin.png" alt=""></span><i class="gk-rider-tip"></i><b class="gk-count">${group.length}</b></span>`,
+              html: `<span class="gk-rider gk-rider-cluster" aria-label="${group.length} delivery partners"><span class="gk-rider-bubble"><span class="gk-initials">${group.length}</span></span><i class="gk-rider-tip"></i></span>`,
               className: "gk-cluster-wrap",
               iconSize: [PIN.w, PIN.h],
               iconAnchor: [PIN.w / 2, PIN.h],
