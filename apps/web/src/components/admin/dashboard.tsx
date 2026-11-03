@@ -4,11 +4,10 @@
 import { ApiError } from "@zoauro/api-client"
 import {
   businessName,
-  DASHBOARD_RANGES,
   formatINR,
   ORDER_SLA_MINUTES,
   orderStatusLabel,
-  rangeName,
+  rangeLabel,
   type Business,
   type BusinessHealth,
   type DashboardOverview,
@@ -49,6 +48,7 @@ import {
 import { download, useSince } from "@/lib/motion"
 import { placedLabel, statusTone, useOrders } from "@/lib/orders"
 import { useMe } from "@/lib/session"
+import { CustomDates, pickRange, rangeSelectValue, RangeOptions } from "../range-select"
 import { AdminBadge, AdminButton, PageHeader } from "./ui"
 
 const href = (business: Business, page: string, extra = "") =>
@@ -74,23 +74,22 @@ function RangeFilter({
   setRange: (r: DashboardRange) => void
 }) {
   return (
-    <label className="date-filter">
-      <Clock className="icon" size={16} />
-      <select
-        value={range}
-        onChange={(e) => setRange(e.target.value as DashboardRange)}
-        aria-label="Date range"
-      >
-        {DASHBOARD_RANGES.map((r) => (
-          <option key={r} value={r}>
-            {r === "today"
-              ? `Today, ${new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", timeZone: "Asia/Kolkata" })}`
-              : rangeName[r]}
-          </option>
-        ))}
-      </select>
-      <ChevronDown className="icon" size={14} />
-    </label>
+    <>
+      <label className="date-filter">
+        <Clock className="icon" size={16} />
+        <select
+          value={rangeSelectValue(range)}
+          onChange={(e) => pickRange(e.target.value, setRange)}
+          aria-label="Date range"
+        >
+          <RangeOptions
+            today={`Today, ${new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", timeZone: "Asia/Kolkata" })}`}
+          />
+        </select>
+        <ChevronDown className="icon" size={14} />
+      </label>
+      <CustomDates range={range} setRange={setRange} />
+    </>
   )
 }
 
@@ -381,7 +380,7 @@ export function AdminDashboard({ business }: { business: Business }) {
     <>
       <PageHeader
         title={`${greeting()}${firstName ? `, ${firstName}` : ""}`}
-        subtitle={`Here’s what’s happening across ${businessName[business]} ${range === "today" ? "today" : `· ${rangeName[range].toLowerCase()}`}.`}
+        subtitle={`Here’s what’s happening across ${businessName[business]} ${range === "today" ? "today" : `· ${rangeLabel(range).toLowerCase()}`}.`}
         note={<Synced at={q.dataUpdatedAt} />}
       >
         <RangeFilter range={range} setRange={setRange} />
@@ -445,7 +444,7 @@ export function AdminDashboard({ business }: { business: Business }) {
               <p>
                 {range === "today"
                   ? "Hourly order volume · today"
-                  : `Daily order volume · ${rangeName[range].toLowerCase()}`}
+                  : `Daily order volume · ${rangeLabel(range).toLowerCase()}`}
               </p>
             </div>
             <div className="legend">
@@ -458,7 +457,7 @@ export function AdminDashboard({ business }: { business: Business }) {
           <div className="panel-head">
             <div>
               <h2>Status overview</h2>
-              <p>Orders placed · {range === "today" ? "today" : rangeName[range].toLowerCase()}</p>
+              <p>Orders placed · {range === "today" ? "today" : rangeLabel(range).toLowerCase()}</p>
             </div>
           </div>
           <StatusDonut business={business} byStatus={d?.byStatus} />
@@ -685,7 +684,7 @@ export function AdminOverview({ business }: { business: Business }) {
   const h = q.data?.businesses.find((x) => x.business === business)
   const cards = healthCards(business, h)
   const stable = !cards.some((c) => c.state === "Below target")
-  const period = range === "today" ? "today" : rangeName[range].toLowerCase()
+  const period = range === "today" ? "today" : rangeLabel(range).toLowerCase()
   return (
     <>
       <PageHeader
@@ -796,7 +795,7 @@ export function AdminFinance({ business }: { business: Business }) {
         title="Settlement overview"
         text={
           t
-            ? `${formatINR(t.platformPaise)} platform revenue (${formatINR(t.commissionPaise)} commission + ${formatINR(t.deliveryFeesPaise)} delivery fees) from ${num(t.orders)} orders, ${rangeName[range].toLowerCase()}. ${formatINR(t.vendorSharePaise)} is owed to ${vendorWord(business, true)}; settlement batches and payouts are approved by the Super Admin.`
+            ? `${formatINR(t.platformPaise)} platform revenue (${formatINR(t.commissionPaise)} commission + ${formatINR(t.deliveryFeesPaise)} delivery fees) from ${num(t.orders)} orders, ${rangeLabel(range).toLowerCase()}. ${formatINR(t.vendorSharePaise)} is owed to ${vendorWord(business, true)}; settlement batches and payouts are approved by the Super Admin.`
             : "Loading the period's figures…"
         }
         value={kept}
@@ -808,7 +807,7 @@ export function AdminFinance({ business }: { business: Business }) {
             <h2>{food ? "Restaurant" : "Seller"} ledger</h2>
             <p>
               Sales, commission and amount owed per {vendorWord(business)} ·{" "}
-              {rangeName[range].toLowerCase()}
+              {rangeLabel(range).toLowerCase()}
             </p>
           </div>
         </div>
@@ -1083,7 +1082,7 @@ export function AdminReports({ business }: { business: Business }) {
           <div>
             <h2>{current.title}</h2>
             <p>
-              {rangeName[range]} · {businessName[business]} · your assigned zones
+              {rangeLabel(range)} · {businessName[business]} · your assigned zones
             </p>
           </div>
           {canExport && (

@@ -3,10 +3,9 @@
 import { ApiError } from "@zoauro/api-client"
 import {
   businessName,
-  DASHBOARD_RANGES,
   formatINR,
   orderStatusLabel,
-  rangeName,
+  rangeLabel,
   type AttentionKind,
   type Business,
   type BusinessHealth,
@@ -48,6 +47,7 @@ import {
 } from "@/lib/dashboard"
 import { useSince } from "@/lib/motion"
 import { placedLabel, statusTone, useOrders } from "@/lib/orders"
+import { CustomDates, pickRange, rangeSelectValue, RangeOptions } from "../range-select"
 import { HeadActions } from "./dashboard"
 import { useCsvExport } from "./export"
 import { useBusinessFilter, type BusinessFilter } from "./shell"
@@ -93,18 +93,15 @@ function Controls({
       <label className="range-switch">
         <CalendarDays size={16} />
         <select
-          value={range}
-          onChange={(e) => setRange(e.target.value as DashboardRange)}
+          value={rangeSelectValue(range)}
+          onChange={(e) => pickRange(e.target.value, setRange)}
           aria-label="Date range"
         >
-          {DASHBOARD_RANGES.map((r) => (
-            <option value={r} key={r}>
-              {rangeName[r]}
-            </option>
-          ))}
+          <RangeOptions />
         </select>
         <ChevronDown size={14} />
       </label>
+      <CustomDates range={range} setRange={setRange} />
       <Button icon={Download} disabled={exporting} onClick={onExport}>
         {exporting ? "Exporting…" : "Export"}
       </Button>
@@ -459,7 +456,7 @@ export function CommandCenter() {
         <Building2 />
         <span>
           <b>{business === "all" ? "All Businesses" : businessName[business]} view</b>
-          All metrics, charts and records below are filtered consistently · {rangeName[range]}.
+          All metrics, charts and records below are filtered consistently · {rangeLabel(range)}.
         </span>
         <Badge tone="success">● Live data</Badge>
       </div>
@@ -525,7 +522,7 @@ export function CommandCenter() {
         >
           <TrendChart dates={d?.trend.map((t) => t.date) ?? []} series={trendSeries} />
         </Panel>
-        <Panel title="Order distribution" subtitle={`Orders placed · ${rangeName[range]}`}>
+        <Panel title="Order distribution" subtitle={`Orders placed · ${rangeLabel(range)}`}>
           <Donut distribution={d?.distribution} business={business} />
         </Panel>
       </div>
@@ -652,7 +649,7 @@ export function BusinessOverview() {
   const h = q.data?.businesses.find((b) => b.business === kind)
   const items = h ? healthItems(h) : []
   const stable = items.every((i) => i.ok)
-  const period = range === "today" ? "today" : rangeName[range].toLowerCase()
+  const period = range === "today" ? "today" : rangeLabel(range).toLowerCase()
 
   const exportCsv = () =>
     csv.run("business-overview", async () => {

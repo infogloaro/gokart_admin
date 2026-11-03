@@ -5427,7 +5427,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    range?: "today" | "7d" | "30d" | "90d";
+                    range?: string;
                     business?: "food" | "mart";
                     type?: "order_payment" | "cod_collection" | "refund" | "partner_payout" | "admin_payout" | "cash_remittance";
                     method?: "upi" | "card" | "cod" | "netbanking" | "wallet" | "bank_transfer";
@@ -5498,7 +5498,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    range?: "today" | "7d" | "30d" | "90d";
+                    range?: string;
                     business?: "food" | "mart";
                     type?: "order_payment" | "cod_collection" | "refund" | "partner_payout" | "admin_payout" | "cash_remittance";
                     method?: "upi" | "card" | "cod" | "netbanking" | "wallet" | "bank_transfer";
@@ -5705,7 +5705,7 @@ export interface paths {
             parameters: {
                 query?: {
                     business?: "food" | "mart";
-                    range?: "today" | "7d" | "30d" | "90d";
+                    range?: string;
                 };
                 header?: never;
                 path?: never;
@@ -5771,7 +5771,7 @@ export interface paths {
             parameters: {
                 query?: {
                     business?: "food" | "mart";
-                    range?: "today" | "7d" | "30d" | "90d";
+                    range?: string;
                 };
                 header?: never;
                 path?: never;
@@ -5837,7 +5837,7 @@ export interface paths {
             parameters: {
                 query: {
                     business: "food" | "mart";
-                    range?: "today" | "7d" | "30d" | "90d";
+                    range?: string;
                 };
                 header?: never;
                 path?: never;
@@ -13059,8 +13059,7 @@ export interface components {
             updatedAt: string;
         };
         LedgerSummary: {
-            /** @enum {string} */
-            range: "today" | "7d" | "30d" | "90d";
+            range: string;
             grossPaise: number;
             commissionPaise: number;
             deliveryFeesPaise: number;
@@ -13130,8 +13129,7 @@ export interface components {
             }[];
         };
         DashboardOverview: {
-            /** @enum {string} */
-            range: "today" | "7d" | "30d" | "90d";
+            range: string;
             /** Format: date-time */
             from: string;
             /** Format: date-time */
@@ -13223,8 +13221,7 @@ export interface components {
             }[];
         };
         DashboardHealth: {
-            /** @enum {string} */
-            range: "today" | "7d" | "30d" | "90d";
+            range: string;
             /** Format: date-time */
             generatedAt: string;
             businesses: {
@@ -13244,8 +13241,7 @@ export interface components {
         RevenueReport: {
             /** @enum {string} */
             business: "food" | "mart";
-            /** @enum {string} */
-            range: "today" | "7d" | "30d" | "90d";
+            range: string;
             /** Format: date-time */
             from: string;
             /** Format: date-time */
