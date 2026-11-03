@@ -126,6 +126,7 @@ function FleetPartners() {
   } | null>(null)
   const [historyOf, setHistoryOf] = useState<DeliveryFleet | null>(null)
   const [addingRiderTo, setAddingRiderTo] = useState<DeliveryFleet | null>(null)
+  const [pickingPartner, setPickingPartner] = useState(false)
   const [dialogError, setDialogError] = useState("")
   const list = useDeliveryFleets({
     business: business || undefined,
@@ -199,8 +200,11 @@ function FleetPartners() {
             </b>
           </span>
         </div>
+        <Button icon={UserPlus} onClick={() => setPickingPartner(true)}>
+          Add delivery boy
+        </Button>
         <Button primary icon={Plus} onClick={() => setAdding(true)}>
-          Add fleet partner
+          Add delivery partner
         </Button>
       </div>
       {(pending.data?.items.length ?? 0) > 0 && (
@@ -531,6 +535,35 @@ function FleetPartners() {
             )
           }
         />
+      )}
+      {pickingPartner && (
+        <Modal
+          title="Add delivery boy"
+          subtitle="Choose the delivery partner this boy works for"
+          close={() => setPickingPartner(false)}
+        >
+          <div className="modal-body">
+            <Select
+              label="Delivery partner *"
+              value=""
+              onChange={(id) => {
+                const fleet = (allFleets.data?.items ?? []).find((item) => item.id === id)
+                setPickingPartner(false)
+                if (fleet) setAddingRiderTo(fleet)
+              }}
+            >
+              <option value="">Choose a partner</option>
+              {(allFleets.data?.items ?? [])
+                .filter((fleet) => fleet.status === "active")
+                .map((fleet) => (
+                  <option key={fleet.id} value={fleet.id}>
+                    {fleet.name} · {fleet.code}
+                  </option>
+                ))}
+            </Select>
+            <p>Only active delivery partners can take new delivery boys.</p>
+          </div>
+        </Modal>
       )}
       {addingRiderTo && (
         <AddRiderDialog
