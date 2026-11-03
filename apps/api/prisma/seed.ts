@@ -1156,7 +1156,7 @@ async function main() {
 
   // ---- finance: plans, cash remittances, payouts at every stage, adjustments, requests ----
   // Uses the finance service itself, so seeded payouts match what the screens calculate.
-  const arjun = { id: superId, name: "Arjun Menon", role: "super_admin", source: "seed" }
+  const arjun = { id: superId, name: "Arjun Menon", role: "super_admin", source: "system" }
   await prisma.payPlanVersion.create({
     data: {
       accountType: "admin",
@@ -1314,7 +1314,7 @@ async function main() {
     id: members["priya.shankar@gokart.in"]!,
     name: "Priya Shankar",
     role: "admin",
-    source: "seed",
+    source: "system",
   }
   await finance.requestChange(
     {
