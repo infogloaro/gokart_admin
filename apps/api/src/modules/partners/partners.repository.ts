@@ -35,6 +35,8 @@ export type PartnerFilter = {
 
 function where(f: PartnerFilter): Prisma.PartnerWhereInput {
   return {
+    // Partners who now have a rider are managed as riders (see PartnerRiderMap).
+    riderMap: { is: null },
     // A partner serving both businesses shows to admins of either.
     businesses: { some: { business: { in: f.businesses } } },
     ...(f.zoneIds && { zoneId: { in: f.zoneIds } }),

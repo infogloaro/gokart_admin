@@ -58,6 +58,7 @@ model Partner {
   businesses PartnerBusiness[]
   documents  PartnerDocument[]
   orders     Order[]
+  riderMap   PartnerRiderMap?
 
   @@index([status, availability])
   @@map("partners")
@@ -331,4 +332,17 @@ model BankAccount {
 
   @@unique([accountType, accountId])
   @@map("bank_accounts")
+}
+
+/// Links an individual partner to the delivery company and rider created for the same person.
+/// The partner keeps its id for money and history; the rider is what the screens show.
+model PartnerRiderMap {
+  partnerId String   @id
+  /// Several riders can join the same delivery company, so this is not unique.
+  fleetId   String
+  boyId     String   @unique
+  createdAt DateTime @default(now())
+  partner   Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@map("partner_rider_maps")
 }

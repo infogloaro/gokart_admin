@@ -44,6 +44,7 @@ export function listApproved(f: {
   return prisma.partner.findMany({
     where: {
       status: "active",
+      riderMap: { is: null },
       businesses: { some: { business: { in: f.businesses } } },
       ...(f.zoneIds && { zoneId: { in: f.zoneIds } }),
       ...(f.zoneId && { zoneId: f.zoneId }),
@@ -72,6 +73,28 @@ export async function saveLatest(partnerId: string, loc: TrackedLocation) {
     .set(locKey(partnerId), JSON.stringify(loc), "EX", LOC_TTL_SECONDS)
     .zadd(SEEN, new Date(loc.at).getTime(), partnerId)
     .exec()
+  await mirrorRider(partnerId, {
+    lastLat: loc.lat,
+    lastLng: loc.lng,
+    lastLocationAt: new Date(loc.at),
+  })
+}
+
+/** Copies a partner's availability or position to the rider linked to them, if there is one. */
+async function mirrorRider(
+  partnerId: string,
+  data: {
+    availability?: PartnerAvailability
+    lastLat?: number
+    lastLng?: number
+    lastLocationAt?: Date
+  },
+) {
+  const link = await prisma.partnerRiderMap.findUnique({
+    where: { partnerId },
+    select: { boyId: true },
+  })
+  if (link) await prisma.deliveryBoy.update({ where: { id: link.boyId }, data })
 }
 
 export async function latest(partnerIds: string[]): Promise<Map<string, TrackedLocation>> {
@@ -140,17 +163,24 @@ export async function carrying(partnerIds: string[]) {
   return out
 }
 
-export const setAvailability = (partnerId: string, availability: PartnerAvailability) =>
-  prisma.partner.update({ where: { id: partnerId }, data: { availability }, select: partnerSelect })
+export async function setAvailability(partnerId: string, availability: PartnerAvailability) {
+  const updated = await prisma.partner.update({
+    where: { id: partnerId },
+    data: { availability },
+    select: partnerSelect,
+  })
+  await mirrorRider(partnerId, { availability })
+  return updated
+}
 
 /** A Super Admin or Admin changing availability by hand; audited with the reason. */
-export function overrideAvailability(
+export async function overrideAvailability(
   partner: { id: string; code: string; availability: PartnerAvailability },
   to: PartnerAvailability,
   reason: string,
   actor: Actor,
 ) {
-  return prisma.$transaction(async (tx) => {
+  const updated = await prisma.$transaction(async (tx) => {
     const { count } = await tx.partner.updateMany({
       where: { id: partner.id, availability: partner.availability },
       data: { availability: to },
@@ -165,6 +195,8 @@ export function overrideAvailability(
     )
     return tx.partner.findUniqueOrThrow({ where: { id: partner.id }, select: partnerSelect })
   })
+  await mirrorRider(partner.id, { availability: to })
+  return updated
 }
 
 export const findOrder = (code: string) =>
@@ -183,15 +215,24 @@ export const findOrder = (code: string) =>
   })
 
 /** Attaches a partner to a ready order (ready → assigned) with the order's version check. */
-export function assignOrder(
+export async function assignOrder(
   order: { id: string; code: string; version: number },
   partnerId: string,
   actor: Actor,
 ) {
+  const link = await prisma.partnerRiderMap.findUnique({
+    where: { partnerId },
+    select: { boyId: true, fleetId: true },
+  })
   return prisma.$transaction(async (tx) => {
     const { count } = await tx.order.updateMany({
       where: { id: order.id, version: order.version, status: "ready", partnerId: null },
-      data: { status: "assigned", partnerId, version: { increment: 1 } },
+      data: {
+        status: "assigned",
+        partnerId,
+        version: { increment: 1 },
+        ...(link && { deliveryBoyId: link.boyId, deliveryFleetId: link.fleetId }),
+      },
     })
     if (count === 0) throw conflict("This order was taken or changed. Reload to see the latest.")
     await tx.orderEvent.create({

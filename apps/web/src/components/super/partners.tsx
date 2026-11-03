@@ -120,16 +120,11 @@ function chipQuery(chip: Chip): Pick<PartnerQuery, "status" | "availability"> {
 export function SuperPartners() {
   // Global search links here with ?search=CODE; a new link starts the list over.
   const linked = useSearchParams().get("search") ?? ""
-  const [section, setSection] = useState<"Individual riders" | "Fleet delivery">(
-    "Individual riders",
-  )
+  // Every delivery partner is a company with its riders now; individual partners were merged in.
+  const [section, setSection] = useState<"Individual riders" | "Fleet delivery">("Fleet delivery")
   return (
     <>
-      <Tabs
-        items={["Individual riders", "Fleet delivery"] as const}
-        value={section}
-        onChange={setSection}
-      />
+      <Tabs items={["Fleet delivery"] as const} value={section} onChange={setSection} />
       {section === "Individual riders" ? (
         <PartnersScreen key={linked} initialSearch={linked} />
       ) : (

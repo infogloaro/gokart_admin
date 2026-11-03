@@ -1082,7 +1082,8 @@ describe("partners", () => {
     const { agent } = await signIn("ravi.chandran@gokart.in", "Admin@123")
     const mart = await agent.get("/api/v1/partners?pageSize=100").expect(200)
     const codes = mart.body.items.map((p: { code: string }) => p.code)
-    expect(codes).toContain("DP-2379")
+    // DP-2379 now works as a rider in a delivery company, so the partner list leaves it out.
+    expect(codes).not.toContain("DP-2379")
     expect(codes).not.toContain("DP-2381") // food + mart, but in Chennai
     const summary = await agent.get("/api/v1/partners/summary").expect(200)
     expect(summary.body.total).toBe(mart.body.total)
@@ -1202,14 +1203,17 @@ describe("partner profile", () => {
       (p: { deliveriesCompleted: number }) => p.deliveriesCompleted,
     )
     expect(counts).toEqual([...counts].sort((a: number, b: number) => b - a))
-    const top = sorted.body.items[0]
-    const detail = await agent.get(`/api/v1/partners/${top.id}`).expect(200)
+    // Migrated partners are not in the list, but their records (and money history) still open.
+    const migrated = await prisma.partner.findFirstOrThrow({ where: { code: "DP-2379" } })
+    const detail = await agent.get(`/api/v1/partners/${migrated.id}`).expect(200)
     expect(detail.body.payPlan).toMatchObject({ perDeliveryPaise: expect.any(Number) })
     expect(detail.body.updatedAt).toEqual(expect.any(String))
-    const carried = await agent.get(`/api/v1/orders?partnerId=${top.id}&pageSize=100`).expect(200)
-    expect(carried.body.items.every((o: { partnerId: string }) => o.partnerId === top.id)).toBe(
-      true,
-    )
+    const carried = await agent
+      .get(`/api/v1/orders?partnerId=${migrated.id}&pageSize=100`)
+      .expect(200)
+    expect(
+      carried.body.items.every((o: { partnerId: string }) => o.partnerId === migrated.id),
+    ).toBe(true)
   })
 
   it("lets a Super Admin edit a profile with a stale-write check", async (ctx) => {
