@@ -33,3 +33,11 @@ registry.registerPath({
   request: { params: z.object({ id: z.string() }) },
   responses: { 204: noContent, ...errors(401, 404) },
 })
+
+registry.registerPath({
+  method: "delete",
+  path: "/notifications",
+  tags,
+  summary: "Delete all of the signed-in member's read notifications",
+  responses: { 204: noContent, ...errors(401) },
+})

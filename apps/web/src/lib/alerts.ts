@@ -5,7 +5,12 @@ import { api } from "@zoauro/api-client"
 
 export type AlertStatus = "open" | "resolved"
 export type AlertKindFilter =
-  "delayed_order" | "payment_failed" | "vendor_issue" | "security" | "document_expiry"
+  | "delayed_order"
+  | "payment_failed"
+  | "vendor_issue"
+  | "security"
+  | "document_expiry"
+  | "rider_off_zone"
 
 export const useAlerts = (status: AlertStatus, page: number, kind?: AlertKindFilter) =>
   useQuery({

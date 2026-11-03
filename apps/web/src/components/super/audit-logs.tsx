@@ -20,10 +20,9 @@ import {
 } from "lucide-react"
 import { useDeferredValue, useState } from "react"
 import { useSince } from "@/lib/motion"
-import { auditCsv, type AuditFilters, useAuditLogs } from "@/lib/system"
-import { Button, IconButton, Input, Panel, Toast } from "./ui"
+import { auditExportUrl, type AuditFilters, useAuditLogs } from "@/lib/system"
+import { Button, IconButton, Input, Panel } from "./ui"
 import { Count, HeadActions } from "./dashboard"
-import { useCsvExport } from "./export"
 import { useRefreshToast } from "@/components/refresh-toast"
 
 const moduleLabels: Record<AuditModule, string> = {
@@ -221,6 +220,13 @@ function AuditDetailsDrawer({ entry, close }: { entry: AuditLogEntry; close: () 
   )
 }
 
+/** Starts a download from a URL on this site; the server names the file. */
+function downloadFile(url: string) {
+  const link = document.createElement("a")
+  link.href = url
+  link.click()
+}
+
 export function AuditLogs() {
   const runRefresh = useRefreshToast()
   const [search, setSearch] = useState("")
@@ -248,7 +254,6 @@ export function AuditLogs() {
     to: to || undefined,
   }
   const logs = useAuditLogs({ ...filters, page, pageSize })
-  const csv = useCsvExport()
   const updated = useSince(logs.dataUpdatedAt)
   const pages = Math.max(1, Math.ceil((logs.data?.total ?? 0) / pageSize))
   const clearFilters = () => {
@@ -272,10 +277,17 @@ export function AuditLogs() {
         </span>
         <Button
           icon={Download}
-          disabled={csv.exporting || logs.isFetching || logs.isError}
-          onClick={() => void csv.run("audit-log", () => auditCsv(filters))}
+          disabled={logs.isFetching || logs.isError}
+          onClick={() => downloadFile(auditExportUrl(filters, "xlsx"))}
         >
-          {csv.exporting ? "Exporting…" : "Export filtered"}
+          Export Excel
+        </Button>
+        <Button
+          icon={Download}
+          disabled={logs.isFetching || logs.isError}
+          onClick={() => downloadFile(auditExportUrl(filters))}
+        >
+          Export CSV
         </Button>
         <Button
           primary
@@ -546,7 +558,6 @@ export function AuditLogs() {
         )}
       </Panel>
       {selected && <AuditDetailsDrawer entry={selected} close={() => setSelected(null)} />}
-      {csv.toast && <Toast toast={csv.toast} close={csv.dismiss} />}
     </>
   )
 }

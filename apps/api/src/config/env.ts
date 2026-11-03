@@ -24,6 +24,8 @@ const Env = z.object({
   S3_BUCKET: z.string().default("gokart-dev"),
   S3_ACCESS_KEY: z.string().optional(),
   S3_SECRET_KEY: z.string().optional(),
+  // Audit entries older than this many days are deleted daily. Unset keeps everything.
+  AUDIT_RETENTION_DAYS: z.coerce.number().int().min(30).optional(),
   // Shared secret the partner app sends as x-intake-key.
   INTAKE_KEY: z.string().min(16).optional(),
 })

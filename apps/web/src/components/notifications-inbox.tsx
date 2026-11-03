@@ -6,7 +6,12 @@ import { Bell, Bike, Check, CheckCheck, ShoppingBag, Store, Trash2 } from "lucid
 import Link from "next/link"
 import { useState } from "react"
 import { useNotificationFeed } from "@/components/notification-center"
-import { useDeleteNotification, useMarkRead, useStoredNotifications } from "@/lib/operations"
+import {
+  useDeleteNotification,
+  useDeleteReadNotifications,
+  useMarkRead,
+  useStoredNotifications,
+} from "@/lib/operations"
 import { useMe } from "@/lib/session"
 import "./notifications-inbox.css"
 
@@ -36,9 +41,11 @@ export function NotificationsInbox({
   const stored = useStoredNotifications(unreadOnly, 50)
   const markRead = useMarkRead()
   const remove = useDeleteNotification()
+  const removeRead = useDeleteReadNotifications()
   const feed = useNotificationFeed(business, me.data?.permissions ?? [], portal, 20)
   const pending = feed.items.filter((item) => item.kind !== "update")
   const unread = stored.data?.unread ?? 0
+  const readCount = (stored.data?.items ?? []).filter((n) => n.readAt).length
   const updatesHome =
     portal === "admin" && business !== "all"
       ? `/admin/${business}/notifications`
@@ -58,6 +65,23 @@ export function NotificationsInbox({
         )}
         <div className="notifications-head-actions">
           <span className={`notifications-unread${unread ? " has" : ""}`}>{unread} unread</span>
+          {tab === "updates" && readCount > 0 && (
+            <button
+              type="button"
+              className="notifications-action notifications-action-danger"
+              disabled={removeRead.isPending}
+              onClick={() => {
+                if (
+                  window.confirm(
+                    `Delete ${readCount} read notification${readCount === 1 ? "" : "s"}? Unread ones stay.`,
+                  )
+                )
+                  removeRead.mutate()
+              }}
+            >
+              <Trash2 size={15} /> Delete read
+            </button>
+          )}
           {tab === "updates" && unread > 0 && (
             <button
               type="button"
@@ -135,7 +159,10 @@ export function NotificationsInbox({
                 <button
                   type="button"
                   className="notifications-delete"
-                  onClick={() => remove.mutate(n.id)}
+                  onClick={() => {
+                    if (window.confirm(`Delete “${n.title}”? This cannot be undone.`))
+                      remove.mutate(n.id)
+                  }}
                   disabled={remove.isPending}
                   aria-label={`Delete “${n.title}”`}
                   title="Delete notification"

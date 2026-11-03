@@ -8,6 +8,7 @@ import {
   Bell,
   Clock,
   IdCard,
+  MapPin,
   CreditCard,
   Search,
   ShieldAlert,
@@ -20,7 +21,13 @@ import Link from "next/link"
 import { useMemo, useState, type ReactNode } from "react"
 import { useAlerts, useResolveAlerts, type AlertKindFilter, type AlertStatus } from "@/lib/alerts"
 
-type Kind = "delayed_order" | "payment_failed" | "vendor_issue" | "security" | "document_expiry"
+type Kind =
+  | "delayed_order"
+  | "payment_failed"
+  | "vendor_issue"
+  | "security"
+  | "document_expiry"
+  | "rider_off_zone"
 
 const KIND_META: Record<Kind, { label: string; icon: typeof Timer; severity: "high" | "medium" }> =
   {
@@ -29,6 +36,7 @@ const KIND_META: Record<Kind, { label: string; icon: typeof Timer; severity: "hi
     vendor_issue: { label: "Vendor issue", icon: Store, severity: "medium" },
     security: { label: "Security", icon: ShieldAlert, severity: "high" },
     document_expiry: { label: "Licence expiry", icon: IdCard, severity: "medium" },
+    rider_off_zone: { label: "Rider away from zone", icon: MapPin, severity: "medium" },
   }
 
 const KIND_ORDER: Kind[] = [
@@ -36,6 +44,7 @@ const KIND_ORDER: Kind[] = [
   "payment_failed",
   "vendor_issue",
   "document_expiry",
+  "rider_off_zone",
   "security",
 ]
 const OVERDUE_MS = 2 * 60 * 60 * 1000

@@ -14,6 +14,7 @@ const KIND = z.enum([
   "vendor_issue",
   "security",
   "document_expiry",
+  "rider_off_zone",
 ])
 
 const ListQuery = z.object({

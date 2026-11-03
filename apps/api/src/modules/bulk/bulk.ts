@@ -5,7 +5,8 @@ import express from "express"
 import { z } from "zod"
 import { audit } from "../../lib/audit"
 import { badRequest, forbidden } from "../../lib/errors"
-import { parseCsv, toCsv } from "../../lib/csv"
+import { parseCsv } from "../../lib/csv"
+import { sendTable, type ExportFormat } from "../../lib/export"
 import { prisma } from "../../lib/prisma"
 import { actorOf, requireAuth, requirePermission, scope } from "../../middleware/auth"
 
@@ -29,7 +30,8 @@ const martOnly = (req: Request, _res: Response, next: () => void) => {
   next()
 }
 
-async function vendorsCsv(req: Request, res: Response) {
+/** Vendors in the member's scope, as CSV or Excel. */
+async function vendorsExport(req: Request, res: Response, format: ExportFormat) {
   const s = scope(req)
   const vendors = await prisma.vendor.findMany({
     where: {
@@ -40,12 +42,11 @@ async function vendorsCsv(req: Request, res: Response) {
     orderBy: { code: "asc" },
     take: 10_000,
   })
-  res.setHeader("Content-Type", "text/csv; charset=utf-8")
-  res.setHeader("Content-Disposition", 'attachment; filename="vendors.csv"')
-  res.send(toCsv(vendors, [...VENDOR_COLUMNS]))
+  await sendTable(res, format, "vendors", VENDOR_COLUMNS, vendors)
 }
 
-async function productsCsv(req: Request, res: Response) {
+/** GLOARO MART products in the member's zones, as CSV or Excel. */
+async function productsExport(req: Request, res: Response, format: ExportFormat) {
   const s = scope(req, "mart")
   const products = await prisma.product.findMany({
     where: s.zoneIds ? { zoneId: { in: s.zoneIds } } : {},
@@ -63,9 +64,7 @@ async function productsCsv(req: Request, res: Response) {
     orderBy: { sku: "asc" },
     take: 10_000,
   })
-  res.setHeader("Content-Type", "text/csv; charset=utf-8")
-  res.setHeader("Content-Disposition", 'attachment; filename="products.csv"')
-  res.send(toCsv(products, [...PRODUCT_COLUMNS]))
+  await sendTable(res, format, "products", PRODUCT_COLUMNS, products)
 }
 
 /** One row of a product import. Price is given in rupees, e.g. 49.50. */
@@ -162,8 +161,18 @@ async function importProducts(req: Request, res: Response) {
 
 export const bulkRoutes = Router()
   .use(requireAuth)
-  .get("/vendors.csv", requirePermission("vendors.view"), vendorsCsv)
-  .get("/products.csv", requirePermission("inventory.view"), martOnly, productsCsv)
+  .get("/vendors.csv", requirePermission("vendors.view"), (req, res) =>
+    vendorsExport(req, res, "csv"),
+  )
+  .get("/vendors.xlsx", requirePermission("vendors.view"), (req, res) =>
+    vendorsExport(req, res, "xlsx"),
+  )
+  .get("/products.csv", requirePermission("inventory.view"), martOnly, (req, res) =>
+    productsExport(req, res, "csv"),
+  )
+  .get("/products.xlsx", requirePermission("inventory.view"), martOnly, (req, res) =>
+    productsExport(req, res, "xlsx"),
+  )
   .post(
     "/products/import",
     requirePermission("inventory.manage"),

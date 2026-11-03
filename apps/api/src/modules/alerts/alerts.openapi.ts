@@ -15,6 +15,7 @@ const Alert = registry.register(
       "vendor_issue",
       "security",
       "document_expiry",
+      "rider_off_zone",
     ]),
     business: Business.nullable(),
     zoneId: z.string().nullable(),
@@ -57,7 +58,14 @@ registry.registerPath({
     query: z.object({
       status: z.enum(["open", "resolved"]).optional(),
       kind: z
-        .enum(["delayed_order", "payment_failed", "vendor_issue", "security", "document_expiry"])
+        .enum([
+          "delayed_order",
+          "payment_failed",
+          "vendor_issue",
+          "security",
+          "document_expiry",
+          "rider_off_zone",
+        ])
         .optional(),
       page: z.coerce.number().int().min(1).optional(),
       pageSize: z.coerce.number().int().min(1).max(100).optional(),

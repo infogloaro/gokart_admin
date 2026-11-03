@@ -71,6 +71,14 @@ async function remove(req: Request<{ id: string }>, res: Response) {
   res.status(204).end()
 }
 
+/** Deletes every read notification of the signed-in member. Unread ones are kept. */
+async function removeRead(req: Request, res: Response) {
+  await prisma.notification.deleteMany({
+    where: { memberId: currentMember(req).id, readAt: { not: null } },
+  })
+  res.status(204).end()
+}
+
 async function readAll(req: Request, res: Response) {
   await prisma.notification.updateMany({
     where: { memberId: currentMember(req).id, readAt: null },
@@ -157,6 +165,7 @@ export const notificationRoutes = Router()
   .post("/activity-read", readActivity)
   .post("/read-all", readAll)
   .post("/:id/read", read)
+  .delete("/", removeRead)
   .delete("/:id", remove)
 
 // ---------- outbox relay ----------

@@ -58,6 +58,7 @@ function VendorsScreen({ business, initialSearch }: { business: Business; initia
         note={<span className="live-note">● Live data</span>}
       >
         <ExportCsvLink href="/api/v1/bulk/vendors.csv" label="Export CSV" />
+        <ExportCsvLink href="/api/v1/bulk/vendors.xlsx" label="Export Excel" />
       </PageHeader>
       <VendorCoverage />
       <VendorScorecards />

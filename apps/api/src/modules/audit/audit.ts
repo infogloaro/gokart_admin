@@ -3,13 +3,13 @@ import { Router, type Request, type Response } from "express"
 import { prisma } from "../../lib/prisma"
 import { currentMember, requireAuth, requirePermission } from "../../middleware/auth"
 import { errors, json, registry } from "../../openapi/registry"
-import { forbidden, parse } from "../../lib/errors"
+import { badRequest, forbidden, parse } from "../../lib/errors"
+import { exportFormat, sendTable } from "../../lib/export"
 import { z } from "zod"
 import type { Prisma } from "../../generated/prisma/client"
 
-async function list(req: Request, res: Response) {
-  if (currentMember(req).role !== "super_admin") throw forbidden()
-  const query = parse(AuditLogQuery, req.query)
+/** The filters the audit screen and the CSV export share. */
+function auditWhere(query: z.infer<typeof AuditLogQuery>): Prisma.AuditLogWhereInput {
   const search = query.search
   const actionFilter = query.module
     ? query.module === "zone"
@@ -59,6 +59,13 @@ async function list(req: Request, res: Response) {
       : {}),
     ...(and.length ? { AND: and } : {}),
   }
+  return where
+}
+
+async function list(req: Request, res: Response) {
+  if (currentMember(req).role !== "super_admin") throw forbidden()
+  const query = parse(AuditLogQuery, req.query)
+  const where = auditWhere(query)
   const [total, successfulSignIns, administrativeChanges, rows] = await Promise.all([
     prisma.auditLog.count({ where }),
     prisma.auditLog.count({ where: { AND: [where, { action: "auth.signed_in" }] } }),
@@ -119,7 +126,56 @@ const AuditLogPage = z.object({
   pageSize: z.number().int(),
 })
 
-export const auditRoutes = Router().use(requireAuth, requirePermission("audit.view")).get("/", list)
+const EXPORT_LIMIT = 10_000
+const EXPORT_COLUMNS = [
+  "at",
+  "actorName",
+  "actorRole",
+  "action",
+  "entityType",
+  "entityId",
+  "source",
+  "ip",
+  "detail",
+] as const
+
+/** The filtered audit log as a CSV file, oldest first. Excel opens it with UTF-8 intact. */
+async function exportAudit(req: Request, res: Response) {
+  if (currentMember(req).role !== "super_admin") throw forbidden()
+  const query = parse(AuditLogQuery, req.query)
+  const where = auditWhere(query)
+  const total = await prisma.auditLog.count({ where })
+  if (total > EXPORT_LIMIT)
+    throw badRequest(
+      `This range has ${total.toLocaleString("en-IN")} entries. Export up to ${EXPORT_LIMIT.toLocaleString("en-IN")} at a time; narrow the dates.`,
+    )
+  const rows = await prisma.auditLog.findMany({
+    where,
+    orderBy: [{ at: "asc" }, { id: "asc" }],
+  })
+  await sendTable(
+    res,
+    exportFormat(req),
+    `audit-${new Date().toISOString().slice(0, 10)}`,
+    EXPORT_COLUMNS,
+    rows.map((row) => ({
+      at: row.at.toISOString(),
+      actorName: row.actorName,
+      actorRole: row.actorRole,
+      action: row.action,
+      entityType: row.entityType,
+      entityId: row.entityId,
+      source: row.source,
+      ip: row.ip,
+      detail: JSON.stringify(redactAuditDetail(row.detail)),
+    })),
+  )
+}
+
+export const auditRoutes = Router()
+  .use(requireAuth, requirePermission("audit.view"))
+  .get("/", list)
+  .get("/export", exportAudit)
 
 registry.registerPath({
   method: "get",

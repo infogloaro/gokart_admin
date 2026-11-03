@@ -86,3 +86,14 @@
   font-size: 0.8rem;
   color: #b42318;
 }
+.notifications-action-danger {
+  color: #b42318;
+  border-color: #f5c2c2;
+}
+.notifications-action-danger:hover:not(:disabled) {
+  background: #fdecec;
+}
+.notifications-action:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

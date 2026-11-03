@@ -1857,7 +1857,8 @@
               "payment_failed",
               "vendor_issue",
               "security",
-              "document_expiry"
+              "document_expiry",
+              "rider_off_zone"
             ]
           },
           "business": {
@@ -10599,7 +10600,8 @@
                 "payment_failed",
                 "vendor_issue",
                 "security",
-                "document_expiry"
+                "document_expiry",
+                "rider_off_zone"
               ]
             },
             "required": false,
@@ -11243,6 +11245,25 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Notifications"],
+        "summary": "Delete all of the signed-in member's read notifications",
+        "responses": {
+          "204": {
+            "description": "No content"
           },
           "401": {
             "description": "Not signed in",

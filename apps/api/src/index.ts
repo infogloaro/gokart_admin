@@ -6,6 +6,7 @@ import { prisma } from "./lib/prisma"
 import { attachRealtime, closeRealtime } from "./lib/realtime"
 import { redis } from "./lib/redis"
 import { runAlertChecks } from "./modules/alerts/alerts"
+import { purgeExpiredAudit } from "./modules/audit/retention"
 import { sendWeeklyDigest } from "./modules/digest/digest"
 import { assignReadyOrders } from "./modules/orders/orders.service"
 import { relayOutbox } from "./modules/notifications/notifications"
@@ -41,6 +42,17 @@ const riderSweep = setInterval(() => {
 }, 60_000)
 riderSweep.unref()
 
+// Audit entries past the retention period are removed once a day (opt-in, see env).
+const retention = setInterval(
+  () => {
+    purgeExpiredAudit()
+      .then((removed) => removed && console.info(`Audit retention removed ${removed} entries`))
+      .catch((e: unknown) => console.error("Audit retention failed", e))
+  },
+  24 * 60 * 60_000,
+)
+retention.unref()
+
 // Super Admins get a digest on Monday mornings (sent once per week).
 const digest = setInterval(() => {
   sendWeeklyDigest().catch((e: unknown) => console.error("Weekly digest failed", e))
@@ -53,6 +65,7 @@ async function shutdown() {
   clearInterval(alerts)
   clearInterval(digest)
   clearInterval(riderSweep)
+  clearInterval(retention)
   await closeRealtime()
   server.close()
   await Promise.allSettled([prisma.$disconnect(), redis.quit()])

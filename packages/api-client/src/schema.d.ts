@@ -4378,7 +4378,7 @@ export interface paths {
             parameters: {
                 query?: {
                     status?: "open" | "resolved";
-                    kind?: "delayed_order" | "payment_failed" | "vendor_issue" | "security" | "document_expiry";
+                    kind?: "delayed_order" | "payment_failed" | "vendor_issue" | "security" | "document_expiry" | "rider_off_zone";
                     page?: number;
                     pageSize?: number;
                 };
@@ -4940,7 +4940,34 @@ export interface paths {
         };
         put?: never;
         post?: never;
-        delete?: never;
+        /** Delete all of the signed-in member's read notifications */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -4984,60 +5011,6 @@ export interface paths {
             };
         };
         delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/notifications/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete one of the signed-in member's notifications */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description No content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Not signed in */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ApiError"];
-                    };
-                };
-                /** @description Not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ApiError"];
-                    };
-                };
-            };
-        };
         options?: never;
         head?: never;
         patch?: never;
@@ -9607,6 +9580,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/notifications/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete one of the signed-in member's notifications */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/partners/draft": {
         parameters: {
             query?: never;
@@ -12354,7 +12381,7 @@ export interface components {
         OperationalAlert: {
             id: string;
             /** @enum {string} */
-            kind: "delayed_order" | "payment_failed" | "vendor_issue" | "security" | "document_expiry";
+            kind: "delayed_order" | "payment_failed" | "vendor_issue" | "security" | "document_expiry" | "rider_off_zone";
             /** @enum {string|null} */
             business: "food" | "mart" | null;
             zoneId: string | null;

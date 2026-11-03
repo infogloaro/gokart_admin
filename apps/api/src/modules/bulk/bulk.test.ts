@@ -95,7 +95,10 @@ describe("bulk product import and export", () => {
     const exported = await agent.get("/api/v1/bulk/products.csv").expect(200)
     expect(exported.text).toContain(sku)
     const vendorsExport = await agent.get("/api/v1/bulk/vendors.csv").expect(200)
-    expect(vendorsExport.text.split("\r\n")[0]).toBe("code,name,business,status,verification")
+    // The file starts with a byte-order mark so Excel reads it as UTF-8.
+    expect(vendorsExport.text.replace(String.fromCharCode(0xfeff), "").split("\r\n")[0]).toBe(
+      "code,name,business,status,verification",
+    )
 
     await prisma.product.delete({ where: { sku } })
   })

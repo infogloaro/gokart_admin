@@ -8,6 +8,7 @@ enum AlertKind {
   vendor_issue
   security
   document_expiry
+  rider_off_zone
 }
 
 model OperationalAlert {
@@ -24,6 +25,8 @@ model OperationalAlert {
   createdAt    DateTime  @default(now())
   resolvedAt   DateTime?
   resolvedById String?
+  /// Set when a delayed-order alert was sent on to Super Admins.
+  escalatedAt  DateTime?
 
   @@index([business, resolvedAt, createdAt])
   @@index([zoneId, resolvedAt])

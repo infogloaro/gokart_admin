@@ -4,7 +4,6 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { api } from "@zoauro/api-client"
 import type {
   AdminMember,
-  AuditLogEntry,
   AuditModule,
   AuditSource,
   Role,
@@ -187,51 +186,12 @@ export const useAuditLogs = (filters: AuditFilters) =>
   })
 
 /** Downloads every audit event matching the visible filters, not only the current page. */
-export async function auditCsv(filters: Omit<AuditFilters, "page" | "pageSize">) {
-  const maxExportRows = 10_000
-  const entries: AuditLogEntry[] = []
-  let total = 0
-  for (let page = 1; entries.length < maxExportRows; page++) {
-    const result = await api("get", "/audit", {
-      query: { ...filters, page, pageSize: 100 },
-    })
-    entries.push(...result.items.slice(0, maxExportRows - entries.length))
-    total = result.total
-    if (entries.length >= total || result.items.length === 0) break
-  }
-  const rows = [
-    [
-      "Event ID",
-      "Date & time",
-      "Actor",
-      "Administrator ID",
-      "Role",
-      "Source",
-      "IP address",
-      "Module",
-      "Action",
-      "Entity type",
-      "Entity ID",
-      "Details",
-    ],
-    ...entries.map((entry) => [
-      entry.id,
-      entry.at,
-      entry.actorName,
-      entry.actorId ?? "",
-      entry.actorRole ?? "Not recorded",
-      entry.source ?? "Unknown",
-      entry.ip ?? "Not recorded",
-      entry.action.split(".")[0] ?? "Unknown",
-      entry.action,
-      entry.entityType,
-      entry.entityId,
-      entry.detail == null ? "" : JSON.stringify(entry.detail),
-    ]),
-  ]
-  return {
-    csv: rows.map((row) => row.map(csvCell).join(",")).join("\r\n"),
-    count: entries.length,
-    limited: total > entries.length,
-  }
+/** The server builds the CSV for the filters on screen (the same rules, up to 10,000 entries). */
+export function auditExportUrl(
+  filters: Omit<AuditFilters, "page" | "pageSize">,
+  format: "csv" | "xlsx" = "csv",
+) {
+  const params = new URLSearchParams({ format })
+  for (const [key, value] of Object.entries(filters)) if (value) params.set(key, String(value))
+  return `/api/v1/audit/export?${params}`
 }
