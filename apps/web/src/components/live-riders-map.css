@@ -25,12 +25,14 @@
   color: var(--muted, #64748b);
 }
 .lr-filters select {
-  padding: 0.45rem 0.6rem;
+  padding: 0.3rem 0.7rem;
   border: 1px solid var(--border, #e2e8f0);
-  border-radius: 0.5rem;
+  border-radius: 999px;
   background: #fff;
   color: var(--navy, #08224b);
-  font-size: 0.8rem;
+  font-size: 0.74rem;
+  font-weight: 650;
+  cursor: pointer;
 }
 .lr-pager {
   display: flex;
@@ -54,11 +56,11 @@
 .lr-pager > div > span {
   min-width: 2rem;
   height: 2rem;
-  padding: 0 0.5rem;
+  padding: 0 0.7rem;
   display: inline-grid;
   place-items: center;
   border: 1px solid var(--border, #e2e8f0);
-  border-radius: 0.45rem;
+  border-radius: 999px;
   background: #fff;
   color: var(--navy, #08224b);
   font-size: 0.78rem;
