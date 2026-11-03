@@ -52,6 +52,7 @@ type RiderForm = {
   vehicleType: VehicleType
   vehicleNumber: string
   vehicleModel: string
+  registrationValidUntil: string
   holderName: string
   bankName: string
   accountNumber: string
@@ -75,6 +76,7 @@ const emptyRider = (): RiderForm => ({
   vehicleType: "motorcycle",
   vehicleNumber: "",
   vehicleModel: "",
+  registrationValidUntil: "",
   holderName: "",
   bankName: "",
   accountNumber: "",
@@ -110,6 +112,7 @@ function applicationPayload(form: RiderForm) {
     vehicleType: form.vehicleType,
     vehicleNumber: form.vehicleNumber.trim().toUpperCase(),
     ...(form.vehicleModel.trim() && { vehicleModel: form.vehicleModel.trim() }),
+    ...(form.registrationValidUntil && { registrationValidUntil: form.registrationValidUntil }),
     ...(form.accountNumber && {
       payout: {
         holderName: form.holderName.trim(),
@@ -198,6 +201,7 @@ export function DeliveryPartnerPortal() {
       vehicleType: boy.vehicleType,
       vehicleNumber: boy.vehicleNumber,
       vehicleModel: boy.vehicleModel ?? "",
+      registrationValidUntil: boy.registrationValidUntil ?? "",
     })
     setEditingBoy(boy)
     setChallenge(null)
@@ -729,6 +733,12 @@ function RiderWizard({
               </Select>
               {label("vehicleNumber", "Vehicle number *", form.vehicleNumber)}
               {label("vehicleModel", "Vehicle model", form.vehicleModel)}
+              {label(
+                "registrationValidUntil",
+                "Registration valid until",
+                form.registrationValidUntil,
+                "date",
+              )}
             </div>
             {documentInputs(["vehicle_registration", "insurance"])}
           </>
