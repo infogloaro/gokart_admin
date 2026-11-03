@@ -42,6 +42,7 @@ import {
   type DayAccrual,
   type PlanVersion,
 } from "./rules"
+import { postPayoutToLedger } from "./ledger-posting"
 
 const ZERO_PARTNER: PartnerPlan = {
   salaryPaise: 0,
@@ -690,6 +691,7 @@ export async function pay(
       }))
     )
       throw conflict(staleMsg)
+    await postPayoutToLedger(tx, p, body.reference, new Date())
     await audit(
       tx,
       actor,
