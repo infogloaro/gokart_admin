@@ -33,7 +33,7 @@ export default async function AdminPage({
   if (page === "finance") return <AdminFinance business={b} key={b} />
   if (page === "reports") return <AdminReports business={b} key={b} />
   if (page === "notifications") return <AdminNotifications business={b} key={b} />
-  if (page === "alerts") return <AlertsPage business={b} key={b} />
+  if (page === "alerts") return <AlertsPage business={b} portal="admin" key={b} />
   if (page === "inventory") return b === "mart" ? <AdminInventory /> : notFound()
   if (page === "orders") return <AdminOrders business={b} />
   if (page === "complaints") return <AdminComplaints business={b} />

@@ -49,11 +49,11 @@ export function RiderAssignment({ order }: { order: Order }) {
             <p>No rider is free in this zone right now.</p>
           )}
           <ul>
-            {suggestions.data?.map((rider) => (
-              <li key={rider.id}>
+            {suggestions.data?.map((rider, index) => (
+              <li key={rider.id} className={index === 0 ? "best-match" : undefined}>
                 <span>
-                  {rider.name} · {rider.fleetName} · {rider.activeOrders}/{rider.maxActiveOrders}{" "}
-                  active
+                  {index === 0 && <b className="best-tag">Best match</b>} {rider.name} ·{" "}
+                  {rider.fleetName} · {rider.activeOrders}/{rider.maxActiveOrders} active
                 </span>
                 <AdminButton
                   kind="secondary"

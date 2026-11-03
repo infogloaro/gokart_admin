@@ -118,12 +118,40 @@ export async function checkVendorIssues(now = Date.now()) {
   return vendors.length
 }
 
+/** Riders whose driving licence has expired or expires within 30 days. */
+export async function checkDocumentExpiry(now = Date.now()) {
+  const soon = new Date(now + 30 * 24 * 60 * 60 * 1000)
+  const riders = await prisma.deliveryBoy.findMany({
+    where: {
+      status: { in: ["pending_admin", "pending_super", "active", "corrections_requested"] },
+      licenceValidUntil: { lte: soon },
+    },
+    select: { id: true, name: true, code: true, zoneId: true, licenceValidUntil: true },
+    take: 200,
+  })
+  for (const rider of riders) {
+    const expired = rider.licenceValidUntil !== null && rider.licenceValidUntil.getTime() < now
+    await raiseAlert(prisma, {
+      kind: "document_expiry",
+      subject: rider.id,
+      business: null,
+      zoneId: rider.zoneId,
+      title: expired ? "Driving licence expired" : "Driving licence expires soon",
+      body: `${rider.name} (${rider.code}) ${expired ? "has an expired licence" : "licence expires on " + rider.licenceValidUntil?.toISOString().slice(0, 10)}. Ask the partner for a renewed copy.`,
+      link: null,
+      now,
+    })
+  }
+  return riders.length
+}
+
 /** One pass of every check. The server runs this on an interval. */
 export async function runAlertChecks(now = Date.now()) {
   return {
     delayedOrders: await checkDelayedOrders(now),
     paymentFailures: await checkPaymentFailures(now),
     vendorIssues: await checkVendorIssues(now),
+    documentExpiry: await checkDocumentExpiry(now),
   }
 }
 
@@ -136,8 +164,9 @@ export function visibleTo(
     resolvedAt: status === "open" ? null : { not: null },
   }
   if (scope.zoneIds) {
-    where.business = { in: scope.businesses }
+    // Admins see their zones, for their businesses. Rider documents have no business of their own.
     where.zoneId = { in: scope.zoneIds }
+    where.OR = [{ business: { in: scope.businesses } }, { business: null, kind: "document_expiry" }]
   }
   return where
 }

@@ -38,6 +38,6 @@ export default async function SuperPage({ params }: { params: Promise<{ page: st
   if (page === "admins") return <AdminPermissions />
   if (page === "settings") return <AreasFees />
   if (page === "audit") return <AuditLogs />
-  if (page === "alerts") return <AlertsPage />
+  if (page === "alerts") return <AlertsPage portal="super" />
   return <ScreenPlaceholder screen={screen} />
 }

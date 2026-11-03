@@ -214,3 +214,10 @@ export const useVerifyBoyDocument = () => {
     onSuccess: () => client.invalidateQueries({ queryKey: ["delivery", "boys"] }),
   })
 }
+
+/** A rider's approval steps, for the partner who submitted them. */
+export const getFleetBoyHistory = (credential: string, id: string) =>
+  api("get", "/delivery/intake/fleet/me/boys/{id}/history", {
+    params: { id },
+    headers: { "x-partner-credential": credential },
+  })

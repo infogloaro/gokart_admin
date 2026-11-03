@@ -4302,6 +4302,7 @@ export interface paths {
             parameters: {
                 query?: {
                     status?: "open" | "resolved";
+                    kind?: "delayed_order" | "payment_failed" | "vendor_issue" | "security" | "document_expiry";
                     page?: number;
                     pageSize?: number;
                 };
@@ -4342,6 +4343,78 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/alerts/resolve-many": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark several alerts resolved at once */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        ids: string[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Number resolved */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            resolved: number;
+                        };
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -6131,6 +6204,78 @@ export interface paths {
                 };
                 /** @description Not allowed */
                 403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/delivery/intake/fleet/me/boys/{id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A delivery boy's approval steps for this partner, oldest first in the timeline */
+        get: {
+            parameters: {
+                query?: never;
+                header: {
+                    "x-partner-credential": string;
+                };
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            action: string;
+                            actorName: string;
+                            actorRole: string;
+                            reason: string | null;
+                            changes: {
+                                [key: string]: {
+                                    from?: unknown;
+                                    to?: unknown;
+                                };
+                            } | null;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -11593,7 +11738,7 @@ export interface components {
         OperationalAlert: {
             id: string;
             /** @enum {string} */
-            kind: "delayed_order" | "payment_failed" | "vendor_issue" | "security";
+            kind: "delayed_order" | "payment_failed" | "vendor_issue" | "security" | "document_expiry";
             /** @enum {string|null} */
             business: "food" | "mart" | null;
             zoneId: string | null;
@@ -11611,6 +11756,9 @@ export interface components {
             page: number;
             pageSize: number;
             openCount: number;
+            counts: {
+                [key: string]: number;
+            };
             volume: {
                 zoneId: string;
                 zoneName: string;

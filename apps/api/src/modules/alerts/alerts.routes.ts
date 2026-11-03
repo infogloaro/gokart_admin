@@ -8,8 +8,17 @@ import { currentMember, requireAuth, requirePermission, scope } from "../../midd
 import { zoneInsights } from "../reports/insights"
 import { visibleTo } from "./alerts"
 
+const KIND = z.enum([
+  "delayed_order",
+  "payment_failed",
+  "vendor_issue",
+  "security",
+  "document_expiry",
+])
+
 const ListQuery = z.object({
   status: z.enum(["open", "resolved"]).default("open"),
+  kind: KIND.optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(30),
 })
@@ -17,8 +26,8 @@ const ListQuery = z.object({
 async function list(req: Request, res: Response) {
   const q = parse(ListQuery, req.query)
   const s = scope(req)
-  const where = visibleTo(s, q.status)
-  const [rows, total, openCount] = await prisma.$transaction([
+  const where = { ...visibleTo(s, q.status), ...(q.kind && { kind: q.kind }) }
+  const [rows, total, openCount, byKind] = await Promise.all([
     prisma.operationalAlert.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -27,7 +36,13 @@ async function list(req: Request, res: Response) {
     }),
     prisma.operationalAlert.count({ where }),
     prisma.operationalAlert.count({ where: visibleTo(s, "open") }),
+    Promise.all(
+      KIND.options.map((kind) =>
+        prisma.operationalAlert.count({ where: { ...visibleTo(s, "open"), kind } }),
+      ),
+    ),
   ])
+  const counts = Object.fromEntries(KIND.options.map((kind, i) => [kind, byKind[i] ?? 0]))
   const volume = (await zoneInsights(s)).filter((zone) => zone.flagged)
   res.json({
     items: rows.map((row) => ({
@@ -45,8 +60,20 @@ async function list(req: Request, res: Response) {
     page: q.page,
     pageSize: q.pageSize,
     openCount,
+    counts,
     volume,
   })
+}
+
+const ResolveMany = z.object({ ids: z.array(z.string().min(1)).min(1).max(200) })
+
+async function resolveMany(req: Request, res: Response) {
+  const { ids } = parse(ResolveMany, req.body)
+  const result = await prisma.operationalAlert.updateMany({
+    where: { id: { in: ids }, resolvedAt: null, ...visibleTo(scope(req), "open") },
+    data: { resolvedAt: new Date(), resolvedById: currentMember(req).id },
+  })
+  res.json({ resolved: result.count })
 }
 
 async function resolve(req: Request<{ id: string }>, res: Response) {
@@ -67,4 +94,5 @@ async function resolve(req: Request<{ id: string }>, res: Response) {
 export const alertRoutes = Router()
   .use(requireAuth, requirePermission("dashboard.view"))
   .get("/", list)
+  .post("/resolve-many", resolveMany)
   .post("/:id/resolve", resolve)

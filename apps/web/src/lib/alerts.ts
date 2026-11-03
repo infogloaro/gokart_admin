@@ -4,19 +4,26 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { api } from "@zoauro/api-client"
 
 export type AlertStatus = "open" | "resolved"
+export type AlertKindFilter =
+  "delayed_order" | "payment_failed" | "vendor_issue" | "security" | "document_expiry"
 
-export const useAlerts = (status: AlertStatus, page: number) =>
+export const useAlerts = (status: AlertStatus, page: number, kind?: AlertKindFilter) =>
   useQuery({
-    queryKey: ["alerts", status, page],
-    queryFn: () => api("get", "/alerts", { query: { status, page, pageSize: 30 } }),
+    queryKey: ["alerts", status, page, kind ?? "all"],
+    queryFn: () => api("get", "/alerts", { query: { status, page, pageSize: 30, kind } }),
     placeholderData: keepPreviousData,
     refetchInterval: 30_000,
   })
 
-export function useResolveAlert() {
+export function useResolveAlerts() {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => api("post", "/alerts/{id}/resolve", { params: { id } }),
-    onSuccess: () => client.invalidateQueries({ queryKey: ["alerts"] }),
+    mutationFn: (ids: string[]) =>
+      ids.length === 1
+        ? api("post", "/alerts/{id}/resolve", { params: { id: ids[0]! } }).then(() => ({
+            resolved: 1,
+          }))
+        : api("post", "/alerts/resolve-many", { body: { ids } }),
+    onSettled: () => client.invalidateQueries({ queryKey: ["alerts"] }),
   })
 }

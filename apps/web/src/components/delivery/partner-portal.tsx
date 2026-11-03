@@ -2,6 +2,7 @@
 
 import { ApiError } from "@zoauro/api-client"
 import {
+  DELIVERY_BOYS_PER_PARTNER,
   DeliveryBoyApplicationRequest,
   FleetDeliveryBoyOnboardingRequest,
   GENDERS,
@@ -13,10 +14,12 @@ import {
   type VehicleType,
   vehicleLabel,
 } from "@zoauro/shared"
-import { AlertTriangle, LogOut, Plus } from "lucide-react"
-import { useState, type FormEvent } from "react"
+import { AlertTriangle, ChevronDown, ChevronUp, Gauge, LogOut, Plus } from "lucide-react"
+import { Fragment, useState, type FormEvent } from "react"
+import { RiderTimeline } from "./rider-timeline"
 import {
   correctFleetDeliveryBoy,
+  getFleetBoyHistory,
   getFleetPartnerBoys,
   getFleetPartnerProfile,
   requestDeliveryBoyOtp,
@@ -123,6 +126,11 @@ export function DeliveryPartnerPortal() {
   const [credential, setCredential] = useState("")
   const [fleet, setFleet] = useState<DeliveryFleet | null>(null)
   const [boys, setBoys] = useState<DeliveryBoy[]>([])
+  const [openRider, setOpenRider] = useState<string | null>(null)
+  const [timelines, setTimelines] = useState<
+    Record<string, Awaited<ReturnType<typeof getFleetBoyHistory>>>
+  >({})
+  const riderCount = boys.filter((boy) => boy.status !== "rejected").length
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [notice, setNotice] = useState("")
@@ -336,10 +344,11 @@ export function DeliveryPartnerPortal() {
                   District <b>{fleet.district}</b>
                 </span>
               </div>
-              <Button primary icon={Plus} onClick={openNew}>
+              <Button primary icon={Plus} onClick={openNew} disabled={riderCount >= RIDER_MAX}>
                 Add delivery boy
               </Button>
             </section>
+            <CapacityPanel count={riderCount} />
             {notice && <p role="status">{notice}</p>}
             {error && <ErrorBox icon={AlertTriangle}>{error}</ErrorBox>}
             <section className="panel table-panel">
@@ -356,77 +365,104 @@ export function DeliveryPartnerPortal() {
                   </thead>
                   <tbody>
                     {boys.map((boy) => (
-                      <tr key={boy.id}>
-                        <td>
-                          <span className="stack">
-                            <strong>{boy.name}</strong>
-                            <small>
-                              {boy.phone} · {boy.code}
-                            </small>
-                          </span>
-                        </td>
-                        <td>
-                          {fleet.businesses.map((item) => businessName[item]).join(", ")} →{" "}
-                          {fleet.district} → {boy.zoneName}
-                        </td>
-                        <td>{boy.documents.length} uploaded</td>
-                        <td>
-                          <Badge
-                            tone={
-                              boy.status === "active"
-                                ? "success"
-                                : boy.status === "rejected" || boy.status === "suspended"
-                                  ? "danger"
-                                  : "warning"
-                            }
-                          >
-                            {statusLabel[boy.status]}
-                          </Badge>
-                          {boy.reviews.at(-1)?.reason && (
-                            <small>{boy.reviews.at(-1)?.reason}</small>
-                          )}
-                        </td>
-                        <td>
-                          {boy.status === "corrections_requested" && (
-                            <Button onClick={() => openCorrection(boy)}>Edit & resubmit</Button>
-                          )}
-                          {DOCUMENTS.some(
-                            ({ kind, required }) =>
-                              required && !boy.documents.some((document) => document.kind === kind),
-                          ) && (
-                            <label className="field">
-                              <span>Upload missing required document</span>
-                              <input
-                                type="file"
-                                accept="application/pdf,image/jpeg,image/png"
-                                onChange={async (event) => {
-                                  const file = event.target.files?.[0]
-                                  const missing = DOCUMENTS.find(
-                                    ({ kind, required }) =>
-                                      required &&
-                                      !boy.documents.some((document) => document.kind === kind),
-                                  )
-                                  if (!file || !missing) return
-                                  const problem = fileProblem(file)
-                                  if (problem) return setError(problem)
+                      <Fragment key={boy.id}>
+                        <tr>
+                          <td>
+                            <span className="stack">
+                              <strong>{boy.name}</strong>
+                              <small>
+                                {boy.phone} · {boy.code}
+                              </small>
+                            </span>
+                          </td>
+                          <td>
+                            {fleet.businesses.map((item) => businessName[item]).join(", ")} →{" "}
+                            {fleet.district} → {boy.zoneName}
+                          </td>
+                          <td>{boy.documents.length} uploaded</td>
+                          <td>
+                            <Badge
+                              tone={
+                                boy.status === "active"
+                                  ? "success"
+                                  : boy.status === "rejected" || boy.status === "suspended"
+                                    ? "danger"
+                                    : "warning"
+                              }
+                            >
+                              {statusLabel[boy.status]}
+                            </Badge>
+                            {boy.reviews.at(-1)?.reason && (
+                              <small>{boy.reviews.at(-1)?.reason}</small>
+                            )}
+                          </td>
+                          <td>
+                            {boy.status === "corrections_requested" && (
+                              <Button onClick={() => openCorrection(boy)}>Edit & resubmit</Button>
+                            )}
+                            <Button
+                              icon={openRider === boy.id ? ChevronUp : ChevronDown}
+                              onClick={async () => {
+                                const next = openRider === boy.id ? null : boy.id
+                                setOpenRider(next)
+                                if (next && !timelines[boy.id]) {
                                   try {
-                                    await uploadDeliveryBoyDocument(
-                                      credential,
-                                      boy.id,
-                                      missing.kind,
-                                      file,
-                                    )
-                                    await refreshBoys(credential)
-                                    setNotice(`${missing.label} uploaded for ${boy.name}.`)
+                                    const entries = await getFleetBoyHistory(credential, boy.id)
+                                    setTimelines((current) => ({ ...current, [boy.id]: entries }))
                                   } catch (cause) {
                                     setError(errorText(cause))
                                   }
-                                }}
-                              />
-                            </label>
-                          )}
-                        </td>
-                      </tr>
+                                }
+                              }}
+                            >
+                              {openRider === boy.id ? "Hide progress" : "Progress"}
+                            </Button>
+                            {DOCUMENTS.some(
+                              ({ kind, required }) =>
+                                required &&
+                                !boy.documents.some((document) => document.kind === kind),
+                            ) && (
+                              <label className="field">
+                                <span>Upload missing required document</span>
+                                <input
+                                  type="file"
+                                  accept="application/pdf,image/jpeg,image/png"
+                                  onChange={async (event) => {
+                                    const file = event.target.files?.[0]
+                                    const missing = DOCUMENTS.find(
+                                      ({ kind, required }) =>
+                                        required &&
+                                        !boy.documents.some((document) => document.kind === kind),
+                                    )
+                                    if (!file || !missing) return
+                                    const problem = fileProblem(file)
+                                    if (problem) return setError(problem)
+                                    try {
+                                      await uploadDeliveryBoyDocument(
+                                        credential,
+                                        boy.id,
+                                        missing.kind,
+                                        file,
+                                      )
+                                      await refreshBoys(credential)
+                                      setNotice(`${missing.label} uploaded for ${boy.name}.`)
+                                    } catch (cause) {
+                                      setError(errorText(cause))
+                                    }
+                                  }}
+                                />
+                              </label>
+                            )}
+                          </td>
+                        </tr>
+                        {openRider === boy.id && (
+                          <tr className="rider-progress-row">
+                            <td colSpan={5}>
+                              <RiderTimeline entries={timelines[boy.id] ?? []} />
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
                     ))}
                     {boys.length === 0 && (
                       <tr>
@@ -467,6 +503,36 @@ export function DeliveryPartnerPortal() {
         />
       )}
     </div>
+  )
+}
+
+const RIDER_MIN = DELIVERY_BOYS_PER_PARTNER.min
+const RIDER_MAX = DELIVERY_BOYS_PER_PARTNER.max
+
+/** Riders still in the partner's roster (rejected applications do not count). */
+function CapacityPanel({ count }: { count: number }) {
+  const percent = Math.min(100, Math.round((count / RIDER_MAX) * 100))
+  const note =
+    count >= RIDER_MAX
+      ? `The limit of ${RIDER_MAX} delivery boys is reached. Remove or replace one before adding another.`
+      : count < RIDER_MIN
+        ? `Add ${RIDER_MIN - count} more to reach the ${RIDER_MIN}-rider target. You can have up to ${RIDER_MAX}.`
+        : `You have ${count} delivery boys, within the ${RIDER_MIN}–${RIDER_MAX} range.`
+  return (
+    <section
+      className={`panel capacity${count < RIDER_MIN ? " low" : ""}${count >= RIDER_MAX ? " full" : ""}`}
+    >
+      <div className="capacity-head">
+        <Gauge size={16} />
+        <strong>
+          {count} of {RIDER_MAX} delivery boys
+        </strong>
+      </div>
+      <div className="capacity-bar" aria-hidden="true">
+        <i style={{ width: `${percent}%` }} />
+      </div>
+      <p>{note}</p>
+    </section>
   )
 }
 
