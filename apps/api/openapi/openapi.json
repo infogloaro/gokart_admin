@@ -17098,6 +17098,9 @@
                       "fleetName": {
                         "type": "string"
                       },
+                      "adminName": {
+                        "type": ["string", "null"]
+                      },
                       "district": {
                         "type": "string"
                       },
@@ -17127,6 +17130,7 @@
                       "name",
                       "fleetName",
                       "district",
+                      "adminName",
                       "zoneName",
                       "availability",
                       "activeOrders",

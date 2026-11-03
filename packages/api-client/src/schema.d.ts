@@ -8690,6 +8690,7 @@ export interface paths {
                             name: string;
                             fleetName: string;
                             district: string;
+                            adminName: string | null;
                             zoneName: string;
                             availability: string;
                             activeOrders: number;

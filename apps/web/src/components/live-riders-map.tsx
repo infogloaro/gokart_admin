@@ -14,6 +14,7 @@ export type MapRider = {
   code: string
   name: string
   zoneName: string
+  adminName?: string | null
   availability: string
   lat: number
   lng: number
@@ -106,7 +107,7 @@ export function LiveRidersMap({ riders }: { riders: MapRider[] }) {
           title: rider!.name,
         })
           .bindTooltip(
-            `<strong>${escapeHtml(rider!.name)}</strong><br />${escapeHtml(rider!.code)} · ${escapeHtml(rider!.zoneName)}`,
+            `<strong>${escapeHtml(rider!.name)}</strong><br />${escapeHtml(rider!.code)} · ${escapeHtml(rider!.zoneName)}${rider!.adminName ? `<br />Admin: ${escapeHtml(rider!.adminName)}` : ""}`,
           )
           .addTo(layer)
         continue

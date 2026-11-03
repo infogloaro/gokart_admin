@@ -20,6 +20,7 @@ const when = (iso: string) => {
 type Rider = MapRider & {
   fleetName: string
   district: string
+  adminName: string | null
   activeOrders: number
   lastSeenAt: string
 }
@@ -145,6 +146,7 @@ export function LiveRiders() {
                 <tr>
                   <th>Rider</th>
                   <th>District</th>
+                  <th>Admin</th>
                   <th>Partner</th>
                   <th>Zone</th>
                   <th>Status</th>
@@ -161,6 +163,7 @@ export function LiveRiders() {
                       <small>{rider.code}</small>
                     </td>
                     <td>{rider.district}</td>
+                    <td>{rider.adminName ?? "Not assigned"}</td>
                     <td>{rider.fleetName}</td>
                     <td>{rider.zoneName}</td>
                     <td>
