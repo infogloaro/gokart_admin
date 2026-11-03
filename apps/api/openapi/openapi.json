@@ -17098,11 +17098,11 @@
                       "fleetName": {
                         "type": "string"
                       },
-                      "adminName": {
-                        "type": ["string", "null"]
-                      },
                       "district": {
                         "type": "string"
+                      },
+                      "adminName": {
+                        "type": ["string", "null"]
                       },
                       "zoneName": {
                         "type": "string"
@@ -18154,6 +18154,47 @@
           },
           "403": {
             "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/{id}": {
+      "delete": {
+        "tags": ["Notifications"],
+        "summary": "Delete one of the signed-in member's notifications",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content"
+          },
+          "401": {
+            "description": "Not signed in",
             "content": {
               "application/json": {
                 "schema": {

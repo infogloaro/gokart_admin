@@ -5,6 +5,7 @@ import { AreasFees } from "@/components/super/areas-fees"
 import { AuditLogs } from "@/components/super/audit-logs"
 import { ScreenPlaceholder } from "@/components/placeholder"
 import { SuperComplaints } from "@/components/super/complaints"
+import { NotificationsInbox } from "@/components/notifications-inbox"
 import { FinancePayouts } from "@/components/super/finance"
 import { TransactionLedger } from "@/components/super/ledger"
 import { SuperOrders } from "@/components/super/orders"
@@ -39,5 +40,14 @@ export default async function SuperPage({ params }: { params: Promise<{ page: st
   if (page === "settings") return <AreasFees />
   if (page === "audit") return <AuditLogs />
   if (page === "alerts") return <AlertsPage portal="super" />
+  if (page === "notifications")
+    return (
+      <NotificationsInbox
+        business="all"
+        portal="super"
+        title="Notifications"
+        subtitle="Approvals, new orders and updates for you."
+      />
+    )
   return <ScreenPlaceholder screen={screen} />
 }

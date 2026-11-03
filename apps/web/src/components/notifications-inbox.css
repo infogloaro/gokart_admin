@@ -1,0 +1,88 @@
+/* Notifications page: header, row actions and delete, shared by both portals. */
+.notifications-page {
+  display: grid;
+  gap: 0;
+}
+.notifications-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.notifications-head h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 750;
+  color: var(--navy, #08224b);
+}
+.notifications-head p {
+  margin: 0.2rem 0 0;
+  font-size: 0.82rem;
+  color: var(--muted, #64748b);
+}
+.notifications-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.notifications-unread {
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: #eef3f8;
+  color: var(--muted, #64748b);
+  font-size: 0.74rem;
+  font-weight: 650;
+}
+.notifications-unread.has {
+  background: #fff3d6;
+  color: #8a5a00;
+}
+.notifications-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--navy, #08224b);
+  font-size: 0.76rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+.notifications-action:hover {
+  background: #f5f8fb;
+}
+.notifications-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 14px;
+}
+.notifications-delete {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  color: #9aa6b2;
+  cursor: pointer;
+}
+.notifications-delete:hover:not(:disabled) {
+  background: #fdecec;
+  border-color: #f5c2c2;
+  color: #b42318;
+}
+.notifications-delete:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.notifications-error {
+  margin: 0 0 12px;
+  font-size: 0.8rem;
+  color: #b42318;
+}

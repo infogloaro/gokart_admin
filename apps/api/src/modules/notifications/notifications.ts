@@ -63,6 +63,14 @@ async function read(req: Request<{ id: string }>, res: Response) {
   res.status(204).end()
 }
 
+async function remove(req: Request<{ id: string }>, res: Response) {
+  const done = await prisma.notification.deleteMany({
+    where: { id: req.params.id, memberId: currentMember(req).id },
+  })
+  if (!done.count) throw notFound("Notification")
+  res.status(204).end()
+}
+
 async function readAll(req: Request, res: Response) {
   await prisma.notification.updateMany({
     where: { memberId: currentMember(req).id, readAt: null },
@@ -149,6 +157,7 @@ export const notificationRoutes = Router()
   .post("/activity-read", readActivity)
   .post("/read-all", readAll)
   .post("/:id/read", read)
+  .delete("/:id", remove)
 
 // ---------- outbox relay ----------
 

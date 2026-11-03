@@ -21,8 +21,6 @@ import {
   ArrowRight,
   Bell,
   Bike,
-  Check,
-  CheckCheck,
   ChevronDown,
   ChevronRight,
   Clock,
@@ -39,8 +37,7 @@ import {
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useMemo, useState, type ReactNode } from "react"
-import { useNotificationFeed } from "@/components/notification-center"
-import { useMarkRead, useStoredNotifications } from "@/lib/operations"
+import { NotificationsInbox } from "@/components/notifications-inbox"
 import {
   age,
   change,
@@ -1143,120 +1140,12 @@ export function AdminReports({ business }: { business: Business }) {
 // ---------- Notifications ----------
 
 export function AdminNotifications({ business }: { business: Business }) {
-  const me = useMe()
-  const [tab, setTab] = useState<"updates" | "action">("updates")
-  const [unreadOnly, setUnreadOnly] = useState(false)
-  const stored = useStoredNotifications(unreadOnly, 50)
-  const markRead = useMarkRead()
-  const feed = useNotificationFeed(business, me.data?.permissions ?? [], "admin", 20)
-  const pending = feed.items.filter((n) => n.kind !== "update")
-  const icons = { vendor: Store, partner: Bike, order: ShoppingBag, update: Bell } as const
-  const unread = stored.data?.unread ?? 0
   return (
-    <div className="gk-page">
-      <PageHeader
-        title="Notifications"
-        subtitle="Your assigned operational updates and alerts."
-        note={<AdminBadge tone={unread ? "danger" : "neutral"}>{num(unread)} unread</AdminBadge>}
-      >
-        {tab === "updates" && unread > 0 && (
-          <AdminButton icon={CheckCheck} kind="secondary" onClick={() => markRead.mutate("all")}>
-            Mark all as read
-          </AdminButton>
-        )}
-      </PageHeader>
-      <div className="gk-segment" role="tablist" aria-label="Notifications">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "updates"}
-          className={tab === "updates" ? "active" : ""}
-          onClick={() => setTab("updates")}
-        >
-          Updates {unread > 0 && <b>{unread}</b>}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "action"}
-          className={tab === "action" ? "active" : ""}
-          onClick={() => setTab("action")}
-        >
-          Needs action {pending.length > 0 && <b>{feed.count - unread}</b>}
-        </button>
-        {tab === "updates" && (
-          <label className="gk-toggle">
-            <input
-              type="checkbox"
-              checked={unreadOnly}
-              onChange={(e) => setUnreadOnly(e.target.checked)}
-            />
-            <span />
-            Unread only
-          </label>
-        )}
-      </div>
-      {tab === "updates" ? (
-        <ul className="gk-inbox">
-          {stored.data?.items.map((n, i) => (
-            <li
-              key={n.id}
-              className={n.readAt ? "" : "unread"}
-              style={{ animationDelay: `${i * 35}ms` }}
-            >
-              <Link
-                href={n.link ?? href(business, "notifications")}
-                onClick={() => !n.readAt && markRead.mutate(n.id)}
-              >
-                <span className="gk-inbox-icon">
-                  <Bell className="icon" size={17} />
-                </span>
-                <span className="gk-inbox-copy">
-                  <strong>{n.title}</strong>
-                  <small>{n.body}</small>
-                </span>
-                <time dateTime={n.createdAt}>{age(n.createdAt)} ago</time>
-              </Link>
-              {!n.readAt && (
-                <button
-                  type="button"
-                  className="gk-inbox-read"
-                  onClick={() => markRead.mutate(n.id)}
-                  aria-label={`Mark “${n.title}” as read`}
-                  title="Mark as read"
-                >
-                  <Check className="icon" size={15} />
-                </button>
-              )}
-            </li>
-          ))}
-          {stored.data && stored.data.items.length === 0 && (
-            <li className="gk-inbox-empty">
-              <CheckCheck size={26} />
-              {unreadOnly ? "No unread notifications." : "No notifications yet."}
-            </li>
-          )}
-        </ul>
-      ) : (
-        <>
-          {feed.hasError && <LoadError error={null} />}
-          <div className="feature-grid notifications">
-            {pending.map((n) => (
-              <FeatureCard
-                key={n.id}
-                icon={icons[n.kind]}
-                title={n.title}
-                text={n.detail}
-                extra={<small className="feature-hint">{age(n.createdAt)} ago</small>}
-                to={n.href}
-              />
-            ))}
-          </div>
-          {!feed.loading && pending.length === 0 && (
-            <p className="admin-empty">Nothing is waiting on you.</p>
-          )}
-        </>
-      )}
-    </div>
+    <NotificationsInbox
+      business={business}
+      portal="admin"
+      title="Notifications"
+      subtitle="Your assigned operational updates and alerts."
+    />
   )
 }

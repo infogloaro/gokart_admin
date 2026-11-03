@@ -129,6 +129,14 @@ export function useMarkRead() {
   })
 }
 
+export function useDeleteNotification() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api("delete", "/notifications/{id}", { params: { id } }),
+    onSettled: () => client.invalidateQueries({ queryKey: ["notifications"] }),
+  })
+}
+
 export function useMarkActivityRead() {
   const client = useQueryClient()
   return useMutation({

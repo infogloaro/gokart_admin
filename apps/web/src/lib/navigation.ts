@@ -95,6 +95,17 @@ export const superNav: { group: string; items: Screen[] }[] = [
     group: "OPERATIONS",
     items: [
       {
+        key: "notifications",
+        label: "Notifications",
+        icon: Bell,
+        title: "Notifications",
+        subtitle: "Approvals, new orders and updates for you, with mark as read and delete.",
+        owner: "Dev 1",
+        module: "Notifications",
+        permission: "dashboard.view",
+        live: true,
+      },
+      {
         key: "alerts",
         label: "Alerts",
         icon: TriangleAlert,
