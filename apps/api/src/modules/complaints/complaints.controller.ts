@@ -74,3 +74,7 @@ export async function note(req: Id, res: Response) {
 export async function suggestions(req: Id, res: Response) {
   res.json(await service.suggestions(req.params.id, scope(req)))
 }
+
+export async function suggestAssignee(req: Id, res: Response) {
+  res.json(await service.suggestAssignee(req.params.id, scope(req)))
+}

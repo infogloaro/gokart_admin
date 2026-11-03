@@ -248,3 +248,10 @@ export const useComplaintSuggestions = (id: string | null) =>
     queryFn: () => api("get", "/complaints/{id}/suggestions", { params: { id: id! } }),
     enabled: Boolean(id),
   })
+
+export const useSuggestedAssignee = (id: string | null) =>
+  useQuery({
+    queryKey: ["complaints", "suggested-assignee", id],
+    queryFn: () => api("get", "/complaints/{id}/suggested-assignee", { params: { id: id! } }),
+    enabled: Boolean(id),
+  })

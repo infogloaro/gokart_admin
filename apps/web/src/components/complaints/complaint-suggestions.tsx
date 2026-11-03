@@ -1,7 +1,7 @@
 "use client"
 
 import { Sparkles } from "lucide-react"
-import { useComplaintSuggestions } from "@/lib/operations"
+import { useComplaintSuggestions, useSuggestedAssignee } from "@/lib/operations"
 
 const PRIORITY_LABEL: Record<string, string> = {
   low: "Low",
@@ -14,11 +14,14 @@ const PRIORITY_LABEL: Record<string, string> = {
 export function ComplaintSuggestions({
   id,
   onUseReply,
+  onAssign,
 }: {
   id: string
   onUseReply: (body: string) => void
+  onAssign?: (assigneeId: string) => void
 }) {
   const q = useComplaintSuggestions(id)
+  const owner = useSuggestedAssignee(id)
   if (q.isPending) return null
   if (q.isError || !q.data) return null
   const { priority, reasons, replies } = q.data
@@ -30,6 +33,21 @@ export function ComplaintSuggestions({
       <p>
         Suggested priority: <strong>{PRIORITY_LABEL[priority] ?? priority}</strong>
       </p>
+      {owner.data?.suggested && (
+        <p className="cs-owner">
+          Suggested owner: <strong>{owner.data.suggested.name}</strong> (
+          {owner.data.suggested.openCount} open)
+          {onAssign && (
+            <button
+              type="button"
+              className="cmp-btn"
+              onClick={() => onAssign(owner.data.suggested!.id)}
+            >
+              Assign to them
+            </button>
+          )}
+        </p>
+      )}
       <ul>
         {reasons.map((reason) => (
           <li key={reason}>{reason}</li>

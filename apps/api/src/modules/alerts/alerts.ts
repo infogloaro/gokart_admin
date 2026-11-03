@@ -118,6 +118,32 @@ export async function checkVendorIssues(now = Date.now()) {
   return vendors.length
 }
 
+/** Online payments still unconfirmed a day after the order was delivered: money to chase. */
+export async function checkUnconfirmedPayments(now = Date.now()) {
+  const orders = await prisma.order.findMany({
+    where: {
+      status: "delivered",
+      paymentStatus: "pending",
+      paymentMethod: { not: "cod" },
+      placedAt: { lt: new Date(now - 24 * 60 * 60 * 1000) },
+    },
+    select: { id: true, code: true, business: true, zoneId: true },
+    take: 200,
+  })
+  for (const order of orders)
+    await raiseAlert(prisma, {
+      kind: "payment_failed",
+      subject: `unconfirmed:${order.id}`,
+      business: order.business,
+      zoneId: order.zoneId,
+      title: "Payment not confirmed",
+      body: `${order.code} was delivered but its online payment is still unconfirmed. Reconcile it with the payment provider.`,
+      link: linkFor("admin", order.business, "orders", `search=${order.code}`),
+      now,
+    })
+  return orders.length
+}
+
 /** Riders whose driving licence has expired or expires within 30 days. */
 export async function checkDocumentExpiry(now = Date.now()) {
   const soon = new Date(now + 30 * 24 * 60 * 60 * 1000)
@@ -152,6 +178,7 @@ export async function runAlertChecks(now = Date.now()) {
     paymentFailures: await checkPaymentFailures(now),
     vendorIssues: await checkVendorIssues(now),
     documentExpiry: await checkDocumentExpiry(now),
+    unconfirmedPayments: await checkUnconfirmedPayments(now),
   }
 }
 

@@ -108,3 +108,39 @@ registry.registerPath({
   },
   responses: { 200: json(StoredDocumentRef, "Updated document"), ...errors(400, 401, 403, 404) },
 })
+
+registry.registerPath({
+  method: "get",
+  path: "/vendors/scorecards",
+  tags,
+  summary:
+    "Last 30 days per vendor: orders, on-time delivery, cancellations, complaints, and attention flags",
+  responses: {
+    200: {
+      description: "Vendor scorecards",
+      content: {
+        "application/json": {
+          schema: z.object({
+            windowDays: z.number().int(),
+            items: z.array(
+              z.object({
+                vendorId: z.string(),
+                vendorName: z.string(),
+                business: z.enum(["food", "mart"]),
+                orders: z.number().int(),
+                delivered: z.number().int(),
+                cancelled: z.number().int(),
+                onTimePct: z.number().int().nullable(),
+                cancelPct: z.number().int().nullable(),
+                complaints: z.number().int(),
+                needsAttention: z.boolean(),
+                reasons: z.array(z.string()),
+              }),
+            ),
+          }),
+        },
+      },
+    },
+    ...errors(401, 403),
+  },
+})

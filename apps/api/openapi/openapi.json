@@ -10006,6 +10006,116 @@
         }
       }
     },
+    "/complaints/{id}/suggested-assignee": {
+      "get": {
+        "tags": [
+          "Complaints"
+        ],
+        "summary": "Who should take this complaint: the eligible person with the fewest open complaints",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Suggested assignee",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "suggested": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "openCount": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "openCount"
+                      ]
+                    },
+                    "candidates": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "openCount": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "openCount"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "suggested",
+                    "candidates"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/finance/cycles": {
       "get": {
         "tags": [
@@ -22845,6 +22955,122 @@
           },
           "404": {
             "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vendors/scorecards": {
+      "get": {
+        "tags": [
+          "Vendors"
+        ],
+        "summary": "Last 30 days per vendor: orders, on-time delivery, cancellations, complaints, and attention flags",
+        "responses": {
+          "200": {
+            "description": "Vendor scorecards",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "windowDays": {
+                      "type": "integer"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "vendorId": {
+                            "type": "string"
+                          },
+                          "vendorName": {
+                            "type": "string"
+                          },
+                          "business": {
+                            "type": "string",
+                            "enum": [
+                              "food",
+                              "mart"
+                            ]
+                          },
+                          "orders": {
+                            "type": "integer"
+                          },
+                          "delivered": {
+                            "type": "integer"
+                          },
+                          "cancelled": {
+                            "type": "integer"
+                          },
+                          "onTimePct": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          },
+                          "cancelPct": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          },
+                          "complaints": {
+                            "type": "integer"
+                          },
+                          "needsAttention": {
+                            "type": "boolean"
+                          },
+                          "reasons": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "vendorId",
+                          "vendorName",
+                          "business",
+                          "orders",
+                          "delivered",
+                          "cancelled",
+                          "onTimePct",
+                          "cancelPct",
+                          "complaints",
+                          "needsAttention",
+                          "reasons"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "windowDays",
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
             "content": {
               "application/json": {
                 "schema": {

@@ -95,3 +95,25 @@ registry.registerPath({
     ...errors(401, 403, 404),
   },
 })
+
+registry.registerPath({
+  method: "get",
+  path: "/complaints/{id}/suggested-assignee",
+  tags: ["Complaints"],
+  summary: "Who should take this complaint: the eligible person with the fewest open complaints",
+  request: { params: id },
+  responses: {
+    200: json(
+      z.object({
+        suggested: z
+          .object({ id: z.string(), name: z.string(), openCount: z.number().int() })
+          .nullable(),
+        candidates: z.array(
+          z.object({ id: z.string(), name: z.string(), openCount: z.number().int() }),
+        ),
+      }),
+      "Suggested assignee",
+    ),
+    ...errors(401, 403, 404),
+  },
+})

@@ -7,6 +7,7 @@ import {
 } from "@zoauro/shared"
 import type { Actor } from "../../lib/audit"
 import { badRequest, conflict, notFound } from "../../lib/errors"
+import { prisma } from "../../lib/prisma"
 import * as repo from "./complaints.repository"
 import type { ComplaintFilter, Scope } from "./complaints.repository"
 import { suggestComplaintHandling } from "./suggestions"
@@ -217,4 +218,24 @@ export async function suggestions(id: string, s: Scope) {
     claimPaise: c.claimPaise,
     text: `${c.summary} ${c.details}`,
   })
+}
+
+/**
+ * Suggests who should take a complaint: the eligible person with the fewest open complaints.
+ * Only people allowed to work this business and zone are considered, as in the assign action.
+ */
+export async function suggestAssignee(id: string, s: Scope) {
+  const c = await load(id, s)
+  const allowed = await repo.assignees(c.business, c.zoneId)
+  const open = await Promise.all(
+    allowed.map((member) =>
+      prisma.complaint.count({
+        where: { assigneeId: member.id, status: { in: ["open", "in_review", "escalated"] } },
+      }),
+    ),
+  )
+  const candidates = allowed
+    .map((member, i) => ({ id: member.id, name: member.name, openCount: open[i] ?? 0 }))
+    .sort((a, b) => a.openCount - b.openCount || a.name.localeCompare(b.name))
+  return { suggested: candidates[0] ?? null, candidates }
 }

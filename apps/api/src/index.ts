@@ -6,6 +6,7 @@ import { prisma } from "./lib/prisma"
 import { attachRealtime, closeRealtime } from "./lib/realtime"
 import { redis } from "./lib/redis"
 import { runAlertChecks } from "./modules/alerts/alerts"
+import { sendWeeklyDigest } from "./modules/digest/digest"
 import { relayOutbox } from "./modules/notifications/notifications"
 import { sweepStale } from "./modules/tracking/tracking.service"
 
@@ -33,10 +34,17 @@ const alerts = setInterval(() => {
 }, 60_000)
 alerts.unref()
 
+// Super Admins get a digest on Monday mornings (sent once per week).
+const digest = setInterval(() => {
+  sendWeeklyDigest().catch((e: unknown) => console.error("Weekly digest failed", e))
+}, 60 * 60_000)
+digest.unref()
+
 async function shutdown() {
   clearInterval(sweeper)
   clearInterval(relay)
   clearInterval(alerts)
+  clearInterval(digest)
   await closeRealtime()
   server.close()
   await Promise.allSettled([prisma.$disconnect(), redis.quit()])

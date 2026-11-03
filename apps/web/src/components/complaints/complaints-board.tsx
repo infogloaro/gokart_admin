@@ -586,7 +586,13 @@ function ComplaintPanel({
                 </section>
               )}
 
-              {id && <ComplaintSuggestions id={id} onUseReply={(body) => setNote(body)} />}
+              {id && (
+                <ComplaintSuggestions
+                  id={id}
+                  onUseReply={(body) => setNote(body)}
+                  onAssign={(assigneeId) => c && run({ kind: "assign", assigneeId })}
+                />
+              )}
 
               <section className="cmp-timeline">
                 <h3>History</h3>

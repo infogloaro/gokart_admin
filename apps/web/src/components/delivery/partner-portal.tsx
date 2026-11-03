@@ -292,7 +292,7 @@ export function DeliveryPartnerPortal() {
   }
 
   return (
-    <div className="super-ui">
+    <div className="super-ui partner-portal">
       <main className="content">
         <header className="page-head">
           <div>
@@ -349,6 +349,7 @@ export function DeliveryPartnerPortal() {
               </Button>
             </section>
             <CapacityPanel count={riderCount} />
+            <LicenceReminder boys={boys} />
             {notice && <p role="status">{notice}</p>}
             {error && <ErrorBox icon={AlertTriangle}>{error}</ErrorBox>}
             <section className="panel table-panel">
@@ -503,6 +504,35 @@ export function DeliveryPartnerPortal() {
         />
       )}
     </div>
+  )
+}
+
+/** Riders whose driving licence has expired or expires within 30 days. */
+function LicenceReminder({ boys }: { boys: DeliveryBoy[] }) {
+  const soon = Date.now() + 30 * 24 * 60 * 60 * 1000
+  const due = boys.filter(
+    (boy) =>
+      boy.status !== "rejected" &&
+      boy.licenceValidUntil &&
+      Date.parse(boy.licenceValidUntil) <= soon,
+  )
+  if (due.length === 0) return null
+  return (
+    <section className="panel capacity low licence-reminder" role="status">
+      <div className="capacity-head">
+        <AlertTriangle size={16} />
+        <strong>Licence renewal needed</strong>
+      </div>
+      <p>
+        {due
+          .map((boy) => {
+            const expired = Date.parse(boy.licenceValidUntil!) < Date.now()
+            return `${boy.name} (${expired ? "expired" : "expires " + boy.licenceValidUntil})`
+          })
+          .join(", ")}
+        . Renew the licence and tell your zone Admin so the rider record can be updated.
+      </p>
+    </section>
   )
 }
 
