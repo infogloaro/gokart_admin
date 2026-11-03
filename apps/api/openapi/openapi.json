@@ -2021,7 +2021,7 @@
         "properties": {
           "range": {
             "type": "string",
-            "enum": ["today", "7d", "30d", "90d"]
+            "pattern": "^(today|7d|30d|90d|365d|y\\d{4}|c\\d{4}-\\d{2}-\\d{2}_\\d{4}-\\d{2}-\\d{2})$"
           },
           "grossPaise": {
             "type": "integer"
@@ -2253,7 +2253,7 @@
         "properties": {
           "range": {
             "type": "string",
-            "enum": ["today", "7d", "30d", "90d"]
+            "pattern": "^(today|7d|30d|90d|365d|y\\d{4}|c\\d{4}-\\d{2}-\\d{2}_\\d{4}-\\d{2}-\\d{2})$"
           },
           "from": {
             "type": "string",
@@ -2596,7 +2596,7 @@
         "properties": {
           "range": {
             "type": "string",
-            "enum": ["today", "7d", "30d", "90d"]
+            "pattern": "^(today|7d|30d|90d|365d|y\\d{4}|c\\d{4}-\\d{2}-\\d{2}_\\d{4}-\\d{2}-\\d{2})$"
           },
           "generatedAt": {
             "type": "string",
@@ -2665,7 +2665,7 @@
           },
           "range": {
             "type": "string",
-            "enum": ["today", "7d", "30d", "90d"]
+            "pattern": "^(today|7d|30d|90d|365d|y\\d{4}|c\\d{4}-\\d{2}-\\d{2}_\\d{4}-\\d{2}-\\d{2})$"
           },
           "from": {
             "type": "string",
@@ -11747,7 +11747,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": ["today", "7d", "30d", "90d"],
+              "pattern": "^(today|7d|30d|90d|365d|y\\d{4}|c\\d{4}-\\d{2}-\\d{2}_\\d{4}-\\d{2}-\\d{2})$",
               "default": "30d"
             },
             "required": false,
@@ -11871,7 +11871,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": ["today", "7d", "30d", "90d"],
+              "pattern": "^(today|7d|30d|90d|365d|y\\d{4}|c\\d{4}-\\d{2}-\\d{2}_\\d{4}-\\d{2}-\\d{2})$",
               "default": "30d"
             },
             "required": false,
@@ -12179,7 +12179,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": ["today", "7d", "30d", "90d"],
+              "pattern": "^(today|7d|30d|90d|365d|y\\d{4}|c\\d{4}-\\d{2}-\\d{2}_\\d{4}-\\d{2}-\\d{2})$",
               "default": "7d"
             },
             "required": false,
@@ -12248,7 +12248,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": ["today", "7d", "30d", "90d"],
+              "pattern": "^(today|7d|30d|90d|365d|y\\d{4}|c\\d{4}-\\d{2}-\\d{2}_\\d{4}-\\d{2}-\\d{2})$",
               "default": "7d"
             },
             "required": false,
@@ -12317,7 +12317,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": ["today", "7d", "30d", "90d"],
+              "pattern": "^(today|7d|30d|90d|365d|y\\d{4}|c\\d{4}-\\d{2}-\\d{2}_\\d{4}-\\d{2}-\\d{2})$",
               "default": "7d"
             },
             "required": false,

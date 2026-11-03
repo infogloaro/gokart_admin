@@ -4,11 +4,10 @@
 // Finance & payouts, where it gets the category tabs.
 import { api, ApiError } from "@zoauro/api-client"
 import {
-  DASHBOARD_RANGES,
   ledgerMethodLabel,
   ledgerTypeLabel,
   LEDGER_TYPES,
-  rangeName,
+  rangeLabel,
   type DashboardRange,
   type LedgerEntry,
   type LedgerMethod,
@@ -26,6 +25,7 @@ import {
 import { useEffect, useState } from "react"
 import { fmtStamp, inr, useLedger, useLedgerSummary } from "@/lib/finance"
 import { useCsvExport } from "./export"
+import { CustomDates, pickRange, rangeSelectValue, RangeOptions } from "../range-select"
 import { useBusinessFilter } from "./shell"
 import { Badge, Button, ErrorBox, IconButton, Input, Modal, Panel, Select, Tabs, Toast } from "./ui"
 
@@ -184,7 +184,7 @@ export function TransactionLedger({ withTabs = false }: { withTabs?: boolean }) 
       </div>
       <Panel
         title={tab}
-        subtitle={`${rangeName[range]} · permission-controlled · no transfers are made from here`}
+        subtitle={`${rangeLabel(range)} · permission-controlled · no transfers are made from here`}
       >
         <div className="filters">
           <Input
@@ -204,13 +204,10 @@ export function TransactionLedger({ withTabs = false }: { withTabs?: boolean }) 
               ))}
             </Select>
           )}
-          <Select value={range} onChange={(v) => setRange(v as DashboardRange)}>
-            {DASHBOARD_RANGES.map((r) => (
-              <option value={r} key={r}>
-                {rangeName[r]}
-              </option>
-            ))}
+          <Select value={rangeSelectValue(range)} onChange={(v) => pickRange(v, setRange)}>
+            <RangeOptions />
           </Select>
+          <CustomDates range={range} setRange={setRange} />
           <Button icon={Download} onClick={exportCsv} disabled={csv.exporting}>
             {csv.exporting ? "Exporting…" : "Export"}
           </Button>

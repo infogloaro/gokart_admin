@@ -948,3 +948,6 @@
 @media (max-width: 640px) {
   .super-ui.partner-portal .partner-table { min-width: 0 !important; width: 100%; }
 }
+
+.range-custom { display: inline-flex; align-items: center; gap: .4rem; font-size: .85rem; color: #5b6b82; }
+.range-custom input { height: 2.5rem; padding: 0 .6rem; border: 1px solid #dfe5ee; border-radius: 10px; background: #fff; font: inherit; color: #0b1f44; }

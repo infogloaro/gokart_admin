@@ -1,5 +1,7 @@
 import {
   rangeDays,
+  rangeCustom,
+  rangeYear,
   type AttentionItem,
   type Business,
   type DashboardHealth,
@@ -20,19 +22,43 @@ const istDay = (t: number) => new Date(t + IST).toISOString().slice(0, 10)
 
 /**
  * The period runs from the start of the first IST day to now; the comparison period
- * covers the same stretch of time immediately before it.
+ * covers the same stretch of time immediately before it. A calendar-year range runs from
+ * 1 January to now (current year) or to 31 December (past years).
  */
 export function periods(range: DashboardRange, now = Date.now()) {
-  const days = rangeDays[range]
-  const startOfToday = Date.parse(`${istDay(now)}T00:00:00.000Z`) - IST
-  const from = startOfToday - (days - 1) * DAY
+  const startOfToday = startOfDay(now)
+  const year = rangeYear(range)
+  let from: number
+  let end: number
+  const custom = rangeCustom(range)
+  if (custom) {
+    const dayStart = (d: string) => Date.parse(`${d}T00:00:00.000Z`) - IST
+    const a = dayStart(custom.from)
+    const b = dayStart(custom.to)
+    // Inverted dates are swapped; the span is capped at three years and never runs past now.
+    from = Math.max(Math.min(a, b), startOfToday - 1095 * DAY)
+    end = Math.min(Math.max(a, b) + DAY - 1, now)
+    if (end < from) from = startOfDay(end)
+  } else if (year === undefined) {
+    from = startOfToday - (rangeDays(range) - 1) * DAY
+    end = now
+  } else {
+    const thisYear = new Date(now + IST).getUTCFullYear()
+    const y = Math.min(year, thisYear)
+    from = Date.parse(`${y}-01-01T00:00:00.000Z`) - IST
+    end = y === thisYear ? now : Date.parse(`${y + 1}-01-01T00:00:00.000Z`) - IST - 1
+  }
+  const days = Math.max(1, Math.round((startOfDay(end) - from) / DAY) + 1)
   const span = days * DAY
   return {
-    current: { from: new Date(from), to: new Date(now) } satisfies Period,
-    previous: { from: new Date(from - span), to: new Date(now - span) } satisfies Period,
+    current: { from: new Date(from), to: new Date(end) } satisfies Period,
+    previous: { from: new Date(from - span), to: new Date(end - span) } satisfies Period,
     dates: Array.from({ length: days }, (_, i) => istDay(from + i * DAY)),
   }
 }
+
+/** Start of the IST day containing an instant. */
+const startOfDay = (t: number) => Date.parse(`${istDay(t)}T00:00:00.000Z`) - IST
 
 type Totals = Awaited<ReturnType<typeof repo.totals>>[number]
 const sum = (rows: Totals[], key: keyof Omit<Totals, "business">) =>

@@ -4,17 +4,66 @@ import { Business } from "../common/enums"
 import { Paise } from "../common/money"
 import { OrderStatus } from "../orders/status"
 
-/** Reporting periods, counted in India Standard Time days ending today. */
-export const DASHBOARD_RANGES = ["today", "7d", "30d", "90d"] as const
-export const DashboardRange = z.enum(DASHBOARD_RANGES)
-export type DashboardRange = z.infer<typeof DashboardRange>
-export const rangeName: Record<DashboardRange, string> = {
-  today: "Today",
-  "7d": "Last 7 days",
-  "30d": "Last 30 days",
-  "90d": "Last 90 days",
+/**
+ * Reporting periods, counted in India Standard Time days ending today. Besides the rolling
+ * windows, "365d" is the last year and "y2026" is that whole calendar year (to date for the
+ * current one); the year options are built from today's date so they never need updating.
+ */
+export const DASHBOARD_RANGES = ["today", "7d", "30d", "90d", "365d"] as const
+/** A rolling window, a calendar year ("y2025") or a custom span ("c2025-01-01_2025-03-31"). */
+export type DashboardRange = string
+const RANGE_PATTERN = /^(today|7d|30d|90d|365d|y\d{4}|c\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2})$/
+export const DashboardRange = z
+  .string()
+  .regex(RANGE_PATTERN)
+  .transform((v) => v as DashboardRange)
+const FIRST_YEAR = 2024
+const DAY_COUNT: Record<(typeof DASHBOARD_RANGES)[number], number> = {
+  today: 1,
+  "7d": 7,
+  "30d": 30,
+  "90d": 90,
+  "365d": 365,
 }
-export const rangeDays: Record<DashboardRange, number> = { today: 1, "7d": 7, "30d": 30, "90d": 90 }
+
+/** Calendar year for a "yYYYY" range, else undefined. */
+export const rangeYear = (r: string) => (/^y\d{4}$/.test(r) ? Number(r.slice(1)) : undefined)
+/** Day count for a rolling range, else undefined (calendar years vary). */
+export const rangeDays = (r: string) => DAY_COUNT[r as keyof typeof DAY_COUNT]
+/** Custom range "cYYYY-MM-DD_YYYY-MM-DD" (IST days, inclusive). */
+export const customRange = (from: string, to: string) => `c${from}_${to}` as DashboardRange
+export const rangeCustom = (r: string) => {
+  const m = /^c(\d{4}-\d{2}-\d{2})_(\d{4}-\d{2}-\d{2})$/.exec(r)
+  return m ? { from: m[1]!, to: m[2]! } : undefined
+}
+const shortDay = (d: string) =>
+  new Date(`${d}T00:00:00Z`).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  })
+export const rangeLabel = (r: string) => {
+  const c = rangeCustom(r)
+  if (c) return `${shortDay(c.from)} – ${shortDay(c.to)}`
+  return rangeYearLabel(r)
+}
+const rangeYearLabel = (r: string) =>
+  rangeYear(r) !== undefined
+    ? `Year ${r.slice(1)}`
+    : r === "today"
+      ? "Today"
+      : r === "365d"
+        ? "Last 12 months"
+        : `Last ${DAY_COUNT[r as keyof typeof DAY_COUNT]} days`
+
+/** Every range a picker offers: rolling windows, then this year back to the first year. */
+export function rangeOptions(now = new Date()): DashboardRange[] {
+  const year = new Date(now.getTime() + 330 * 60_000).getUTCFullYear()
+  const years: DashboardRange[] = []
+  for (let y = year; y >= Math.min(FIRST_YEAR, year); y--) years.push(`y${y}`)
+  return [...DASHBOARD_RANGES, ...years]
+}
 
 export const DashboardQuery = z.object({
   business: Business.optional(),
