@@ -59,7 +59,7 @@ export function SuperTracking() {
     return () => clearTimeout(t)
   }, [toast])
 
-  // Areas grouped under their zone for the filter (Chennai North, Ranipet, â€¦).
+  // Areas grouped under their zone for the filter (Chennai North, Ranipet, …).
   const byZone = useMemo(() => {
     const groups = new Map<string, TrackingZone[]>()
     for (const z of zones.data ?? []) groups.set(z.zone, [...(groups.get(z.zone) ?? []), z])
@@ -104,7 +104,7 @@ export function SuperTracking() {
           icon={Search}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search partner, ID or orderâ€¦"
+          placeholder="Search partner, ID or order…"
           aria-label="Search partners or orders"
         />
         <Select value={zoneId} onChange={setZoneId}>
@@ -144,9 +144,9 @@ export function SuperTracking() {
                       ? "Online partners"
                       : "Active partners"
             }
-            subtitle={`${scoped.length} eligible Â· ${list.length} shown Â· ${onMap} located Â· ${list.length - onMap} unavailable Â· ${stale} stale`}
+            subtitle={`${scoped.length} eligible · ${list.length} shown · ${onMap} located · ${list.length - onMap} unavailable · ${stale} stale`}
           >
-            {partners.isPending && <p className="track-empty">Loading delivery partnersâ€¦</p>}
+            {partners.isPending && <p className="track-empty">Loading delivery partners…</p>}
             {partners.isError && (
               <p className="track-empty" role="alert">
                 Could not load delivery partners. {partners.error.message}{" "}
@@ -167,10 +167,10 @@ export function SuperTracking() {
                   <span>
                     <strong>{p.name}</strong>
                     <small>
-                      {p.code} Â·{" "}
+                      {p.code} ·{" "}
                       {!hasValidLocation(p.location)
                         ? "Location unavailable"
-                        : `${isStaleLocation(p.location, now) ? "Stale Â· " : ""}${ago(p.location.at, now)}`}
+                        : `${isStaleLocation(p.location, now) ? "Stale · " : ""}${ago(p.location.at, now)}`}
                     </small>
                   </span>
                   <Badge tone={availabilityTone(p.availability)}>
@@ -240,7 +240,7 @@ function TrackCard({
         <span>
           <strong>{p.name}</strong>
           <small>
-            {p.code} Â· {servicesLabel(p.businesses)}
+            {p.code} · {servicesLabel(p.businesses)}
           </small>
         </span>
       </div>
@@ -261,7 +261,7 @@ function TrackCard({
           <LocateFixed size={14} />
           {!hasValidLocation(p.location)
             ? "Location unavailable"
-            : `${isStaleLocation(p.location, now) ? "Stale location Â· " : p.availability === "offline" ? "Last known Â· " : "Updated "}${ago(p.location.at, now)}`}
+            : `${isStaleLocation(p.location, now) ? "Stale location · " : p.availability === "offline" ? "Last known · " : "Updated "}${ago(p.location.at, now)}`}
         </li>
         <li>
           <Gauge size={14} />
@@ -271,9 +271,9 @@ function TrackCard({
         </li>
         <li>
           <MapPin size={14} />
-          {p.zoneName} Â· {vehicleLabel[p.vehicleType]} {p.vehicleNumber}
+          {p.zoneName} · {vehicleLabel[p.vehicleType]} {p.vehicleNumber}
           {hasValidLocation(p.location) &&
-            ` Â· ${p.location.lat.toFixed(5)}, ${p.location.lng.toFixed(5)}`}
+            ` · ${p.location.lat.toFixed(5)}, ${p.location.lng.toFixed(5)}`}
         </li>
       </ul>
       <div className="track-actions">
@@ -290,7 +290,7 @@ export function ConnectionBadge({ state }: { state: Connection }) {
   return (
     <span className={`live-badge ${state}`} aria-live="polite">
       <i />
-      {state === "live" ? "Live" : state === "connecting" ? "Connectingâ€¦" : "Reconnectingâ€¦"}
+      {state === "live" ? "Live" : state === "connecting" ? "Connecting…" : "Reconnecting…"}
     </span>
   )
 }
