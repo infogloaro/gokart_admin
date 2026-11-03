@@ -7,6 +7,7 @@ import { Prisma } from "../../generated/prisma/client"
 import { parse } from "../../lib/errors"
 import { prisma } from "../../lib/prisma"
 import { requireAuth, requirePermission, scope } from "../../middleware/auth"
+import { GeoQuery, geoZoneIds } from "../geography"
 import { zoneInsights } from "./insights"
 
 type Scope = { businesses: Business[]; zoneIds: string[] | null }
@@ -129,9 +130,17 @@ export async function analytics(s: Scope, period: ReportPeriod): Promise<Analyti
 export const reportRoutes = Router()
   .use(requireAuth, requirePermission("reports.view"))
   .get("/insights", async (req: Request, res: Response) => {
-    res.json(await zoneInsights(scope(req)))
+    const s = scope(req)
+    res.json(
+      await zoneInsights({
+        ...s,
+        zoneIds: await geoZoneIds(parse(GeoQuery, req.query), s.zoneIds),
+      }),
+    )
   })
   .get("/analytics", async (req: Request, res: Response) => {
     const q = parse(AnalyticsQuery, req.query)
-    res.json(await analytics(scope(req), q.period))
+    const s = scope(req)
+    const zoneIds = await geoZoneIds(parse(GeoQuery, req.query), s.zoneIds)
+    res.json(await analytics({ ...s, zoneIds }, q.period))
   })

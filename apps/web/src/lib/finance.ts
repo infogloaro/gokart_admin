@@ -23,10 +23,20 @@ export const useCycles = () =>
     staleTime: 60_000,
   })
 
-export const useFinanceOverview = (cycle: string | undefined) =>
+/** State / District chosen in the Finance and Reports filter; empty means all India. */
+export type Geo = { state?: string; district?: string }
+
+export const useGeography = () =>
   useQuery({
-    queryKey: ["finance", "overview", cycle],
-    queryFn: () => api("get", "/finance/overview", { query: { cycle } }),
+    queryKey: ["geography"],
+    queryFn: () => api("get", "/zones/geography"),
+    staleTime: 5 * 60_000,
+  })
+
+export const useFinanceOverview = (cycle: string | undefined, geo: Geo = {}) =>
+  useQuery({
+    queryKey: ["finance", "overview", cycle, geo],
+    queryFn: () => api("get", "/finance/overview", { query: { cycle, ...geo } }),
     enabled: Boolean(cycle),
     placeholderData: keepPreviousData,
   })
@@ -50,6 +60,8 @@ export const usePayouts = (q: {
   cycle?: string | undefined
   accountType?: AccountType | undefined
   status?: PayoutDisplayStatus | undefined
+  state?: string | undefined
+  district?: string | undefined
 }) =>
   useQuery({
     queryKey: ["finance", "payouts", q],
@@ -68,10 +80,10 @@ export const usePayRequests = () =>
   useQuery({ queryKey: ["finance", "requests"], queryFn: () => api("get", "/finance/requests") })
 export const useMovements = () =>
   useQuery({ queryKey: ["finance", "movements"], queryFn: () => api("get", "/finance/movements") })
-export const useFinanceReport = (period: ReportPeriod) =>
+export const useFinanceReport = (period: ReportPeriod, geo: Geo = {}) =>
   useQuery({
-    queryKey: ["finance", "report", period],
-    queryFn: () => api("get", "/finance/report", { query: { period } }),
+    queryKey: ["finance", "report", period, geo],
+    queryFn: () => api("get", "/finance/report", { query: { period, ...geo } }),
     placeholderData: keepPreviousData,
   })
 export const useFinanceAudit = () =>
@@ -215,10 +227,10 @@ export const useLedger = (q: LedgerFilters) =>
 
 // ---------- reports ----------
 
-export const useAnalytics = (period: ReportPeriod) =>
+export const useAnalytics = (period: ReportPeriod, geo: Geo = {}) =>
   useQuery({
-    queryKey: ["reports", "analytics", period],
-    queryFn: () => api("get", "/reports/analytics", { query: { period } }),
+    queryKey: ["reports", "analytics", period, geo],
+    queryFn: () => api("get", "/reports/analytics", { query: { period, ...geo } }),
     placeholderData: keepPreviousData,
   })
 

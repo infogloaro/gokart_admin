@@ -92,11 +92,18 @@ function checkCycle(cycle: string) {
 type PartnerRow = Awaited<ReturnType<typeof repo.partners>>[number]
 type AdminRow = Awaited<ReturnType<typeof repo.admins>>[number]
 
-async function accounts() {
+/** `zoneIds` narrows to accounts working in those zones (the State / District filter). */
+async function accounts(zoneIds?: string[] | null) {
   const [partners, admins] = await Promise.all([repo.partners(), repo.admins()])
   // ADM-01, ADM-02 … in the order admins joined, for payout codes.
   const adminCode = new Map(admins.map((a, i) => [a.id, `ADM-${String(i + 1).padStart(2, "0")}`]))
-  return { partners, admins, adminCode }
+  if (!zoneIds) return { partners, admins, adminCode }
+  const inside = new Set(zoneIds)
+  return {
+    partners: partners.filter((p) => inside.has(p.zoneId)),
+    admins: admins.filter((a) => a.zones.some((z) => inside.has(z.zoneId))),
+    adminCode,
+  }
 }
 
 const history = <T>(rows: { effectiveFrom: Date; plan: unknown }[], fallback: T, first: string) =>
@@ -228,13 +235,13 @@ const toDay = (r: Awaited<ReturnType<typeof repo.accruals>>[number]): DayAccrual
 type Inputs = Awaited<ReturnType<typeof loadInputs>>
 
 /** Everything statements need for one cycle, fetched once. */
-async function loadInputs(cycle: string) {
+async function loadInputs(cycle: string, zoneIds?: string[] | null) {
   await accrue(cycle)
   const from = `${cycle}-01`
   const to = cycleEnd(cycle)
   const [acc, partnerAcc, adminAcc, partnerPlans, adminPlans, adjustments, remits] =
     await Promise.all([
-      accounts(),
+      accounts(zoneIds),
       repo.accruals("partner", from, to),
       repo.accruals("admin", from, to),
       repo.planVersions("partner"),
@@ -410,9 +417,9 @@ async function summaries(rows: Payout[], names?: Names): Promise<PayoutSummary[]
 const bankText = (b?: { bankName: string | null; upiId: string | null; last4: string }) =>
   b ? `${b.bankName ?? (b.upiId ? "UPI" : "Bank")} ••${b.last4}` : "No bank account"
 
-export async function overview(cycle: string): Promise<FinanceOverview> {
+export async function overview(cycle: string, zoneIds?: string[] | null): Promise<FinanceOverview> {
   checkCycle(cycle)
-  const inp = await loadInputs(cycle)
+  const inp = await loadInputs(cycle, zoneIds)
   const [partnerBanks, adminBanks, payouts] = await Promise.all([
     repo.bankAccounts(
       "partner",
@@ -514,16 +521,24 @@ export async function account(
   }
 }
 
-export async function listPayouts(q: {
-  cycle?: string | undefined
-  accountType?: AccountType | undefined
-  status?: PayoutDisplayStatus | undefined
-}) {
+export async function listPayouts(
+  q: {
+    cycle?: string | undefined
+    accountType?: AccountType | undefined
+    status?: PayoutDisplayStatus | undefined
+  },
+  zoneIds?: string[] | null,
+) {
   const rows = await repo.payouts({
     ...(q.cycle && { cycle: q.cycle }),
     ...(q.accountType && { accountType: q.accountType }),
   })
-  const list = await summaries(rows)
+  let list = await summaries(rows)
+  if (zoneIds) {
+    const { partners, admins } = await accounts(zoneIds)
+    const keep = new Set([...partners.map((p) => p.id), ...admins.map((a) => a.id)])
+    list = list.filter((p) => keep.has(p.accountId))
+  }
   return q.status ? list.filter((p) => p.displayStatus === q.status) : list
 }
 
@@ -1030,14 +1045,28 @@ const fmt = (day: string) =>
   })
 
 /** Daily (14 days), weekly (8 weeks) or monthly (3 cycles), summed from daily accruals. */
-export async function report(period: ReportPeriod): Promise<FinanceReportRow[]> {
+export async function report(
+  period: ReportPeriod,
+  zoneIds?: string[] | null,
+): Promise<FinanceReportRow[]> {
   const cs = cycles()
   for (const c of cs) await accrue(c.cycle)
   const start = `${cs[0]!.cycle}-01`
   const end = today()
+  const scoped = zoneIds ? await accounts(zoneIds) : null
   const [partnerRows, adminRows] = await Promise.all([
-    repo.accruals("partner", start, end),
-    repo.accruals("admin", start, end),
+    repo.accruals(
+      "partner",
+      start,
+      end,
+      scoped?.partners.map((p) => p.id),
+    ),
+    repo.accruals(
+      "admin",
+      start,
+      end,
+      scoped?.admins.map((a) => a.id),
+    ),
   ])
   const byDay = new Map<string, { col: number; rev: number; pc: number; ac: number }>()
   const at = (d: string) => byDay.get(d) ?? byDay.set(d, { col: 0, rev: 0, pc: 0, ac: 0 }).get(d)!

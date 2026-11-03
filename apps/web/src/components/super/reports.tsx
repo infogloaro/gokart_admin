@@ -8,8 +8,9 @@ import { AlertTriangle, Download, ReceiptText } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { compactINR } from "@/lib/dashboard"
-import { inr, useAnalytics } from "@/lib/finance"
+import { inr, useAnalytics, type Geo } from "@/lib/finance"
 import { download } from "@/lib/motion"
+import { GeoFilter } from "./geo-filter"
 import { TrendChart } from "./overview"
 import { useBusinessFilter } from "./shell"
 import { Badge, Button, ErrorBox, Panel, Tabs, Toast, type ToastMessage } from "./ui"
@@ -28,7 +29,8 @@ export function ReportsAnalytics() {
   const business = useBusinessFilter()
   const [period, setPeriod] = useState<Period>("Monthly")
   const [toast, setToast] = useState<ToastMessage | null>(null)
-  const q = useAnalytics(period.toLowerCase() as ReportPeriod)
+  const [geo, setGeo] = useState<Geo>({})
+  const q = useAnalytics(period.toLowerCase() as ReportPeriod, geo)
   const a = q.data
   const m = a?.metrics
   const series = [
@@ -103,6 +105,7 @@ export function ReportsAnalytics() {
     <>
       <div className="report-tools">
         <Tabs items={PERIODS} value={period} onChange={setPeriod} />
+        <GeoFilter value={geo} onChange={setGeo} />
         <Button icon={Download} onClick={exportReport} disabled={!a}>
           Export report
         </Button>

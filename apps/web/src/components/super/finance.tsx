@@ -47,6 +47,7 @@ import {
   useFinanceAction,
   useFinanceAudit,
   useFinanceOverview,
+  type Geo,
   useFinanceReport,
   useMovements,
   usePayout,
@@ -54,6 +55,7 @@ import {
   usePayRequests,
 } from "@/lib/finance"
 import { useMe } from "@/lib/session"
+import { GeoFilter } from "./geo-filter"
 import { TransactionLedger } from "./ledger"
 import {
   Badge,
@@ -141,8 +143,9 @@ export function FinancePayouts() {
   const [toast, setToast] = useState<ToastMessage | null>(null)
   const cycle = picked ?? cycles.data?.at(-1)?.cycle
   const info = cycles.data?.find((c) => c.cycle === cycle)
-  const overview = useFinanceOverview(cycle)
-  const payouts = usePayouts({})
+  const [geo, setGeo] = useState<Geo>({})
+  const overview = useFinanceOverview(cycle, geo)
+  const payouts = usePayouts(geo)
   const requests = usePayRequests()
   const act = useFinanceAction()
   const can = (p: string) => Boolean(me.data?.permissions.includes(p as never))
@@ -183,6 +186,7 @@ export function FinancePayouts() {
             </option>
           ))}
         </Select>
+        <GeoFilter value={geo} onChange={setGeo} />
         <IconButton
           icon={RotateCcw}
           label="Refresh finance data"
@@ -472,7 +476,7 @@ export function FinancePayouts() {
         />
       )}
 
-      {tab === "Reports" && <Reports />}
+      {tab === "Reports" && <Reports geo={geo} />}
 
       {tab === "Approvals" && (
         <div className="fp-stack">
@@ -1217,9 +1221,9 @@ function PaymentTracking({
   )
 }
 
-function Reports() {
+function Reports({ geo }: { geo: Geo }) {
   const [period, setPeriod] = useState<"Daily" | "Weekly" | "Monthly">("Monthly")
-  const q = useFinanceReport(period.toLowerCase() as ReportPeriod)
+  const q = useFinanceReport(period.toLowerCase() as ReportPeriod, geo)
   const rows = q.data ?? []
   const total = useMemo(
     () => ({

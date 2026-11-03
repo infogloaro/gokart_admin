@@ -1,6 +1,7 @@
 import {
   Analytics,
   AnalyticsQuery,
+  GeoFields,
   LedgerEntry,
   LedgerQuery,
   LedgerSummary,
@@ -49,6 +50,7 @@ registry.registerPath({
   path: "/reports/insights",
   tags: ["Reports"],
   summary: "Zones with unusually many orders today compared with their usual day",
+  request: { query: GeoFields },
   responses: {
     200: json(
       z.array(

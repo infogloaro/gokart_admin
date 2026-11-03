@@ -8242,6 +8242,54 @@
         }
       }
     },
+    "/zones/geography": {
+      "get": {
+        "tags": [
+          "Zones"
+        ],
+        "summary": "States and districts the member can filter Finance and Reports by",
+        "responses": {
+          "200": {
+            "description": "States with their districts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "state": {
+                        "type": "string"
+                      },
+                      "districts": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "state",
+                      "districts"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/login": {
       "post": {
         "tags": [
@@ -10093,6 +10141,24 @@
             "required": false,
             "name": "cycle",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": false,
+            "name": "state",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": false,
+            "name": "district",
+            "in": "query"
           }
         ],
         "responses": {
@@ -10282,6 +10348,24 @@
             },
             "required": false,
             "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": false,
+            "name": "state",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": false,
+            "name": "district",
             "in": "query"
           }
         ],
@@ -11969,6 +12053,24 @@
             "required": false,
             "name": "period",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": false,
+            "name": "state",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": false,
+            "name": "district",
+            "in": "query"
           }
         ],
         "responses": {
@@ -13471,6 +13573,24 @@
             "required": false,
             "name": "period",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": false,
+            "name": "state",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": false,
+            "name": "district",
+            "in": "query"
           }
         ],
         "responses": {
@@ -13523,6 +13643,26 @@
           "Reports"
         ],
         "summary": "Zones with unusually many orders today compared with their usual day",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": false,
+            "name": "state",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": false,
+            "name": "district",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Zone insights",

@@ -9,8 +9,10 @@ import {
   FinanceOverview,
   FinanceReportRow,
   GeneratePayoutsRequest,
+  GeoFields,
   MoneyMovement,
   NewPayChangeRequest,
+  OverviewQuery,
   PayChangeRequestInfo,
   PayoutDetail,
   PayoutListQuery,
@@ -64,7 +66,7 @@ get(
   "/finance/overview",
   "Every partner and admin account's statement and payout for a cycle",
   registry.register("FinanceOverview", FinanceOverview),
-  { query: CycleQuery },
+  { query: OverviewQuery },
 )
 get(
   "/finance/accounts/{type}/{id}",
@@ -163,6 +165,6 @@ get(
   "/finance/report",
   "Daily, weekly or monthly finance report from daily accruals",
   z.array(FinanceReportRow),
-  { query: z.object({ period: ReportPeriod.optional() }) },
+  { query: z.object({ period: ReportPeriod.optional(), ...GeoFields.shape }) },
 )
 get("/finance/audit", "Finance audit trail", z.array(FinanceAuditEntry))

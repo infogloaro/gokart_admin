@@ -947,6 +947,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/zones/geography": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** States and districts the member can filter Finance and Reports by */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description States with their districts */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            state: string;
+                            districts: string[];
+                        }[];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -2620,6 +2668,8 @@ export interface paths {
             parameters: {
                 query?: {
                     cycle?: string;
+                    state?: string;
+                    district?: string;
                 };
                 header?: never;
                 path?: never;
@@ -2773,6 +2823,8 @@ export interface paths {
                     cycle?: string;
                     accountType?: "partner" | "admin";
                     status?: "pending_approval" | "approved" | "overdue" | "paid" | "settled" | "rejected";
+                    state?: string;
+                    district?: string;
                 };
                 header?: never;
                 path?: never;
@@ -4085,6 +4137,8 @@ export interface paths {
             parameters: {
                 query?: {
                     period?: "daily" | "weekly" | "monthly";
+                    state?: string;
+                    district?: string;
                 };
                 header?: never;
                 path?: never;
@@ -5265,6 +5319,8 @@ export interface paths {
             parameters: {
                 query?: {
                     period?: "daily" | "weekly" | "monthly";
+                    state?: string;
+                    district?: string;
                 };
                 header?: never;
                 path?: never;
@@ -5328,7 +5384,10 @@ export interface paths {
         /** Zones with unusually many orders today compared with their usual day */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    state?: string;
+                    district?: string;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;

@@ -103,3 +103,4 @@
 .super-ui .fp-stack { display: flex; flex-direction: column; gap: .9rem; }
 .super-ui .fp-stack > .fp-status-cards { margin-bottom: 0; }
 .super-ui .fp-lines .badge { flex: 0 0 auto; width: max-content; }
+.super-ui .geo-filter{display:flex;gap:.5rem;align-items:flex-end}
