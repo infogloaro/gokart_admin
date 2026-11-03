@@ -1,6 +1,7 @@
 "use client"
 // Restaurants / sellers in the admin's zones (prototype "vendors" overview cards).
 import { VendorScorecards } from "@/components/vendor-scorecards"
+import { VendorCoverage } from "@/components/vendor-coverage"
 import { ExportCsvLink } from "@/components/export-csv-link"
 import * as Dialog from "@radix-ui/react-dialog"
 import { ApiError } from "@zoauro/api-client"
@@ -58,6 +59,7 @@ function VendorsScreen({ business, initialSearch }: { business: Business; initia
       >
         <ExportCsvLink href="/api/v1/bulk/vendors.csv" label="Export CSV" />
       </PageHeader>
+      <VendorCoverage />
       <VendorScorecards />
       <section className="panel full-panel">
         <div className="toolbar">

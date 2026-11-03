@@ -144,3 +144,34 @@ registry.registerPath({
     ...errors(401, 403),
   },
 })
+
+registry.registerPath({
+  method: "get",
+  path: "/vendors/coverage",
+  tags,
+  summary:
+    "For each vendor: the zone admins, the delivery partners serving its zone, and free riders",
+  responses: {
+    200: {
+      description: "Vendor coverage",
+      content: {
+        "application/json": {
+          schema: z.object({
+            items: z.array(
+              z.object({
+                vendorId: z.string(),
+                vendorName: z.string(),
+                business: z.enum(["food", "mart"]),
+                zone: z.string(),
+                admins: z.array(z.string()),
+                partners: z.array(z.string()),
+                freeRiders: z.number().int(),
+              }),
+            ),
+          }),
+        },
+      },
+    },
+    ...errors(401, 403),
+  },
+})

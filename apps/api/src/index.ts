@@ -7,6 +7,7 @@ import { attachRealtime, closeRealtime } from "./lib/realtime"
 import { redis } from "./lib/redis"
 import { runAlertChecks } from "./modules/alerts/alerts"
 import { sendWeeklyDigest } from "./modules/digest/digest"
+import { assignReadyOrders } from "./modules/orders/orders.service"
 import { relayOutbox } from "./modules/notifications/notifications"
 import { sweepStale } from "./modules/tracking/tracking.service"
 
@@ -34,6 +35,12 @@ const alerts = setInterval(() => {
 }, 60_000)
 alerts.unref()
 
+// Ready orders with no rider get the best free rider in their zone.
+const riderSweep = setInterval(() => {
+  assignReadyOrders().catch((e: unknown) => console.error("Rider assignment sweep failed", e))
+}, 60_000)
+riderSweep.unref()
+
 // Super Admins get a digest on Monday mornings (sent once per week).
 const digest = setInterval(() => {
   sendWeeklyDigest().catch((e: unknown) => console.error("Weekly digest failed", e))
@@ -45,6 +52,7 @@ async function shutdown() {
   clearInterval(relay)
   clearInterval(alerts)
   clearInterval(digest)
+  clearInterval(riderSweep)
   await closeRealtime()
   server.close()
   await Promise.allSettled([prisma.$disconnect(), redis.quit()])

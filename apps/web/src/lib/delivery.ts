@@ -221,3 +221,16 @@ export const getFleetBoyHistory = (credential: string, id: string) =>
     params: { id },
     headers: { "x-partner-credential": credential },
   })
+
+/** Super Admin adds a delivery boy to an existing active partner. */
+export const useAddDeliveryBoy = () => {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (input: { fleetId: string; body: DeliveryBoyApplicationRequest }) =>
+      api("post", "/delivery/fleets/{id}/boys", {
+        params: { id: input.fleetId },
+        body: input.body,
+      }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["delivery", "boys"] }),
+  })
+}

@@ -19002,6 +19002,535 @@
         }
       }
     },
+    "/delivery/fleets/{id}/boys": {
+      "post": {
+        "tags": [
+          "Delivery management"
+        ],
+        "summary": "Super Admin adds a delivery boy to an existing active partner, in one of its zones",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 120
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "dateOfBirth": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "gender": {
+                    "type": "string",
+                    "enum": [
+                      "Female",
+                      "Male",
+                      "Non-binary",
+                      "Prefer not to say"
+                    ]
+                  },
+                  "address": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 500
+                  },
+                  "pinCode": {
+                    "type": "string",
+                    "pattern": "^\\d{6}$"
+                  },
+                  "zoneId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "drivingLicence": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "licenceValidUntil": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "vehicleType": {
+                    "type": "string",
+                    "enum": [
+                      "motorcycle",
+                      "scooter",
+                      "e_bike",
+                      "bicycle"
+                    ]
+                  },
+                  "vehicleNumber": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{2}\\s?\\d{1,2}\\s?[A-Z]{0,3}\\s?\\d{4}$"
+                  },
+                  "vehicleModel": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "payout": {
+                    "type": "object",
+                    "properties": {
+                      "holderName": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 120
+                      },
+                      "bankName": {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      "accountNumber": {
+                        "type": "string",
+                        "pattern": "^\\d{9,18}$"
+                      },
+                      "ifsc": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{4}0[A-Z0-9]{6}$"
+                      }
+                    },
+                    "required": [
+                      "holderName",
+                      "accountNumber",
+                      "ifsc"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "phone",
+                  "address",
+                  "zoneId",
+                  "vehicleType",
+                  "vehicleNumber"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "fleetId": {
+                      "type": "string"
+                    },
+                    "fleetName": {
+                      "type": "string"
+                    },
+                    "zoneId": {
+                      "type": "string"
+                    },
+                    "zoneName": {
+                      "type": "string"
+                    },
+                    "districtId": {
+                      "type": "string"
+                    },
+                    "district": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "phone": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "email"
+                    },
+                    "address": {
+                      "type": "string"
+                    },
+                    "dateOfBirth": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date"
+                    },
+                    "gender": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "pinCode": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "drivingLicence": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "licenceValidUntil": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date"
+                    },
+                    "vehicleType": {
+                      "type": "string",
+                      "enum": [
+                        "motorcycle",
+                        "scooter",
+                        "e_bike",
+                        "bicycle"
+                      ]
+                    },
+                    "vehicleNumber": {
+                      "type": "string"
+                    },
+                    "vehicleModel": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "payout": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "holderName": {
+                          "type": "string"
+                        },
+                        "bankName": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "last4": {
+                          "type": "string"
+                        },
+                        "ifsc": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "holderName",
+                        "bankName",
+                        "last4",
+                        "ifsc"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending_admin",
+                        "pending_super",
+                        "corrections_requested",
+                        "rejected",
+                        "active",
+                        "suspended"
+                      ]
+                    },
+                    "availability": {
+                      "type": "string",
+                      "enum": [
+                        "available",
+                        "on_delivery",
+                        "offline",
+                        "suspended"
+                      ]
+                    },
+                    "maxActiveOrders": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    },
+                    "version": {
+                      "type": "integer"
+                    },
+                    "reviewAdminId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "reviewAdminName": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "documents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "photo_id",
+                              "driving_licence",
+                              "vehicle_registration",
+                              "profile_photo",
+                              "insurance"
+                            ]
+                          },
+                          "fileName": {
+                            "type": "string"
+                          },
+                          "contentType": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "sizeBytes": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          },
+                          "uploadedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "verified": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "kind",
+                          "fileName",
+                          "contentType",
+                          "sizeBytes",
+                          "uploadedAt",
+                          "verified"
+                        ]
+                      }
+                    },
+                    "reviews": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "actorId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "fleetId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "actorName": {
+                            "type": "string"
+                          },
+                          "actorRole": {
+                            "type": "string"
+                          },
+                          "decision": {
+                            "type": "string",
+                            "enum": [
+                              "submitted",
+                              "corrections_resubmitted",
+                              "forwarded",
+                              "corrections_requested",
+                              "rejected",
+                              "approved",
+                              "suspended",
+                              "reactivated"
+                            ]
+                          },
+                          "from": {
+                            "type": "string",
+                            "enum": [
+                              "pending_admin",
+                              "pending_super",
+                              "corrections_requested",
+                              "rejected",
+                              "active",
+                              "suspended"
+                            ]
+                          },
+                          "to": {
+                            "type": "string",
+                            "enum": [
+                              "pending_admin",
+                              "pending_super",
+                              "corrections_requested",
+                              "rejected",
+                              "active",
+                              "suspended"
+                            ]
+                          },
+                          "reason": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "actorId",
+                          "fleetId",
+                          "actorName",
+                          "actorRole",
+                          "decision",
+                          "from",
+                          "to",
+                          "reason",
+                          "at"
+                        ]
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "code",
+                    "fleetId",
+                    "fleetName",
+                    "zoneId",
+                    "zoneName",
+                    "districtId",
+                    "district",
+                    "name",
+                    "phone",
+                    "email",
+                    "address",
+                    "dateOfBirth",
+                    "gender",
+                    "pinCode",
+                    "drivingLicence",
+                    "licenceValidUntil",
+                    "vehicleType",
+                    "vehicleNumber",
+                    "vehicleModel",
+                    "payout",
+                    "status",
+                    "availability",
+                    "maxActiveOrders",
+                    "version",
+                    "reviewAdminId",
+                    "reviewAdminName",
+                    "documents",
+                    "reviews",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Changed by someone else; reload and retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/orders": {
       "get": {
         "tags": [
@@ -23193,6 +23722,99 @@
                   },
                   "required": [
                     "windowDays",
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vendors/coverage": {
+      "get": {
+        "tags": [
+          "Vendors"
+        ],
+        "summary": "For each vendor: the zone admins, the delivery partners serving its zone, and free riders",
+        "responses": {
+          "200": {
+            "description": "Vendor coverage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "vendorId": {
+                            "type": "string"
+                          },
+                          "vendorName": {
+                            "type": "string"
+                          },
+                          "business": {
+                            "type": "string",
+                            "enum": [
+                              "food",
+                              "mart"
+                            ]
+                          },
+                          "zone": {
+                            "type": "string"
+                          },
+                          "admins": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "partners": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "freeRiders": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "vendorId",
+                          "vendorName",
+                          "business",
+                          "zone",
+                          "admins",
+                          "partners",
+                          "freeRiders"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
                     "items"
                   ]
                 }

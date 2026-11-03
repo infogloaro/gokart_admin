@@ -316,6 +316,9 @@ export async function changeStatus(
   if (input.to === "cancelled" && !input.reason)
     throw badRequest("Give a reason for cancelling.", { reason: ["Required"] })
   const updated = await repo.changeStatus(o, input.version, input.to, actor, input.reason)
+  // A ready order goes to the best free rider in its zone straight away.
+  if (input.to === "ready" && !updated.deliveryBoyId)
+    await autoAssignReadyOrder(id).catch(() => null)
   // The partner's availability follows the orders they carry.
   if (updated.partnerId) await refreshAvailability(updated.partnerId)
   return toDto(updated)
@@ -327,4 +330,52 @@ export async function autoAssignBoy(id: string, scope: Scope, member: MemberCont
   const [top] = await suggestRiders(id, member)
   if (!top) throw conflict("No available rider in this zone right now.")
   return assignBoy(id, scope, { boyId: top.id, version: o.version }, actor)
+}
+
+/** Stands in for a person when the server assigns riders by itself. Sees every zone and business. */
+const SYSTEM_MEMBER: MemberContext = {
+  id: "system",
+  name: "System",
+  email: "",
+  role: "super_admin",
+  businesses: ["food", "mart"],
+  zoneIds: [],
+  permissions: [],
+}
+
+/**
+ * Gives a ready order to the best rider in its zone, if one is free. Returns the order when it was
+ * assigned, or null when nobody is free yet (the sweep tries again).
+ */
+export async function autoAssignReadyOrder(id: string) {
+  const current = await prisma.order.findUnique({
+    where: { id },
+    select: { version: true, status: true, deliveryBoyId: true },
+  })
+  if (!current || current.status !== "ready" || current.deliveryBoyId) return null
+  const [top] = await suggestRiders(id, SYSTEM_MEMBER)
+  if (!top) return null
+  return assignBoy(
+    id,
+    { businesses: ["food", "mart"], zoneIds: null },
+    { boyId: top.id, version: current.version },
+    { id: null, name: "System", role: null, source: "system" },
+  )
+}
+
+/** Ready orders with no rider, oldest first. Run on an interval so nothing waits unassigned. */
+export async function assignReadyOrders() {
+  const orders = await prisma.order.findMany({
+    where: {
+      status: "ready",
+      deliveryBoyId: null,
+      placedAt: { gte: new Date(Date.now() - 6 * 60 * 60 * 1000) },
+    },
+    select: { id: true },
+    orderBy: { placedAt: "asc" },
+    take: 50,
+  })
+  let assigned = 0
+  for (const order of orders) if (await autoAssignReadyOrder(order.id).catch(() => null)) assigned++
+  return assigned
 }

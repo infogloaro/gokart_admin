@@ -3,6 +3,7 @@
 import { ApiError } from "@zoauro/api-client"
 import {
   DELIVERY_BOYS_PER_PARTNER,
+  DeliveryBoyApplicationRequest,
   GENDERS,
   businessName,
   DeliveryBoyDocumentKind,
@@ -17,9 +18,19 @@ import {
   type VehicleType,
   vehicleLabel,
 } from "@zoauro/shared"
-import { AlertTriangle, Copy, History, Plus, RotateCw, Search, ShieldCheck } from "lucide-react"
+import {
+  AlertTriangle,
+  Copy,
+  History,
+  Plus,
+  RotateCw,
+  Search,
+  ShieldCheck,
+  UserPlus,
+} from "lucide-react"
 import { useMemo, useState } from "react"
 import {
+  useAddDeliveryBoy,
   useAssignFleetZone,
   useCreateDeliveryFleet,
   useDeliveryBoys,
@@ -114,6 +125,7 @@ function FleetPartners() {
     decision: "approved" | "rejected"
   } | null>(null)
   const [historyOf, setHistoryOf] = useState<DeliveryFleet | null>(null)
+  const [addingRiderTo, setAddingRiderTo] = useState<DeliveryFleet | null>(null)
   const [dialogError, setDialogError] = useState("")
   const list = useDeliveryFleets({
     business: business || undefined,
@@ -339,6 +351,9 @@ function FleetPartners() {
                         {fleet.status === "active" || fleet.status === "suspended" ? (
                           <>
                             <Button onClick={() => setAssigning(fleet)}>Manage zones</Button>
+                            <Button icon={UserPlus} onClick={() => setAddingRiderTo(fleet)}>
+                              Add delivery boy
+                            </Button>
                             <Button onClick={() => setEditingFleet(fleet)}>Edit profile</Button>
                             <Button onClick={() => setStatusChange(fleet)}>
                               {fleet.status === "active" ? "Suspend" : "Reactivate"}
@@ -517,6 +532,16 @@ function FleetPartners() {
           }
         />
       )}
+      {addingRiderTo && (
+        <AddRiderDialog
+          fleet={addingRiderTo}
+          close={() => setAddingRiderTo(null)}
+          onAdded={(name) => {
+            setAddingRiderTo(null)
+            setFlash(`${name} was added. Admin review comes next.`)
+          }}
+        />
+      )}
       {historyOf && (
         <Modal
           title="Partner history"
@@ -536,6 +561,111 @@ function FleetPartners() {
         />
       )}
     </>
+  )
+}
+
+/** Super Admin adds one delivery boy to a partner, in one of the partner's zones. Admin review follows. */
+function AddRiderDialog({
+  fleet,
+  close,
+  onAdded,
+}: {
+  fleet: DeliveryFleet
+  close: () => void
+  onAdded: (name: string) => void
+}) {
+  const add = useAddDeliveryBoy()
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    address: "",
+    zoneId: fleet.zones[0]?.id ?? "",
+    vehicleType: "scooter" as VehicleType,
+    vehicleNumber: "",
+  })
+  const [error, setError] = useState("")
+  const submit = async () => {
+    setError("")
+    const parsed = DeliveryBoyApplicationRequest.safeParse({
+      ...form,
+      email: form.email || undefined,
+    })
+    if (!parsed.success)
+      return setError(parsed.error.issues[0]?.message ?? "Check the delivery boy details.")
+    try {
+      const boy = await add.mutateAsync({ fleetId: fleet.id, body: parsed.data })
+      onAdded(boy.name)
+    } catch (cause) {
+      setError(errorText(cause))
+    }
+  }
+  return (
+    <Modal title="Add delivery boy" subtitle={`${fleet.name} · ${fleet.code}`} close={close} wide>
+      <div className="modal-body">
+        <div className="form-grid">
+          <Input
+            label="Full name *"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+          />
+          <Input
+            label="Mobile *"
+            value={form.phone}
+            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+          />
+          <Input
+            label="Email"
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+          />
+          <Input
+            label="Address *"
+            value={form.address}
+            onChange={(e) => setForm({ ...form, address: e.target.value })}
+          />
+          <Select
+            label="Zone *"
+            value={form.zoneId}
+            onChange={(zoneId) => setForm({ ...form, zoneId })}
+          >
+            {fleet.zones.map((zone) => (
+              <option key={zone.id} value={zone.id}>
+                {zone.name}
+              </option>
+            ))}
+          </Select>
+          <Select
+            label="Vehicle *"
+            value={form.vehicleType}
+            onChange={(value) => setForm({ ...form, vehicleType: value as VehicleType })}
+          >
+            {VEHICLE_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {vehicleLabel[type]}
+              </option>
+            ))}
+          </Select>
+          <Input
+            label="Vehicle number *"
+            value={form.vehicleNumber}
+            onChange={(e) => setForm({ ...form, vehicleNumber: e.target.value })}
+          />
+        </div>
+        <p>
+          The delivery boy is sent to the zone Admin for review. Documents are uploaded from the
+          partner portal or the review screen.
+        </p>
+        {error && <ErrorBox icon={AlertTriangle}>{error}</ErrorBox>}
+        <footer>
+          <Button onClick={close}>Cancel</Button>
+          <Button primary disabled={add.isPending} onClick={() => void submit()}>
+            {add.isPending ? "Adding…" : "Add delivery boy"}
+          </Button>
+        </footer>
+      </div>
+    </Modal>
   )
 }
 

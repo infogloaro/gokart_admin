@@ -3,12 +3,14 @@ import express, { Router } from "express"
 import { requireAuth, requirePermission } from "../../middleware/auth"
 import * as c from "./vendors.controller"
 import { scorecards } from "./scorecard"
+import { coverage } from "./coverage"
 
 export const vendorRoutes = Router()
   .use(requireAuth)
   .get("/", requirePermission("vendors.view"), c.list)
   .get("/summary", requirePermission("vendors.view"), c.summary)
   .get("/scorecards", requirePermission("vendors.view"), scorecards)
+  .get("/coverage", requirePermission("vendors.view"), coverage)
   .get("/:id", requirePermission("vendors.view"), c.get)
   .post("/", requirePermission("vendors.manage"), c.create)
   // Editing a live vendor is a Super Admin action, like decisions.

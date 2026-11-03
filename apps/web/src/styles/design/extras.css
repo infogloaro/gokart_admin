@@ -893,3 +893,18 @@
   .super-ui.partner-portal .capacity { padding: .75rem; }
   .super-ui.partner-portal form .btn { width: 100%; }
 }
+
+/* Vendor coverage (who serves each vendor) and the super admin add-rider dialog. */
+.super-ui .vendor-coverage, .admin-ui .vendor-coverage { background: #fff; border: 1px solid var(--border, #e2e8f0); border-radius: var(--r, .8rem); padding: 1rem 1.1rem; margin: 0 0 1rem; box-shadow: 0 1px 2px #0f172a0a; }
+.super-ui .vendor-coverage h3, .admin-ui .vendor-coverage h3 { display: flex; align-items: center; gap: .4rem; margin: 0; font-size: .85rem; font-weight: 750; color: var(--navy, #08224b); }
+.super-ui .vendor-coverage header p, .admin-ui .vendor-coverage header p { margin: .2rem 0 .6rem; font-size: .74rem; color: var(--muted, #64748b); }
+.super-ui .vc-table-wrap, .admin-ui .vc-table-wrap { overflow-x: auto; }
+.super-ui .vc-table, .admin-ui .vc-table { width: 100%; border-collapse: collapse; font-size: .76rem; }
+.super-ui .vc-table th, .admin-ui .vc-table th { text-align: left; font-size: .64rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted, #64748b); padding: .45rem .5rem; border-bottom: 1px solid var(--border, #e2e8f0); }
+.super-ui .vc-table td, .admin-ui .vc-table td { padding: .5rem; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+.super-ui .vc-table td small, .admin-ui .vc-table td small { display: block; color: var(--muted, #64748b); font-size: .66rem; }
+.super-ui .vc-table tr.gap td, .admin-ui .vc-table tr.gap td { background: #fff7ed; }
+.super-ui .vc-none, .admin-ui .vc-none { color: #b45309; font-style: italic; }
+.super-ui .vc-riders, .admin-ui .vc-riders { display: inline-flex; align-items: center; gap: .25rem; font-weight: 700; color: var(--navy, #08224b); }
+.super-ui .vc-empty, .admin-ui .vc-empty, .super-ui .vc-error, .admin-ui .vc-error { font-size: .76rem; color: var(--muted, #64748b); margin: 0; }
+.super-ui .vc-error, .admin-ui .vc-error { color: #b91c1c; }

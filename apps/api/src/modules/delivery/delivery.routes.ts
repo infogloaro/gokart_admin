@@ -42,6 +42,13 @@ export const deliveryRoutes = Router()
     (req, res) => c.createFleet(req, res, issueCredential),
   )
   .post(
+    "/fleets/:id/boys",
+    requireAuth,
+    requirePermission("partners.manage"),
+    requireSuperAdmin,
+    c.addBoy,
+  )
+  .post(
     "/fleet-requests",
     requireAuth,
     requirePermission("partners.manage"),

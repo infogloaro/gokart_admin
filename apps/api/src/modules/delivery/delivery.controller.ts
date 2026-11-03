@@ -2,6 +2,7 @@ import {
   AssignFleetZoneRequest,
   CreateDeliveryFleetRequest,
   DeliveryBoyAssignmentRequest,
+  DeliveryBoyApplicationRequest,
   DeliveryBoyCorrectionRequest,
   DeliveryBoyDocumentVerifyRequest,
   DeliveryBoyListQuery,
@@ -206,4 +207,9 @@ function requiredFleetId(req: Request) {
 async function fleetActor(req: Request) {
   const fleetId = requiredFleetId(req)
   return service.fleetActor(fleetId)
+}
+
+export async function addBoy(req: Request<{ id: string }>, res: Response) {
+  const body = parse(DeliveryBoyApplicationRequest, req.body)
+  res.status(201).json(await service.addBoyToFleet(req.params.id, body, actorOf(req)))
 }

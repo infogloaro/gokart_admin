@@ -1,6 +1,7 @@
 import {
   AssignFleetZoneRequest,
   CreateDeliveryFleetRequest,
+  DeliveryBoyApplicationRequest,
   DeliveryBoyAssignmentRequest,
   DeliveryBoy,
   DeliveryBoyCorrectionRequest,
@@ -329,4 +330,13 @@ registry.registerPath({
     body: { content: binary, required: true },
   },
   responses: { 201: json(StoredBoyDocument), ...errors(400, 401, 403, 404, 409) },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/delivery/fleets/{id}/boys",
+  tags,
+  summary: "Super Admin adds a delivery boy to an existing active partner, in one of its zones",
+  request: { params: id, body: json(DeliveryBoyApplicationRequest) },
+  responses: { 201: json(DeliveryBoy), ...errors(400, 401, 403, 404, 409) },
 })

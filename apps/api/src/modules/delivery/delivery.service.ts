@@ -1907,3 +1907,75 @@ export async function fleetActor(fleetId: string): Promise<Actor> {
     source: "api",
   }
 }
+
+/** Super Admin adds a delivery boy to an existing partner, in one of the partner's zones. */
+export async function addBoyToFleet(
+  fleetId: string,
+  input: DeliveryBoyApplicationInput,
+  actor: Actor,
+) {
+  try {
+    const boy = await prisma.$transaction(async (tx) => {
+      const fleet = await tx.deliveryFleet.findUnique({ where: { id: fleetId } })
+      if (!fleet || fleet.status !== "active")
+        throw conflict("Only an active delivery partner can take new delivery boys.")
+      const zone = await tx.zone.findFirst({
+        where: {
+          id: input.zoneId,
+          active: true,
+          districtId: fleet.districtId,
+          fleetAssignments: { some: { fleetId, endedAt: null } },
+        },
+        select: { id: true },
+      })
+      if (!zone) throw badRequest("Choose a zone this partner is assigned to.")
+      const riders = await tx.deliveryBoy.count({ where: { fleetId, status: { not: "rejected" } } })
+      if (riders >= DELIVERY_BOYS_PER_PARTNER.max)
+        throw conflict(
+          `This delivery partner already has ${DELIVERY_BOYS_PER_PARTNER.max} delivery boys, the maximum.`,
+        )
+      const admins = await assignedReviewAdmins(tx, input.zoneId)
+      if (!admins.length) throw conflict("No active Admin is assigned to this zone.")
+      const created = await tx.deliveryBoy.create({
+        data: {
+          ...deliveryBoyData(input),
+          fleetId,
+          reviewAdminId: admins[0]!.id,
+          code: `DB-${randomBytes(5).toString("hex").toUpperCase()}`,
+        },
+      })
+      await tx.deliveryBoyReview.create({
+        data: {
+          boyId: created.id,
+          fleetId,
+          actorId: actor.id,
+          actorName: actor.name,
+          actorRole: actor.role ?? "super_admin",
+          decision: "submitted",
+          from: "pending_admin",
+          to: "pending_admin",
+        },
+      })
+      await audit(
+        tx,
+        actor,
+        "delivery_boy.submitted",
+        { type: "delivery_boy", id: created.id },
+        {
+          code: created.code,
+          fleetId,
+          zoneId: created.zoneId,
+          reviewAdminId: admins[0]!.id,
+          via: "super_admin",
+        },
+      )
+      await recordHistory(tx, { boyId: created.id, fleetId }, { action: "boy.submitted", actor })
+      return tx.deliveryBoy.findUniqueOrThrow({ where: { id: created.id }, include: boyInclude })
+    })
+    return boyDto(boy)
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002")
+      throw conflict("A delivery boy with this phone number already exists.")
+    throw error
+  }
+}

@@ -8382,6 +8382,189 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/delivery/fleets/{id}/boys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Super Admin adds a delivery boy to an existing active partner, in one of its zones */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        name: string;
+                        phone: string;
+                        /** Format: email */
+                        email?: string;
+                        /** Format: date */
+                        dateOfBirth?: string;
+                        /** @enum {string} */
+                        gender?: "Female" | "Male" | "Non-binary" | "Prefer not to say";
+                        address: string;
+                        pinCode?: string;
+                        zoneId: string;
+                        drivingLicence?: string;
+                        /** Format: date */
+                        licenceValidUntil?: string;
+                        /** @enum {string} */
+                        vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
+                        vehicleNumber: string;
+                        vehicleModel?: string;
+                        payout?: {
+                            holderName: string;
+                            bankName?: string;
+                            accountNumber: string;
+                            ifsc: string;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            code: string;
+                            fleetId: string;
+                            fleetName: string;
+                            zoneId: string;
+                            zoneName: string;
+                            districtId: string;
+                            district: string;
+                            name: string;
+                            phone: string;
+                            /** Format: email */
+                            email: string | null;
+                            address: string;
+                            /** Format: date */
+                            dateOfBirth: string | null;
+                            gender: string | null;
+                            pinCode: string | null;
+                            drivingLicence: string | null;
+                            /** Format: date */
+                            licenceValidUntil: string | null;
+                            /** @enum {string} */
+                            vehicleType: "motorcycle" | "scooter" | "e_bike" | "bicycle";
+                            vehicleNumber: string;
+                            vehicleModel: string | null;
+                            payout: {
+                                holderName: string;
+                                bankName: string | null;
+                                last4: string;
+                                ifsc: string;
+                            } | null;
+                            /** @enum {string} */
+                            status: "pending_admin" | "pending_super" | "corrections_requested" | "rejected" | "active" | "suspended";
+                            /** @enum {string} */
+                            availability: "available" | "on_delivery" | "offline" | "suspended";
+                            maxActiveOrders: number;
+                            version: number;
+                            reviewAdminId: string | null;
+                            reviewAdminName: string | null;
+                            documents: {
+                                id: string;
+                                /** @enum {string} */
+                                kind: "photo_id" | "driving_licence" | "vehicle_registration" | "profile_photo" | "insurance";
+                                fileName: string;
+                                contentType: string | null;
+                                sizeBytes: number | null;
+                                /** Format: date-time */
+                                uploadedAt: string;
+                                verified: boolean;
+                            }[];
+                            reviews: {
+                                id: string;
+                                actorId: string | null;
+                                fleetId: string | null;
+                                actorName: string;
+                                actorRole: string;
+                                /** @enum {string} */
+                                decision: "submitted" | "corrections_resubmitted" | "forwarded" | "corrections_requested" | "rejected" | "approved" | "suspended" | "reactivated";
+                                /** @enum {string} */
+                                from: "pending_admin" | "pending_super" | "corrections_requested" | "rejected" | "active" | "suspended";
+                                /** @enum {string} */
+                                to: "pending_admin" | "pending_super" | "corrections_requested" | "rejected" | "active" | "suspended";
+                                reason: string | null;
+                                /** Format: date-time */
+                                at: string;
+                            }[];
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Changed by someone else; reload and retry */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/orders": {
         parameters: {
             query?: never;
@@ -11343,6 +11526,71 @@ export interface paths {
                                 complaints: number;
                                 needsAttention: boolean;
                                 reasons: string[];
+                            }[];
+                        };
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vendors/coverage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** For each vendor: the zone admins, the delivery partners serving its zone, and free riders */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Vendor coverage */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: {
+                                vendorId: string;
+                                vendorName: string;
+                                /** @enum {string} */
+                                business: "food" | "mart";
+                                zone: string;
+                                admins: string[];
+                                partners: string[];
+                                freeRiders: number;
                             }[];
                         };
                     };

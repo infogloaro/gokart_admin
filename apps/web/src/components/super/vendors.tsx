@@ -4,6 +4,7 @@
 // row's ••• button (edit details, approve / reject, suspend / reactivate); and the
 // add-vendor wizard.
 import { VendorScorecards } from "@/components/vendor-scorecards"
+import { VendorCoverage } from "@/components/vendor-coverage"
 import { ApiError } from "@zoauro/api-client"
 import {
   businessName,
@@ -186,6 +187,7 @@ function VendorsScreen({ initialSearch }: { initialSearch: string }) {
           Refresh data
         </Button>
       </HeadActions>
+      <VendorCoverage />
       <VendorScorecards />
       <div className="summary">
         <div>
