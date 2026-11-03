@@ -2,6 +2,7 @@
 // owns zones, so a filter resolves to the zone ids inside it.
 import { z } from "zod"
 import { prisma } from "../lib/prisma"
+import { INDIA_GEOGRAPHY } from "./geography-catalog"
 
 export const GeoQuery = z
   .object({
@@ -26,14 +27,31 @@ export async function geoZoneIds(geo: Geo, allowed: string[] | null): Promise<st
   return zones.map((z) => z.id)
 }
 
-/** States and districts that have zones the member can see. */
+/** Union of two lists, so states and districts in the data but not in the catalog still appear. */
+export function mergeGeography(base: GeographyState[], extra: GeographyState[]): GeographyState[] {
+  const byState = new Map<string, Set<string>>()
+  for (const item of [...base, ...extra]) {
+    const districts = byState.get(item.state) ?? new Set<string>()
+    for (const district of item.districts) districts.add(district)
+    byState.set(item.state, districts)
+  }
+  return [...byState]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([state, districts]) => ({ state, districts: [...districts].sort() }))
+}
+
+/**
+ * Every state and union territory of India with its districts for Super Admins, plus any
+ * district set up here. An Admin only sees the states and districts of their own zones.
+ */
 export async function geographyOptions(allowed: string[] | null): Promise<GeographyState[]> {
   const districts = await prisma.district.findMany({
     where: { active: true, zones: { some: allowed ? { id: { in: allowed } } : {} } },
     select: { state: true, name: true },
-    orderBy: [{ state: "asc" }, { name: "asc" }],
   })
-  const byState = new Map<string, string[]>()
-  for (const d of districts) byState.set(d.state, [...(byState.get(d.state) ?? []), d.name])
-  return [...byState].map(([state, names]) => ({ state, districts: names }))
+  const own = mergeGeography(
+    [],
+    districts.map((d) => ({ state: d.state, districts: [d.name] })),
+  )
+  return allowed ? own : mergeGeography(INDIA_GEOGRAPHY, own)
 }

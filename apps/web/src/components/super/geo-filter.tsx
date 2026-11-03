@@ -8,7 +8,10 @@ export function GeoFilter({ value, onChange }: { value: Geo; onChange: (next: Ge
   const states = useGeography().data ?? []
   const districts = states.find((s) => s.state === value.state)?.districts ?? []
   return (
-    <div className="geo-filter">
+    <div
+      className="geo-filter"
+      style={{ display: "flex", flexDirection: "row", gap: ".5rem", alignItems: "flex-end" }}
+    >
       <Select
         label="State"
         value={value.state ?? ""}
