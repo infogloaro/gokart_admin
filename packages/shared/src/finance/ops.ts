@@ -106,6 +106,13 @@ export type FinanceOverview = z.infer<typeof FinanceOverview>
 
 export const CycleQuery = z.object({ cycle: Cycle.optional() })
 
+/** State / District filter shared by Finance and Reports; a district needs its state. */
+export const GeoFields = z.object({
+  state: z.string().trim().min(1).optional(),
+  district: z.string().trim().min(1).optional(),
+})
+export const OverviewQuery = CycleQuery.extend(GeoFields.shape)
+
 export const PlanVersionInfo = z.object({
   from: z.iso.date(),
   plan: z.union([PartnerPlan, AdminPlan]),
@@ -138,6 +145,7 @@ export const PayoutListQuery = z.object({
   cycle: Cycle.optional(),
   accountType: AccountType.optional(),
   status: PayoutDisplayStatus.optional(),
+  ...GeoFields.shape,
 })
 
 const version = z.number().int()
@@ -306,7 +314,10 @@ export type LedgerEntry = z.infer<typeof LedgerEntry>
 
 // ---------- reports & analytics ----------
 
-export const AnalyticsQuery = z.object({ period: ReportPeriod.default("monthly") })
+export const AnalyticsQuery = z.object({
+  period: ReportPeriod.default("monthly"),
+  ...GeoFields.shape,
+})
 export const Analytics = z.object({
   period: ReportPeriod,
   metrics: z.object({

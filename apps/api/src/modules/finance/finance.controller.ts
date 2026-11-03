@@ -17,6 +17,7 @@ import type { Request, Response } from "express"
 import { cycleOf } from "./rules"
 import { parse } from "../../lib/errors"
 import { actorOf, currentMember } from "../../middleware/auth"
+import { GeoQuery, geoZoneIds } from "../geography"
 import * as service from "./finance.service"
 
 type Id = Request<{ id: string }>
@@ -24,8 +25,11 @@ const cycleFrom = (req: Request) => parse(CycleQuery, req.query).cycle ?? cycleO
 
 export const cycles = (_req: Request, res: Response) => void res.json(service.cycles())
 
+/** Zones inside the State / District filter, or null when no filter is set. */
+const geoOf = (req: Request) => geoZoneIds(parse(GeoQuery, req.query), null)
+
 export async function overview(req: Request, res: Response) {
-  res.json(await service.overview(cycleFrom(req)))
+  res.json(await service.overview(cycleFrom(req), await geoOf(req)))
 }
 
 export async function account(req: Request<{ type: string; id: string }>, res: Response) {
@@ -35,7 +39,7 @@ export async function account(req: Request<{ type: string; id: string }>, res: R
 }
 
 export async function payouts(req: Request, res: Response) {
-  res.json(await service.listPayouts(parse(PayoutListQuery, req.query)))
+  res.json(await service.listPayouts(parse(PayoutListQuery, req.query), await geoOf(req)))
 }
 
 export async function payout(req: Id, res: Response) {
@@ -126,7 +130,9 @@ export async function movements(_req: Request, res: Response) {
 }
 
 export async function report(req: Request, res: Response) {
-  res.json(await service.report(parse(ReportPeriod, req.query.period ?? "monthly")))
+  res.json(
+    await service.report(parse(ReportPeriod, req.query.period ?? "monthly"), await geoOf(req)),
+  )
 }
 
 export async function auditTrail(_req: Request, res: Response) {
