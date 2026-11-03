@@ -682,3 +682,56 @@
 /* Vendor wizard (components/super/vendors.tsx): the step content scrolls between the fixed
    step bar and the fixed footer, so fields near the bottom (e.g. FSSAI number) stay reachable. */
 .super-ui .modal > .wizard-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+
+/* Operational panels: alerts, zone insights, complaint suggestions, rider assignment,
+   bulk tools, partner requests and change history. Shared by the admin and super admin portals. */
+.super-ui .alerts-panel, .admin-ui .alerts-panel,
+.super-ui .insights-panel, .admin-ui .insights-panel,
+.super-ui .partner-requests, .admin-ui .partner-requests,
+.super-ui .cmp-suggestions, .admin-ui .cmp-suggestions,
+.super-ui .rider-assignment, .admin-ui .rider-assignment {
+  background: #fff; border: 1px solid var(--border, #e2e8f0); border-radius: var(--r, .8rem);
+  box-shadow: var(--shadow, 0 10px 30px rgba(8,34,75,.08)); padding: 1rem 1.1rem; margin: 0 0 1rem;
+}
+.super-ui .alerts-panel h3, .admin-ui .alerts-panel h3,
+.super-ui .insights-panel h3, .admin-ui .insights-panel h3,
+.super-ui .partner-requests h3, .admin-ui .partner-requests h3,
+.super-ui .cmp-suggestions h3, .admin-ui .cmp-suggestions h3,
+.super-ui .rider-assignment h4, .admin-ui .rider-assignment h4 {
+  display: flex; align-items: center; gap: .4rem; margin: 0 0 .6rem;
+  font-size: .85rem; font-weight: 750; color: var(--navy, #08224b);
+}
+.super-ui .alerts-panel svg, .admin-ui .alerts-panel svg,
+.super-ui .insights-panel svg, .admin-ui .insights-panel svg,
+.super-ui .cmp-suggestions svg, .admin-ui .cmp-suggestions svg,
+.super-ui .rider-assignment svg, .admin-ui .rider-assignment svg { width: 16px; height: 16px; flex: none; }
+.super-ui .alerts-panel ul, .admin-ui .alerts-panel ul,
+.super-ui .insights-panel ul, .admin-ui .insights-panel ul,
+.super-ui .partner-requests ul, .admin-ui .partner-requests ul,
+.super-ui .cmp-suggestions ul, .admin-ui .cmp-suggestions ul,
+.super-ui .rider-assignment ul, .admin-ui .rider-assignment ul {
+  list-style: none; margin: 0; padding: 0; display: grid; gap: .45rem;
+}
+.super-ui .alerts-panel li, .admin-ui .alerts-panel li,
+.super-ui .insights-panel li, .admin-ui .insights-panel li,
+.super-ui .cmp-suggestions li, .admin-ui .cmp-suggestions li,
+.super-ui .rider-assignment li, .admin-ui .rider-assignment li {
+  font-size: .78rem; color: #334155; line-height: 1.45;
+}
+.super-ui .alerts-panel a, .admin-ui .alerts-panel a { color: inherit; text-decoration: none; }
+.super-ui .alerts-panel a:hover, .admin-ui .alerts-panel a:hover { text-decoration: underline; }
+.super-ui .rider-assignment li, .admin-ui .rider-assignment li { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.super-ui .partner-request, .admin-ui .partner-request { border-top: 1px solid var(--border, #e2e8f0); padding: .6rem 0; }
+.super-ui .partner-request summary, .admin-ui .partner-request summary {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; cursor: pointer; font-size: .8rem;
+}
+.super-ui .partner-request summary small, .admin-ui .partner-request summary small { color: var(--muted, #64748b); }
+.super-ui .history-list, .admin-ui .history-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; }
+.super-ui .history-item, .admin-ui .history-item { border-left: 3px solid var(--gold, #cb9015); padding: .2rem 0 .2rem .75rem; }
+.super-ui .history-item header, .admin-ui .history-item header { display: grid; gap: .1rem; font-size: .8rem; }
+.super-ui .history-item header small, .admin-ui .history-item header small { color: var(--muted, #64748b); }
+.super-ui .history-reason, .admin-ui .history-reason { margin: .3rem 0; font-size: .76rem; color: #334155; }
+.super-ui .history-changes, .admin-ui .history-changes { margin: 0; padding-left: 1rem; font-size: .72rem; color: #475569; }
+.super-ui .history-changes code, .admin-ui .history-changes code { font-size: .7rem; }
+.super-ui .bulk-products, .admin-ui .bulk-products { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin: .5rem 0; }
+.super-ui .bulk-products ul, .admin-ui .bulk-products ul { margin: .4rem 0 0; padding-left: 1rem; font-size: .75rem; }

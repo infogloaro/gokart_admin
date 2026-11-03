@@ -33,6 +33,8 @@ export function usualCount(counts: number[]) {
 export function judge(today: number, history: number[]) {
   const { mean, sd } = usualCount(history)
   if (today < MIN_ORDERS_TO_FLAG) return { flagged: false, reason: null }
+  // A zone that is usually quiet needs a clearly large day before it is flagged.
+  if (mean < 2 && today < 10) return { flagged: false, reason: null }
   if (today > mean + 2 * sd && today > mean * 1.5)
     return {
       flagged: true,

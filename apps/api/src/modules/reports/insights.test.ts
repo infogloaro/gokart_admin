@@ -19,3 +19,10 @@ describe("zone order insights", () => {
     expect(judge(3, [0, 0, 0, 0]).flagged).toBe(false)
   })
 })
+
+describe("quiet zones", () => {
+  it("does not flag a quiet zone for a small day", () => {
+    expect(judge(9, [0, 0, 1, 0, 0, 0, 0, 0]).flagged).toBe(false)
+    expect(judge(12, [0, 0, 1, 0, 0, 0, 0, 0]).flagged).toBe(true)
+  })
+})
