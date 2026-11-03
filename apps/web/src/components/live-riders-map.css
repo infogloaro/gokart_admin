@@ -1,11 +1,11 @@
 /* Rider map and district headings inside the Riders live panel. */
-.lr-map {
+.gk-map.lr-map {
   height: 320px;
+  min-height: 0;
   margin: 0.75rem 0;
   border: 1px solid var(--border, #e2e8f0);
   border-radius: 0.6rem;
   overflow: hidden;
-  background: #e9efed;
 }
 .lr-districts {
   display: flex;

@@ -1,7 +1,9 @@
 "use client"
-// OpenStreetMap of delivery boys, one dot per rider, coloured by availability. Leaflet
-// needs `window`, so it loads in an effect; the map is re-fitted to the riders shown.
+// OpenStreetMap of delivery boys, drawn with the same rider pin as the partner map: the
+// rider image in a white bubble, a status ring and a pointer tip on the exact location.
+// Leaflet needs `window`, so it loads in an effect; the map is re-fitted to the riders shown.
 import "leaflet/dist/leaflet.css"
+import "./tracking/live-map.css"
 import "./live-riders-map.css"
 import type * as Leaflet from "leaflet"
 import { useEffect, useRef } from "react"
@@ -16,20 +18,21 @@ export type MapRider = {
   lng: number
 }
 
-const COLOURS: Record<string, string> = {
-  available: "#16a34a",
-  on_delivery: "#2563eb",
-  on_break: "#d97706",
-  offline: "#64748b",
-  suspended: "#dc2626",
-}
-
+// Same size as the partner pin, so the tip sits on the location.
+const PIN = { w: 56, h: 68 }
 const CHENNAI: [number, number] = [13.0827, 80.2707]
+
+const escapeHtml = (value: string) =>
+  value.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`)
+
+function pinHtml(rider: MapRider) {
+  return `<span class="gk-rider ${escapeHtml(rider.availability)}"><span class="gk-rider-bubble"><img src="/rider-pin.png" alt="" draggable="false"></span><i class="gk-rider-tip"></i></span>`
+}
 
 export function LiveRidersMap({ riders }: { riders: MapRider[] }) {
   const host = useRef<HTMLDivElement>(null)
   const map = useRef<Leaflet.Map | null>(null)
-  const dots = useRef<Leaflet.LayerGroup | null>(null)
+  const pins = useRef<Leaflet.LayerGroup | null>(null)
   const lib = useRef<typeof Leaflet | null>(null)
   // The map may finish loading after riders change, so it reads the latest list.
   const latest = useRef(riders)
@@ -49,14 +52,14 @@ export function LiveRidersMap({ riders }: { riders: MapRider[] }) {
         maxZoom: 19,
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       }).addTo(map.current)
-      dots.current = L.layerGroup().addTo(map.current)
+      pins.current = L.layerGroup().addTo(map.current)
       draw(latest.current)
     })
     return () => {
       cancelled = true
       map.current?.remove()
       map.current = null
-      dots.current = null
+      pins.current = null
     }
     // Riders are drawn by the effect below; the map itself is only created once.
   }, [])
@@ -67,23 +70,27 @@ export function LiveRidersMap({ riders }: { riders: MapRider[] }) {
 
   function draw(list: MapRider[]) {
     const L = lib.current
-    if (!L || !dots.current || !map.current) return
-    dots.current.clearLayers()
+    if (!L || !pins.current || !map.current) return
+    pins.current.clearLayers()
     for (const rider of list) {
-      L.circleMarker([rider.lat, rider.lng], {
-        radius: 7,
-        color: "#ffffff",
-        weight: 2,
-        fillColor: COLOURS[rider.availability] ?? "#64748b",
-        fillOpacity: 0.95,
+      L.marker([rider.lat, rider.lng], {
+        icon: L.divIcon({
+          html: pinHtml(rider),
+          className: "gk-pin-wrap",
+          iconSize: [PIN.w, PIN.h],
+          iconAnchor: [PIN.w / 2, PIN.h],
+        }),
+        title: rider.name,
       })
-        .bindTooltip(`${rider.name} · ${rider.code}<br />${rider.zoneName}`)
-        .addTo(dots.current)
+        .bindTooltip(
+          `<strong>${escapeHtml(rider.name)}</strong><br />${escapeHtml(rider.code)} · ${escapeHtml(rider.zoneName)}`,
+        )
+        .addTo(pins.current)
     }
     if (list.length === 0) return
     const bounds = L.latLngBounds(list.map((rider) => [rider.lat, rider.lng] as [number, number]))
     map.current.fitBounds(bounds, { padding: [30, 30], maxZoom: 13 })
   }
 
-  return <div ref={host} className="lr-map" role="region" aria-label="Rider locations map" />
+  return <div ref={host} className="gk-map lr-map" role="region" aria-label="Rider locations map" />
 }
