@@ -9,6 +9,8 @@ import {
   RiderProfileChangeRequest,
   RiderShiftQuery,
 } from "@zoauro/shared"
+import { z } from "zod"
+import { acceptOffer, declineOffer, openOffers } from "../rider-ops/offers"
 import { audit, type Actor } from "../../lib/audit"
 import { exportFormat, sendTable } from "../../lib/export"
 import { forbidden, notFound, parse, unauthorized } from "../../lib/errors"
@@ -38,6 +40,10 @@ import {
 } from "./rider-session"
 
 const loginBody = RiderLoginRequest
+
+const fleetIdOf = async (boyId: string) =>
+  (await prisma.deliveryBoy.findUniqueOrThrow({ where: { id: boyId }, select: { fleetId: true } }))
+    .fleetId
 
 async function assertRiderInScope(riderId: string, member: ReturnType<typeof currentMember>) {
   const boy = await prisma.deliveryBoy.findUnique({
@@ -112,6 +118,24 @@ export const riderAppRoutes = Router()
   })
   .get("/intake/rider/shifts", requireRiderSession, async (req, res) => {
     res.json(await myShifts(req.riderBoyId!))
+  })
+  // Rider app: order offers. The same rules as the company routes; the rider signs in with their own session.
+  .get("/intake/rider/offers", requireRiderSession, async (req, res) => {
+    res.json(await openOffers(await fleetIdOf(req.riderBoyId!), req.riderBoyId!))
+  })
+  .post("/intake/rider/offers/:offerId/accept", requireRiderSession, async (req, res) => {
+    await acceptOffer(await fleetIdOf(req.riderBoyId!), req.riderBoyId!, String(req.params.offerId))
+    res.json({ ok: true })
+  })
+  .post("/intake/rider/offers/:offerId/decline", requireRiderSession, async (req, res) => {
+    const body = parse(z.object({ reason: z.string().trim().max(200).optional() }), req.body ?? {})
+    await declineOffer(
+      await fleetIdOf(req.riderBoyId!),
+      req.riderBoyId!,
+      String(req.params.offerId),
+      body.reason,
+    )
+    res.json({ ok: true })
   })
   .get("/intake/rider/verification", requireRiderSession, async (req, res) => {
     res.json(await riderVerification(req.riderBoyId!))

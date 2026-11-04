@@ -80,6 +80,34 @@ registry.registerPath({
 })
 registry.registerPath({
   method: "get",
+  path: "/delivery/intake/rider/offers",
+  tags,
+  summary: "Open order offers for the signed-in rider",
+  request: riderSession,
+  responses: { 200: json(z.array(z.object({}).passthrough())), ...errors(401) },
+})
+registry.registerPath({
+  method: "post",
+  path: "/delivery/intake/rider/offers/{offerId}/accept",
+  tags,
+  summary: "Accept an order offer; the order is assigned to the rider",
+  request: { ...riderSession, params: z.object({ offerId: z.string() }) },
+  responses: { 200: json(z.object({ ok: z.boolean() })), ...errors(400, 401, 404) },
+})
+registry.registerPath({
+  method: "post",
+  path: "/delivery/intake/rider/offers/{offerId}/decline",
+  tags,
+  summary: "Decline an order offer, with an optional reason",
+  request: {
+    ...riderSession,
+    params: z.object({ offerId: z.string() }),
+    body: json(z.object({ reason: z.string().max(200).optional() })),
+  },
+  responses: { 200: json(z.object({ ok: z.boolean() })), ...errors(400, 401, 404) },
+})
+registry.registerPath({
+  method: "get",
   path: "/delivery/intake/rider/verification",
   tags,
   summary: "Verification status: documents uploaded, missing documents and the latest review",

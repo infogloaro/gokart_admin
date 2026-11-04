@@ -2,8 +2,9 @@
 
 import { ApiError } from "@zoauro/api-client"
 import type { Order } from "@zoauro/shared"
-import { Bike, Wand2 } from "lucide-react"
+import { Bike, KeyRound, Wand2 } from "lucide-react"
 import { useState } from "react"
+import { useResendCode } from "@/lib/rider-ops"
 import { useAssignRider, useRiderSuggestions } from "@/lib/orders"
 import { AdminButton } from "./ui"
 
@@ -11,7 +12,9 @@ import { AdminButton } from "./ui"
 export function RiderAssignment({ order }: { order: Order }) {
   const suggestions = useRiderSuggestions(order.id)
   const assign = useAssignRider()
+  const resend = useResendCode()
   const [error, setError] = useState("")
+  const [sent, setSent] = useState(false)
   const assignable = order.status === "ready" || order.status === "assigned"
 
   const run = async (boyId?: string) => {
@@ -23,15 +26,46 @@ export function RiderAssignment({ order }: { order: Order }) {
     }
   }
 
-  if (order.deliveryBoyName)
+  if (order.deliveryBoyName) {
+    const open = order.status !== "delivered" && order.status !== "cancelled"
     return (
       <section className="rider-assignment">
         <h4>
           <Bike size={16} /> Rider
         </h4>
         <p>{order.deliveryBoyName}</p>
+        {open && (
+          <>
+            <AdminButton
+              kind="secondary"
+              icon={KeyRound}
+              disabled={resend.isPending}
+              onClick={() => {
+                setError("")
+                setSent(false)
+                resend
+                  .mutateAsync(order.id)
+                  .then(() => setSent(true))
+                  .catch((cause) =>
+                    setError(
+                      cause instanceof ApiError ? cause.message : "The code couldn't be sent.",
+                    ),
+                  )
+              }}
+            >
+              Resend delivery code
+            </AdminButton>
+            {sent && <p role="status">A new code was texted to the customer.</p>}
+          </>
+        )}
+        {error && (
+          <p role="alert" className="form-error">
+            {error}
+          </p>
+        )}
       </section>
     )
+  }
 
   return (
     <section className="rider-assignment">
