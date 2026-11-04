@@ -16618,6 +16618,8 @@ export interface components {
                 /** Format: date-time */
                 at: string;
             } | null;
+            fleetId?: string;
+            fleetName?: string;
         };
         Vendor: {
             id: string;

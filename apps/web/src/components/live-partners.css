@@ -46,3 +46,27 @@
   border-top: 1px solid #e2e8f0;
   overflow-x: auto;
 }
+
+/* Live tracking list: delivery partner companies, and the way back to them. */
+.partner-track-list .fleet-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  text-align: left;
+}
+.partner-track-list .fleet-row small {
+  display: block;
+  color: #64748b;
+  margin-top: 0.15rem;
+}
+.partner-track-list .track-back {
+  background: none;
+  border: 0;
+  color: #1d4ed8;
+  padding: 0.25rem 0;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+}

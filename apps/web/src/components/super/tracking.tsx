@@ -49,6 +49,8 @@ export function SuperTracking() {
   const [zoneId, setZoneId] = useState("")
   const [search, setSearch] = useState("")
   const [show, setShow] = useState<Show>("all")
+  // The delivery partner company whose riders are shown; empty means every company.
+  const [fleet, setFleet] = useState("")
   const [selected, setSelected] = useState<string | null>(params.get("partner"))
   const [profile, setProfile] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
@@ -67,7 +69,8 @@ export function SuperTracking() {
     return groups
   }, [zones.data])
   const scoped = useMemo(
-    () => (partners.data ?? []).filter((p) => !zoneId || p.zoneId === zoneId),
+    () =>
+      (partners.data ?? []).filter((p) => p.kind !== "partner" && (!zoneId || p.zoneId === zoneId)),
     [partners.data, zoneId],
   )
   const counts = scoped.reduce(
@@ -91,9 +94,36 @@ export function SuperTracking() {
             p.currentOrder?.code.toLowerCase().includes(q))),
     )
   }, [scoped, show, search, selected])
+  // Delivery partner companies, each with its riders in the current filters.
+  const fleetGroups = useMemo(() => {
+    const groups = new Map<
+      string,
+      { id: string; name: string; riders: number; online: number; onMap: number }
+    >()
+    for (const p of list) {
+      if (!p.fleetId) continue
+      const g = groups.get(p.fleetId) ?? {
+        id: p.fleetId,
+        name: p.fleetName ?? "Delivery partner",
+        riders: 0,
+        online: 0,
+        onMap: 0,
+      }
+      g.riders += 1
+      if (p.availability !== "offline") g.online += 1
+      if (hasValidLocation(p.location)) g.onMap += 1
+      groups.set(p.fleetId, g)
+    }
+    return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name))
+  }, [list])
+  const visible = useMemo(
+    () => (fleet ? list.filter((p) => p.fleetId === fleet) : list),
+    [list, fleet],
+  )
+  const fleetName = fleet ? (fleetGroups.find((g) => g.id === fleet)?.name ?? null) : null
   const current = list.find((p) => p.id === selected) ?? null
-  const onMap = list.filter((p) => hasValidLocation(p.location)).length
-  const stale = list.filter(
+  const onMap = visible.filter((p) => hasValidLocation(p.location)).length
+  const stale = visible.filter(
     (p) => hasValidLocation(p.location) && isStaleLocation(p.location, now),
   ).length
 
@@ -135,19 +165,21 @@ export function SuperTracking() {
       <div className="tracking">
         <aside className="partner-track-list">
           <Panel
-            title={
-              show === "all"
-                ? "All eligible partners"
-                : show === "offline"
-                  ? "Offline partners"
-                  : show === "on_delivery"
-                    ? "Partners on delivery"
-                    : show === "available"
-                      ? "Online partners"
-                      : "Active partners"
-            }
-            subtitle={`${scoped.length} eligible · ${list.length} shown · ${onMap} located · ${list.length - onMap} unavailable · ${stale} stale`}
+            title={fleetName ?? "Delivery partners"}
+            subtitle={`${fleet ? "" : `${fleetGroups.length} partners · `}${visible.length} riders · ${onMap} on the map · ${stale} stale`}
           >
+            {fleet && (
+              <button
+                type="button"
+                className="track-back"
+                onClick={() => {
+                  setFleet("")
+                  setSelected(null)
+                }}
+              >
+                ← All delivery partners
+              </button>
+            )}
             {partners.isPending && <p className="track-empty">Loading delivery partners…</p>}
             {partners.isError && (
               <p className="track-empty" role="alert">
@@ -158,7 +190,29 @@ export function SuperTracking() {
               </p>
             )}
             {partners.data &&
-              list.map((p) => (
+              !fleet &&
+              fleetGroups.map((g) => (
+                <button
+                  type="button"
+                  className="fleet-row"
+                  key={g.id}
+                  onClick={() => {
+                    setFleet(g.id)
+                    setSelected(null)
+                  }}
+                >
+                  <b>{g.name.slice(0, 2).toUpperCase()}</b>
+                  <span>
+                    <strong>{g.name}</strong>
+                    <small>
+                      {g.riders} riders · {g.online} online · {g.onMap} on the map
+                    </small>
+                  </span>
+                </button>
+              ))}
+            {partners.data &&
+              fleet &&
+              visible.map((p) => (
                 <button
                   type="button"
                   className={selected === p.id ? "active" : ""}
@@ -180,15 +234,18 @@ export function SuperTracking() {
                   </Badge>
                 </button>
               ))}
-            {partners.data && list.length === 0 && (
-              <p className="track-empty">No partners match these filters.</p>
+            {partners.data && !fleet && fleetGroups.length === 0 && (
+              <p className="track-empty">No delivery partners match these filters.</p>
+            )}
+            {partners.data && fleet && visible.length === 0 && (
+              <p className="track-empty">No riders match these filters.</p>
             )}
           </Panel>
         </aside>
         <div className="map live-map">
           <LiveMap
             zones={zones.data ?? []}
-            partners={list}
+            partners={visible}
             selectedId={selected}
             onSelect={setSelected}
             trail={trail.data}

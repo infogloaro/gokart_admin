@@ -51,6 +51,9 @@ export const TrackedPartner = z.object({
     .nullable(),
   /** Latest fix, or null when the partner hasn't reported one recently. */
   location: TrackedLocation.nullable(),
+  /** For riders: the delivery partner company they work for. */
+  fleetId: z.string().optional(),
+  fleetName: z.string().optional(),
 })
 export type TrackedPartner = z.infer<typeof TrackedPartner>
 

@@ -222,7 +222,7 @@ async function fleetRiders(scope: Scope, zoneId?: string): Promise<TrackedPartne
       lastLng: true,
       lastLocationAt: true,
       zone: { select: { location: true, city: true } },
-      fleet: { select: { businesses: { select: { business: true } } } },
+      fleet: { select: { id: true, name: true, businesses: { select: { business: true } } } },
       assignments: {
         where: { endedAt: null },
         take: 1,
@@ -240,6 +240,8 @@ async function fleetRiders(scope: Scope, zoneId?: string): Promise<TrackedPartne
       name: rider.name,
       phone: rider.phone,
       businesses: rider.fleet.businesses.map((row) => row.business),
+      fleetId: rider.fleet.id,
+      fleetName: rider.fleet.name,
       zoneId: rider.zoneId,
       zoneName: `${rider.zone.location}, ${rider.zone.city}`,
       vehicleType: rider.vehicleType,
