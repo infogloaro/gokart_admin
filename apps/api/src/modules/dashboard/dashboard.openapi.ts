@@ -2,6 +2,8 @@ import {
   DashboardHealth,
   DashboardOverview,
   DashboardQuery,
+  GeoInsights,
+  GeoQuery,
   RevenueQuery,
   RevenueReport,
   SearchQuery,
@@ -30,6 +32,18 @@ registry.registerPath({
   request: { query: DashboardQuery },
   responses: {
     200: json(registry.register("DashboardHealth", DashboardHealth), "Health"),
+    ...errors(400, 401, 403),
+  },
+})
+registry.registerPath({
+  method: "get",
+  path: "/dashboard/geography",
+  tags,
+  summary:
+    "State, district or zone drill-down: revenue, margin, on-time delivery, cancellations and rider supply",
+  request: { query: GeoQuery },
+  responses: {
+    200: json(registry.register("GeoInsights", GeoInsights), "Geography insights"),
     ...errors(400, 401, 403),
   },
 })

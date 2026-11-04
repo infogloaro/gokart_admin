@@ -6532,6 +6532,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dashboard/geography": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** State, district or zone drill-down: revenue, margin, on-time delivery, cancellations and rider supply */
+        get: {
+            parameters: {
+                query?: {
+                    business?: "food" | "mart";
+                    range?: string;
+                    state?: string;
+                    districtId?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Geography insights */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GeoInsights"];
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/dashboard/revenue": {
         parameters: {
             query?: never;
@@ -14341,6 +14409,33 @@ export interface components {
                 partnersOnline: number;
             }[];
         };
+        GeoInsights: {
+            /** @enum {string} */
+            level: "state" | "district" | "zone";
+            range: string;
+            /** Format: date-time */
+            generatedAt: string;
+            state: string | null;
+            districtName: string | null;
+            rows: {
+                key: string;
+                label: string;
+                state: string | null;
+                zones: number;
+                orders: number;
+                delivered: number;
+                cancelled: number;
+                grossPaise: number;
+                platformPaise: number;
+                riderCostPaise: number;
+                marginPaise: number;
+                onTimeRate: number | null;
+                cancellationRate: number | null;
+                openOrders: number;
+                ridersAvailable: number;
+                riderShortage: number;
+            }[];
+        };
         RevenueReport: {
             /** @enum {string} */
             business: "food" | "mart";
@@ -14358,6 +14453,8 @@ export interface components {
                 vendorSharePaise: number;
                 refundsPaise: number;
                 refundCount: number;
+                riderCostPaise: number;
+                marginPaise: number;
             };
             previous: {
                 orders: number;
@@ -14368,6 +14465,8 @@ export interface components {
                 vendorSharePaise: number;
                 refundsPaise: number;
                 refundCount: number;
+                riderCostPaise: number;
+                marginPaise: number;
             };
             daily: {
                 /** Format: date */

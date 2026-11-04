@@ -6,6 +6,7 @@ export const dashboardRoutes = Router()
   .use(requireAuth)
   .get("/overview", requirePermission("dashboard.view"), c.overview)
   .get("/health", requirePermission("dashboard.view"), c.health)
+  .get("/geography", requirePermission("dashboard.view"), c.geo)
   .get("/revenue", requirePermission("finance.view"), c.revenue)
 
 // Each result group is limited by its own view permission inside the handler.

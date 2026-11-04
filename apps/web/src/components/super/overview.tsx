@@ -36,6 +36,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useRefreshToast } from "@/components/refresh-toast"
+import { GeoInsights } from "./geo-insights"
 import {
   age,
   change,
@@ -526,6 +527,7 @@ export function CommandCenter() {
           <Donut distribution={d?.distribution} business={business} />
         </Panel>
       </div>
+      <GeoInsights business={business === "all" ? undefined : business} range={range} />
       <div className="grid-two">
         <Panel title="Recent transactions" subtitle="Latest platform activity">
           <div className="list">
@@ -719,6 +721,12 @@ export function BusinessOverview() {
           </div>
         ))}
       </div>
+      <GeoInsights
+        business={kind}
+        range={range}
+        initial="riders"
+        title="Zone leaderboard and rider supply"
+      />
       <Panel
         title={stable ? "Service health remains stable" : "Service health needs attention"}
         subtitle="Operational insight"
@@ -896,6 +904,30 @@ function RevenueOverview({ r, food }: { r: RevenueReport | undefined; food: bool
           note="Before settlement"
         />
       </div>
+      <div className="metrics">
+        <MetricCard
+          label="Partner pay (rider cost)"
+          value={money(t?.riderCostPaise)}
+          metric={totalsMetric(r, "riderCostPaise")}
+          note="Split by share of deliveries"
+        />
+        <MetricCard
+          label="Margin after partner pay"
+          value={money(t?.marginPaise)}
+          metric={totalsMetric(r, "marginPaise")}
+          note={
+            t && t.platformPaise
+              ? `${Math.round((t.marginPaise / t.platformPaise) * 100)}% of platform revenue`
+              : "No revenue yet"
+          }
+        />
+      </div>
+      <GeoInsights
+        business={r?.business}
+        range={r?.range ?? "30d"}
+        initial="margin"
+        title="Margin by state, district and zone"
+      />
       <div className="grid-two">
         <Panel
           title={food ? "Daily food revenue" : "Daily marketplace sales"}

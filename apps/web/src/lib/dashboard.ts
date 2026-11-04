@@ -31,6 +31,20 @@ export const useRevenue = (business: Business, range: DashboardRange) =>
     refetchInterval: LIVE,
   })
 
+export const useGeoInsights = (
+  business: Business | undefined,
+  range: DashboardRange,
+  state?: string,
+  districtId?: string,
+) =>
+  useQuery({
+    queryKey: ["dashboard", "geography", business, range, state, districtId],
+    queryFn: () =>
+      api("get", "/dashboard/geography", { query: { business, range, state, districtId } }),
+    placeholderData: keepPreviousData,
+    refetchInterval: LIVE,
+  })
+
 export const useGlobalSearch = (q: string) =>
   useQuery({
     queryKey: ["search", q],
