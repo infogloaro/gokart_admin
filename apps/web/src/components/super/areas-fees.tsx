@@ -99,6 +99,7 @@ export function AreasFees() {
   const updateZone = useUpdateZone()
   const [districtSearch, setDistrictSearch] = useState("")
   const [districtStatus, setDistrictStatus] = useState<"all" | "active" | "inactive">("all")
+  const [districtState, setDistrictState] = useState("")
   const [districtPage, setDistrictPage] = useState(1)
   const [districtEditor, setDistrictEditor] = useState<DistrictDraft | null>(null)
   const [editingDistrict, setEditingDistrict] = useState<District | null>(null)
@@ -130,10 +131,14 @@ export function AreasFees() {
       (district) =>
         (districtStatus === "all" ||
           (districtStatus === "active" ? district.active : !district.active)) &&
+        (!districtState || district.state === districtState) &&
         (!query ||
           `${district.code} ${district.name} ${district.state}`.toLowerCase().includes(query)),
     )
-  }, [districts.data, districtSearch, districtStatus])
+  }, [districts.data, districtSearch, districtStatus, districtState])
+  const districtStates = [
+    ...new Set((districts.data ?? []).map((district) => district.state)),
+  ].sort()
   const districtPageCount = Math.max(1, Math.ceil(filteredDistricts.length / PAGE_SIZE))
   const currentDistrictPage = Math.min(districtPage, districtPageCount)
   const visibleDistricts = filteredDistricts.slice(
@@ -387,6 +392,21 @@ export function AreasFees() {
             placeholder="Search district, code or state"
             aria-label="Search districts"
           />
+          <select
+            value={districtState}
+            onChange={(event) => {
+              setDistrictState(event.target.value)
+              setDistrictPage(1)
+            }}
+            aria-label="Filter districts by state"
+          >
+            <option value="">All states</option>
+            {districtStates.map((state) => (
+              <option key={state} value={state}>
+                {state}
+              </option>
+            ))}
+          </select>
           <select
             value={districtStatus}
             onChange={(event) => {
