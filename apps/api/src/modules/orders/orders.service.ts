@@ -16,6 +16,7 @@ import { refreshAvailability } from "../tracking/tracking.service"
 import { audit } from "../../lib/audit"
 import * as repo from "./orders.repository"
 import { prisma } from "../../lib/prisma"
+import { offerNextRider } from "../rider-ops/offers"
 
 type Scope = { businesses: string[]; zoneIds: string[] | null }
 
@@ -333,7 +334,7 @@ export async function autoAssignBoy(id: string, scope: Scope, member: MemberCont
 }
 
 /** Stands in for a person when the server assigns riders by itself. Sees every zone and business. */
-const SYSTEM_MEMBER: MemberContext = {
+export const SYSTEM_MEMBER: MemberContext = {
   id: "system",
   name: "System",
   email: "",
@@ -347,20 +348,9 @@ const SYSTEM_MEMBER: MemberContext = {
  * Gives a ready order to the best rider in its zone, if one is free. Returns the order when it was
  * assigned, or null when nobody is free yet (the sweep tries again).
  */
+/** Offers a ready order to the nearest suitable rider. The rider accepts or declines (rider-ops/offers). */
 export async function autoAssignReadyOrder(id: string) {
-  const current = await prisma.order.findUnique({
-    where: { id },
-    select: { version: true, status: true, deliveryBoyId: true },
-  })
-  if (!current || current.status !== "ready" || current.deliveryBoyId) return null
-  const [top] = await suggestRiders(id, SYSTEM_MEMBER)
-  if (!top) return null
-  return assignBoy(
-    id,
-    { businesses: ["food", "mart"], zoneIds: null },
-    { boyId: top.id, version: current.version },
-    { id: null, name: "System", role: null, source: "system" },
-  )
+  return offerNextRider(id)
 }
 
 /** Ready orders with no rider, oldest first. Run on an interval so nothing waits unassigned. */

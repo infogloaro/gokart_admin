@@ -215,6 +215,8 @@ model DeliveryBoy {
   orders        Order[]
   history       DeliveryHistory[]
   supportTickets RiderSupportTicket[]
+  offers DeliveryOffer[]
+  serviceAreas DeliveryBoyArea[]
   codCollections CodCollection[]
 
   @@index([fleetId, status])
@@ -347,4 +349,27 @@ model PartnerRiderMap {
   partner   Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
 
   @@map("partner_rider_maps")
+}
+
+enum AreaStatus {
+  requested
+  approved
+  rejected
+}
+
+/// A zone a rider may take orders from, besides their own. The rider asks; the zone Admin decides.
+model DeliveryBoyArea {
+  id          String     @id @default(cuid())
+  boyId       String
+  zoneId      String
+  status      AreaStatus @default(requested)
+  requestedAt DateTime   @default(now())
+  decidedAt   DateTime?
+  decidedById String?
+  boy         DeliveryBoy @relation(fields: [boyId], references: [id], onDelete: Cascade)
+  zone        Zone        @relation(fields: [zoneId], references: [id], onDelete: Restrict)
+
+  @@unique([boyId, zoneId])
+  @@index([zoneId, status])
+  @@map("delivery_boy_areas")
 }

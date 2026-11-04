@@ -11,10 +11,14 @@ import {
   useReplyToTicket,
   useResolveTicket,
   useRiderTickets,
+  useAreaRequests,
+  useDecideArea,
+  useOpenOffers,
+  useProofs,
   useSendNotice,
 } from "@/lib/rider-ops"
 
-type Tab = "Support" | "Cash handover" | "Send notice"
+type Tab = "Support" | "Cash handover" | "Send notice" | "Offers" | "Proof" | "Areas"
 
 const message = (error: unknown) =>
   error instanceof ApiError ? error.message : "That didn’t work. Try again."
@@ -32,22 +36,27 @@ export function RiderOps() {
   return (
     <div className="rider-ops">
       <div className="gk-segment" role="tablist" aria-label="Rider operations">
-        {(["Support", "Cash handover", "Send notice"] as const).map((item) => (
-          <button
-            type="button"
-            role="tab"
-            key={item}
-            aria-selected={tab === item}
-            className={tab === item ? "active" : ""}
-            onClick={() => setTab(item)}
-          >
-            {item}
-          </button>
-        ))}
+        {(["Support", "Cash handover", "Send notice", "Offers", "Proof", "Areas"] as const).map(
+          (item) => (
+            <button
+              type="button"
+              role="tab"
+              key={item}
+              aria-selected={tab === item}
+              className={tab === item ? "active" : ""}
+              onClick={() => setTab(item)}
+            >
+              {item}
+            </button>
+          ),
+        )}
       </div>
       {tab === "Support" && <Support />}
       {tab === "Cash handover" && <Cash />}
       {tab === "Send notice" && <Notice />}
+      {tab === "Offers" && <Offers />}
+      {tab === "Proof" && <Proof />}
+      {tab === "Areas" && <Areas />}
     </div>
   )
 }
@@ -336,6 +345,216 @@ function Notice() {
       <button type="button" className="btn" disabled={send.isPending} onClick={() => void submit()}>
         {send.isPending ? "Sending…" : "Send notice"}
       </button>
+    </section>
+  )
+}
+
+function Offers() {
+  const offers = useOpenOffers()
+  const items = offers.data ?? []
+  const minutesLeft = (iso: string) =>
+    Math.max(0, Math.round((Date.parse(iso) - Date.now()) / 60_000))
+  return (
+    <section className="panel full-panel">
+      <p className="muted">
+        Orders waiting for a rider to accept. A rider who does not answer in time is skipped, and
+        the order goes to the next nearest rider.
+      </p>
+      {offers.data && items.length === 0 && (
+        <p className="admin-empty">No orders are waiting for a rider.</p>
+      )}
+      {items.length > 0 && (
+        <div className="table-wrap">
+          <table className="fp-table">
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Offered to</th>
+                <th>Zone</th>
+                <th>Offered</th>
+                <th>Time left</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((offer) => (
+                <tr key={offer.id}>
+                  <td>
+                    {offer.orderCode} <small>{offer.business}</small>
+                  </td>
+                  <td>
+                    {offer.riderName}
+                    <br />
+                    <small>{offer.riderCode}</small>
+                  </td>
+                  <td>{offer.zoneName}</td>
+                  <td>{when(offer.offeredAt)}</td>
+                  <td>{minutesLeft(offer.expiresAt)} min</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  )
+}
+
+function Proof() {
+  const proofs = useProofs()
+  const items = proofs.data ?? []
+  return (
+    <section className="panel full-panel">
+      <p className="muted">
+        Delivery photos from riders, and whether the customer’s delivery code was confirmed at the
+        door.
+      </p>
+      {proofs.data && items.length === 0 && <p className="admin-empty">No delivery photos yet.</p>}
+      {items.length > 0 && (
+        <div className="table-wrap">
+          <table className="fp-table">
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Rider</th>
+                <th>Zone</th>
+                <th>Photo taken</th>
+                <th>Code</th>
+                <th>Photo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((row) => (
+                <tr key={row.id}>
+                  <td>
+                    {row.orderCode} <small>{row.business}</small>
+                  </td>
+                  <td>
+                    {row.riderName}
+                    <br />
+                    <small>{row.riderCode}</small>
+                  </td>
+                  <td>{row.zoneName}</td>
+                  <td>{row.proofAt ? when(row.proofAt) : "–"}</td>
+                  <td>{row.codVerified ? "Confirmed at door" : "Not confirmed"}</td>
+                  <td>
+                    <a
+                      href={`/api/v1/delivery/orders/${row.id}/proof`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      View photo
+                    </a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  )
+}
+
+function Areas() {
+  const [status, setStatus] = useState<"requested" | "approved" | "rejected">("requested")
+  const areas = useAreaRequests(status)
+  const decide = useDecideArea()
+  const [error, setError] = useState("")
+  const items = areas.data ?? []
+  return (
+    <section className="panel full-panel">
+      <p className="muted">
+        Riders can take orders from zones beside their own once the zone Admin approves the request.
+      </p>
+      <div className="gk-segment" role="tablist" aria-label="Area request status">
+        {(["requested", "approved", "rejected"] as const).map((value) => (
+          <button
+            type="button"
+            role="tab"
+            key={value}
+            aria-selected={status === value}
+            className={status === value ? "active" : ""}
+            onClick={() => setStatus(value)}
+          >
+            {value === "requested"
+              ? "Awaiting decision"
+              : value === "approved"
+                ? "Approved"
+                : "Rejected"}
+          </button>
+        ))}
+      </div>
+      {error && (
+        <p className="admin-empty" role="alert">
+          {error}
+        </p>
+      )}
+      {areas.data && items.length === 0 && <p className="admin-empty">No requests here.</p>}
+      {items.length > 0 && (
+        <div className="table-wrap">
+          <table className="fp-table">
+            <thead>
+              <tr>
+                <th>Rider</th>
+                <th>Home zone</th>
+                <th>Asks for</th>
+                <th>Requested</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((row) => (
+                <tr key={row.id}>
+                  <td>
+                    {row.riderName}
+                    <br />
+                    <small>{row.riderCode}</small>
+                  </td>
+                  <td>{row.homeZone}</td>
+                  <td>{row.requestedZone}</td>
+                  <td>{when(row.requestedAt)}</td>
+                  <td>
+                    {row.status === "requested" && (
+                      <>
+                        <button
+                          type="button"
+                          className="btn"
+                          disabled={decide.isPending}
+                          onClick={() =>
+                            void decide
+                              .mutateAsync({ id: row.id, approve: true })
+                              .catch((cause) => setError(message(cause)))
+                          }
+                        >
+                          Approve
+                        </button>{" "}
+                        <button
+                          type="button"
+                          className="btn"
+                          disabled={decide.isPending}
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `Reject ${row.riderName}’s request for ${row.requestedZone}?`,
+                              )
+                            ) {
+                              void decide
+                                .mutateAsync({ id: row.id, approve: false })
+                                .catch((cause) => setError(message(cause)))
+                            }
+                          }}
+                        >
+                          Reject
+                        </button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   )
 }

@@ -55,3 +55,44 @@ export function useSendNotice() {
     onSettled: () => client.invalidateQueries({ queryKey: ["rider-ops"] }),
   })
 }
+
+export const useOpenOffers = () =>
+  useQuery({
+    queryKey: ["rider-ops", "offers"],
+    queryFn: () => api("get", "/delivery/offers"),
+    refetchInterval: 10_000,
+  })
+
+export const useProofs = () =>
+  useQuery({
+    queryKey: ["rider-ops", "proofs"],
+    queryFn: () => api("get", "/delivery/proofs"),
+    refetchInterval: LIVE,
+  })
+
+export const useAreaRequests = (status: "requested" | "approved" | "rejected") =>
+  useQuery({
+    queryKey: ["rider-ops", "areas", status],
+    queryFn: () => api("get", "/delivery/area-requests", { query: { status } }),
+    refetchInterval: LIVE,
+  })
+
+export function useDecideArea() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, approve }: { id: string; approve: boolean }) =>
+      approve
+        ? api("post", "/delivery/area-requests/{id}/approve", { params: { id } })
+        : api("post", "/delivery/area-requests/{id}/reject", { params: { id } }),
+    onSettled: () => client.invalidateQueries({ queryKey: ["rider-ops"] }),
+  })
+}
+
+export function useResendCode() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      api("post", "/delivery/orders/{id}/resend-code", { params: { id } }),
+    onSettled: () => client.invalidateQueries({ queryKey: ["rider-ops"] }),
+  })
+}

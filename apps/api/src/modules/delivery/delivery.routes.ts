@@ -1,9 +1,14 @@
 import { randomBytes } from "node:crypto"
 import { createRiderTicket, riderTickets } from "../rider-ops/rider-ops"
+import { acceptOffer, declineOffer, openOffers } from "../rider-ops/offers"
+import { verifyDeliveryCode } from "../rider-ops/delivery-code"
+import { uploadProof } from "../rider-ops/proof"
+import { requestArea, riderAreas } from "../rider-ops/areas"
 import express, { Router, type RequestHandler } from "express"
 import { DeliveryBoyDocumentKind } from "@zoauro/shared"
 import { hashForLookup } from "../../lib/crypto"
-import { badRequest, forbidden, unauthorized } from "../../lib/errors"
+import { badRequest, forbidden, parse, unauthorized } from "../../lib/errors"
+import { z } from "zod"
 import { prisma } from "../../lib/prisma"
 import { currentMember, requireAuth, requirePermission } from "../../middleware/auth"
 import * as c from "./delivery.controller"
@@ -106,6 +111,75 @@ export const deliveryRoutes = Router()
   .get("/intake/fleet/me/boys", requireFleetCredential, c.fleetBoys)
   .get("/intake/fleet/me/boys/:id/history", requireFleetCredential, c.fleetBoyHistory)
   .post("/intake/fleet/me/boys/:id/location", requireFleetCredential, c.reportLocation)
+  .get("/intake/fleet/me/boys/:id/offers", requireFleetCredential, async (req, res) => {
+    res.json(await openOffers(req.deliveryFleetId as string, req.params.id as string))
+  })
+  .post(
+    "/intake/fleet/me/boys/:id/offers/:offerId/accept",
+    requireFleetCredential,
+    async (req, res) => {
+      await acceptOffer(
+        req.deliveryFleetId as string,
+        req.params.id as string,
+        req.params.offerId as string,
+      )
+      res.json({ ok: true })
+    },
+  )
+  .post(
+    "/intake/fleet/me/boys/:id/offers/:offerId/decline",
+    requireFleetCredential,
+    async (req, res) => {
+      const body = parse(z.object({ reason: z.string().trim().max(200).optional() }), req.body)
+      await declineOffer(
+        req.deliveryFleetId as string,
+        req.params.id as string,
+        req.params.offerId as string,
+        body.reason,
+      )
+      res.json({ ok: true })
+    },
+  )
+  .post(
+    "/intake/fleet/me/boys/:id/orders/:orderId/verify-code",
+    requireFleetCredential,
+    async (req, res) => {
+      const body = parse(
+        z.object({ code: z.string().regex(/^d{4}$/, "Enter the 4-digit code.") }),
+        req.body,
+      )
+      await verifyDeliveryCode(
+        req.deliveryFleetId as string,
+        req.params.id as string,
+        req.params.orderId as string,
+        body.code,
+      )
+      res.json({ ok: true })
+    },
+  )
+  .post(
+    "/intake/fleet/me/boys/:id/orders/:orderId/proof",
+    requireFleetCredential,
+    express.json({ limit: "8mb" }),
+    async (req, res) => {
+      const body = parse(z.object({ contentType: z.string(), data: z.string().min(1) }), req.body)
+      await uploadProof(
+        req.deliveryFleetId as string,
+        req.params.id as string,
+        req.params.orderId as string,
+        body,
+      )
+      res.json({ ok: true })
+    },
+  )
+  .get("/intake/fleet/me/boys/:id/areas", requireFleetCredential, async (req, res) => {
+    res.json(await riderAreas(req.deliveryFleetId as string, req.params.id as string))
+  })
+  .post("/intake/fleet/me/boys/:id/areas", requireFleetCredential, async (req, res) => {
+    const body = parse(z.object({ zoneId: z.string().min(1) }), req.body)
+    await requestArea(req.deliveryFleetId as string, req.params.id as string, body.zoneId)
+    res.status(201).json({ ok: true })
+  })
   .get("/riders/live", requireAuth, requirePermission("partners.view"), c.live)
   .get("/performance", requireAuth, requirePermission("partners.view"), c.performance)
   .get("/intake/fleet/me/orders", requireFleetCredential, c.fleetOrders)

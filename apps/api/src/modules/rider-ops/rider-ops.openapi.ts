@@ -81,3 +81,82 @@ registry.registerPath({
   request: { params: id },
   responses: { 200: noContent, ...errors(401, 403, 404, 409) },
 })
+
+const offerRow = z.object({
+  id: z.string(),
+  orderCode: z.string(),
+  business: z.string(),
+  riderName: z.string(),
+  riderCode: z.string(),
+  zoneName: z.string(),
+  offeredAt: z.iso.datetime(),
+  expiresAt: z.iso.datetime(),
+})
+const proofRow = z.object({
+  id: z.string(),
+  orderCode: z.string(),
+  business: z.string(),
+  riderName: z.string(),
+  riderCode: z.string(),
+  zoneName: z.string(),
+  proofAt: z.iso.datetime().nullable(),
+  codVerified: z.boolean(),
+})
+const areaRow = z.object({
+  id: z.string(),
+  riderName: z.string(),
+  riderCode: z.string(),
+  homeZone: z.string(),
+  requestedZone: z.string(),
+  status: z.enum(["requested", "approved", "rejected"]),
+  requestedAt: z.iso.datetime(),
+})
+
+registry.registerPath({
+  method: "get",
+  path: "/delivery/offers",
+  tags,
+  summary: "Orders offered to riders and not yet answered, in the member's zones",
+  responses: { 200: json(z.array(offerRow)), ...errors(401, 403) },
+})
+registry.registerPath({
+  method: "get",
+  path: "/delivery/proofs",
+  tags,
+  summary: "Recent delivered orders with a proof photo, in the member's zones",
+  responses: { 200: json(z.array(proofRow)), ...errors(401, 403) },
+})
+registry.registerPath({
+  method: "post",
+  path: "/delivery/orders/{id}/resend-code",
+  tags,
+  summary: "Text the customer a new delivery code",
+  request: { params: id },
+  responses: { 200: json(z.object({ ok: z.boolean() })), ...errors(401, 403, 404) },
+})
+registry.registerPath({
+  method: "get",
+  path: "/delivery/area-requests",
+  tags,
+  summary: "Service-area requests from riders, in the member's zones",
+  request: {
+    query: z.object({ status: z.enum(["requested", "approved", "rejected"]).optional() }),
+  },
+  responses: { 200: json(z.array(areaRow)), ...errors(401, 403) },
+})
+registry.registerPath({
+  method: "post",
+  path: "/delivery/area-requests/{id}/approve",
+  tags,
+  summary: "Approve a rider's request to take orders from another zone",
+  request: { params: id },
+  responses: { 200: json(z.object({ ok: z.boolean() })), ...errors(401, 403, 404) },
+})
+registry.registerPath({
+  method: "post",
+  path: "/delivery/area-requests/{id}/reject",
+  tags,
+  summary: "Reject a rider's request to take orders from another zone",
+  request: { params: id },
+  responses: { 200: json(z.object({ ok: z.boolean() })), ...errors(401, 403, 404) },
+})

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import { prisma } from "../../lib/prisma"
 import { redis } from "../../lib/redis"
 import { autoAssignReadyOrder } from "./orders.service"
+import { acceptOffer } from "../rider-ops/offers"
 
 // A ready order with no rider gets the best free rider in its zone. Runs against the seeded
 // database; the order is put back to its original state afterwards.
@@ -41,21 +42,29 @@ describe("automatic rider assignment", () => {
     const originalStatus = order!.status
     await prisma.order.update({ where: { id: order!.id }, data: { status: "ready" } })
     try {
-      const assigned = await autoAssignReadyOrder(order!.id)
-      expect(assigned).not.toBeNull()
+      // The rider is offered the order first; accepting the offer assigns it.
+      const offer = await autoAssignReadyOrder(order!.id)
+      expect(offer).not.toBeNull()
+      expect(offer!.status).toBe("offered")
+      await acceptOffer(offer!.fleetId, offer!.boyId, offer!.id)
       const after = await prisma.order.findUniqueOrThrow({ where: { id: order!.id } })
       expect(after.status).toBe("assigned")
-      expect(after.deliveryBoyId).not.toBeNull()
-      const boy = await prisma.deliveryBoy.findUniqueOrThrow({
-        where: { id: after.deliveryBoyId! },
-      })
-      expect(after.deliveryFleetId).toBe(boy.fleetId)
+      expect(after.deliveryBoyId).toBe(offer!.boyId)
+      expect(after.deliveryFleetId).toBe(offer!.fleetId)
+      expect(after.deliveryOtpHash).not.toBeNull()
     } finally {
+      await prisma.deliveryOffer.deleteMany({ where: { orderId: order!.id } })
       await prisma.deliveryAssignment.deleteMany({ where: { orderId: order!.id } })
       await prisma.orderEvent.deleteMany({ where: { orderId: order!.id } })
       await prisma.order.update({
         where: { id: order!.id },
-        data: { status: originalStatus, deliveryBoyId: null, deliveryFleetId: null },
+        data: {
+          status: originalStatus,
+          deliveryBoyId: null,
+          deliveryFleetId: null,
+          deliveryOtpHash: null,
+          otpVerifiedAt: null,
+        },
       })
     }
   })

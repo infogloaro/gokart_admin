@@ -48,6 +48,13 @@ model Order {
   paymentStatus    PaymentStatus @default(pending)
   itemsTotalPaise  Int
   deliveryFeePaise Int
+  /// Hashed 4-digit code the customer gives the rider at the door. Never stored in clear.
+  deliveryOtpHash  String?
+  otpVerifiedAt    DateTime?
+  /// Photo of the delivered order, stored in object storage.
+  proofKey         String?
+  proofContentType String?
+  proofAt          DateTime?
   totalPaise       Int
   placedAt         DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
@@ -60,6 +67,7 @@ model Order {
   items               OrderItem[]
   events              OrderEvent[]
   deliveryAssignments DeliveryAssignment[]
+  deliveryOffers      DeliveryOffer[]
 
   @@index([business, status])
   @@index([zoneId, placedAt])
@@ -111,4 +119,33 @@ model OrderEvent {
 
   @@index([orderId, at])
   @@map("order_events")
+}
+
+enum OfferStatus {
+  offered
+  accepted
+  declined
+  expired
+  withdrawn
+}
+
+/// An order offered to one rider. The rider has a short time to accept or decline; otherwise the
+/// next suitable rider is offered the order.
+model DeliveryOffer {
+  id            String       @id @default(cuid())
+  orderId       String
+  boyId         String
+  fleetId       String
+  status        OfferStatus  @default(offered)
+  offeredAt     DateTime     @default(now())
+  expiresAt     DateTime
+  respondedAt   DateTime?
+  declineReason String?
+  order         Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  boy           DeliveryBoy  @relation(fields: [boyId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, status])
+  @@index([boyId, status])
+  @@index([status, expiresAt])
+  @@map("delivery_offers")
 }

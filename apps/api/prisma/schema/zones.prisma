@@ -19,6 +19,7 @@ model Zone {
   partners         Partner[]
   fleetAssignments DeliveryFleetZone[]
   deliveryBoys     DeliveryBoy[]
+  riderAreas       DeliveryBoyArea[]
   orders           Order[]
   feeRules         FeeRule[]
 

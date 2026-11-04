@@ -46,7 +46,9 @@ export function createApp() {
   app.set("trust proxy", 1)
   app.disable("x-powered-by")
   app.use(helmet())
-  app.use(express.json({ limit: "1mb" }))
+  // Delivery proof photos are larger; that route sets its own limit.
+  const jsonBody = express.json({ limit: "1mb" })
+  app.use((req, res, next) => (/\/proof$/.test(req.path) ? next() : jsonBody(req, res, next)))
   app.use(cookieParser())
 
   const v1 = Router()

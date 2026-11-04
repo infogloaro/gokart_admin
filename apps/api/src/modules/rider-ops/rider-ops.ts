@@ -14,6 +14,10 @@ import { badRequest, conflict, notFound, parse } from "../../lib/errors"
 import { prisma } from "../../lib/prisma"
 import { actorOf, currentMember, type MemberContext } from "../../middleware/auth"
 import type { Prisma } from "../../generated/prisma/client"
+import { z } from "zod"
+import { issueDeliveryCode } from "./delivery-code"
+import { readProof } from "./proof"
+import { decideArea, listAreaRequests } from "./areas"
 
 /** Riders the member may see: their zones, or every zone for a Super Admin. */
 const zonesOf = (member: MemberContext): Prisma.DeliveryBoyWhereInput =>
@@ -275,5 +279,121 @@ export async function confirmHandover(req: Request<{ id: string }>, res: Respons
       { amountPaise: row.amountPaise, orderId: row.orderId },
     )
   })
+  res.json({ ok: true })
+}
+
+/** Open offers in the member's zones: who was offered which order, and until when. */
+export async function listOffers(req: Request, res: Response) {
+  const member = currentMember(req)
+  const rows = await prisma.deliveryOffer.findMany({
+    where: {
+      status: "offered",
+      expiresAt: { gt: new Date() },
+      order: member.role === "super_admin" ? {} : { zoneId: { in: member.zoneIds } },
+    },
+    include: {
+      boy: { select: { name: true, code: true } },
+      order: {
+        select: { code: true, business: true, zone: { select: { location: true, city: true } } },
+      },
+    },
+    orderBy: { offeredAt: "asc" },
+    take: 100,
+  })
+  res.json(
+    rows.map((row) => ({
+      id: row.id,
+      orderCode: row.order.code,
+      business: row.order.business,
+      riderName: row.boy.name,
+      riderCode: row.boy.code,
+      zoneName: `${row.order.zone.location}, ${row.order.zone.city}`,
+      offeredAt: row.offeredAt.toISOString(),
+      expiresAt: row.expiresAt.toISOString(),
+    })),
+  )
+}
+
+/** Delivered orders with a proof photo, newest first. */
+export async function listProofs(req: Request, res: Response) {
+  const member = currentMember(req)
+  const rows = await prisma.order.findMany({
+    where: {
+      proofAt: { not: null },
+      ...(member.role !== "super_admin" && {
+        zoneId: { in: member.zoneIds },
+        business: { in: member.businesses },
+      }),
+    },
+    select: {
+      id: true,
+      code: true,
+      business: true,
+      proofAt: true,
+      otpVerifiedAt: true,
+      deliveryBoy: { select: { name: true, code: true } },
+      zone: { select: { location: true, city: true } },
+    },
+    orderBy: { proofAt: "desc" },
+    take: 50,
+  })
+  res.json(
+    rows.map((row) => ({
+      id: row.id,
+      orderCode: row.code,
+      business: row.business,
+      riderName: row.deliveryBoy?.name ?? "",
+      riderCode: row.deliveryBoy?.code ?? "",
+      zoneName: `${row.zone.location}, ${row.zone.city}`,
+      proofAt: row.proofAt?.toISOString() ?? null,
+      codVerified: Boolean(row.otpVerifiedAt),
+    })),
+  )
+}
+
+/** The proof photo itself, for someone who can see the order. */
+export async function readProofImage(req: Request, res: Response) {
+  const { buffer, contentType } = await readProof(String(req.params.id), currentMember(req))
+  res.setHeader("Content-Type", contentType)
+  res.setHeader("Cache-Control", "private, max-age=300")
+  res.send(buffer)
+}
+
+/** Texts the customer a new delivery code, for an order the member can see. */
+export async function resendCode(req: Request, res: Response) {
+  const member = currentMember(req)
+  const orderId = String(req.params.id)
+  const order = await prisma.order.findFirst({
+    where: {
+      id: orderId,
+      deliveryBoyId: { not: null },
+      ...(member.role !== "super_admin" && { zoneId: { in: member.zoneIds } }),
+    },
+    select: { id: true },
+  })
+  if (!order) throw notFound("Assigned order")
+  await issueDeliveryCode(orderId)
+  await prisma.$transaction(async (tx) => {
+    await audit(tx, actorOf(req), "rider.code_resent", { type: "order", id: orderId }, {})
+  })
+  res.json({ ok: true })
+}
+
+const areaStatusQuery = z.object({
+  status: z.enum(["requested", "approved", "rejected"]).default("requested"),
+})
+
+export async function areaRequests(req: Request, res: Response) {
+  const q = parse(areaStatusQuery, req.query)
+  res.json(await listAreaRequests(currentMember(req), q.status))
+}
+
+export async function approveArea(req: Request, res: Response) {
+  await decideArea(String(req.params.id), currentMember(req), true, actorOf(req))
+  res.json({ ok: true })
+}
+
+export async function rejectArea(req: Request, res: Response) {
+  await decideArea(String(req.params.id), currentMember(req), false, actorOf(req))
   res.json({ ok: true })
 }

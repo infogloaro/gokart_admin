@@ -9,6 +9,7 @@ import { runAlertChecks } from "./modules/alerts/alerts"
 import { purgeExpiredAudit } from "./modules/audit/retention"
 import { sendWeeklyDigest } from "./modules/digest/digest"
 import { assignReadyOrders } from "./modules/orders/orders.service"
+import { expireOffers } from "./modules/rider-ops/offers"
 import { relayOutbox } from "./modules/notifications/notifications"
 import { sweepStale } from "./modules/tracking/tracking.service"
 
@@ -53,6 +54,12 @@ const retention = setInterval(
 )
 retention.unref()
 
+// Offers nobody answered in time go to the next suitable rider.
+const offerTimeouts = setInterval(() => {
+  expireOffers().catch((e: unknown) => console.error("Offer timeouts failed", e))
+}, 15_000)
+offerTimeouts.unref()
+
 // Super Admins get a digest on Monday mornings (sent once per week).
 const digest = setInterval(() => {
   sendWeeklyDigest().catch((e: unknown) => console.error("Weekly digest failed", e))
@@ -65,6 +72,7 @@ async function shutdown() {
   clearInterval(alerts)
   clearInterval(digest)
   clearInterval(riderSweep)
+  clearInterval(offerTimeouts)
   clearInterval(retention)
   await closeRealtime()
   server.close()

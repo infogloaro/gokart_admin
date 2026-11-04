@@ -38,6 +38,7 @@ import {
   unauthorized,
 } from "../../lib/errors"
 import { distanceKm } from "../../lib/geo"
+import { issueDeliveryCode } from "../rider-ops/delivery-code"
 import { linkFor, notify } from "../../lib/notify"
 import { prisma } from "../../lib/prisma"
 import { rateLimit } from "../../lib/rate-limit"
@@ -1327,11 +1328,19 @@ export async function assignOrderToBoy(
         const workload = await tx.deliveryAssignment.count({
           where: { boyId: input.boyId, endedAt: null },
         })
+        const areaApproved =
+          boy && boy.zoneId !== order.zoneId
+            ? await tx.deliveryBoyArea.findFirst({
+                where: { boyId: boy.id, zoneId: order.zoneId, status: "approved" },
+                select: { id: true },
+              })
+            : null
         assertOrderAssignmentEligible({
           fleetId,
           boy,
           order,
           primaryZone: Boolean(primaryZone),
+          areaApproved: Boolean(areaApproved),
           openAssignment: Boolean(openAssignment),
           workload,
           verifiedDocumentKinds: boy.documents.map((document) => document.kind),
@@ -1372,6 +1381,7 @@ export async function assignOrderToBoy(
         const assignment = await tx.deliveryAssignment.create({
           data: { orderId, fleetId, boyId: input.boyId, status: "assigned" },
         })
+        await issueDeliveryCode(orderId, tx)
         await tx.orderEvent.create({
           data: {
             orderId,
@@ -1443,6 +1453,8 @@ export async function changeFleetOrderStatus(
         where: { orderId, fleetId, boyId: order.deliveryBoy.id, endedAt: null },
       })
       if (!assignment) throw conflict("This order has no active delivery assignment.")
+      if (input.to === "delivered" && order.deliveryOtpHash && !order.otpVerifiedAt)
+        throw conflict("Ask the customer for the delivery code before you mark this delivered.")
       if (!canTransition(order.business, order.status, input.to))
         throw badRequest(`An order in ${order.status} cannot move to ${input.to}.`)
       const count = await tx.order.updateMany({
@@ -1873,7 +1885,10 @@ export async function suggestRiders(orderId: string, member: MemberContext) {
   })
   const riders = await prisma.deliveryBoy.findMany({
     where: {
-      zoneId: order.zoneId,
+      OR: [
+        { zoneId: order.zoneId },
+        { serviceAreas: { some: { zoneId: order.zoneId, status: "approved" } } },
+      ],
       status: "active",
       availability: "available",
       fleet: {

@@ -379,6 +379,11 @@ export function changeStatus(
     if (count === 0)
       throw conflict("This order was updated by someone else. Reload to see the latest.")
     if (to === "delivered") await recordCodCollection(tx, order.id)
+    if (["cancelled", "picked_up", "delivered"].includes(to))
+      await tx.deliveryOffer.updateMany({
+        where: { orderId: order.id, status: "offered" },
+        data: { status: "withdrawn" },
+      })
     if (order.deliveryBoyId && ["cancelled", "delivered", "ready"].includes(to)) {
       await tx.deliveryAssignment.updateMany({
         where: { orderId: order.id, boyId: order.deliveryBoyId, endedAt: null },

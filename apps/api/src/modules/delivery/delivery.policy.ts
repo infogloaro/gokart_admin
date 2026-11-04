@@ -71,6 +71,8 @@ export function assertOrderAssignmentEligible(input: {
     deliveryBoyId: string | null
   }
   primaryZone: boolean
+  /** The rider has an approved service area for the order's zone. */
+  areaApproved?: boolean
   openAssignment: boolean
   workload: number
   verifiedDocumentKinds: string[]
@@ -79,7 +81,7 @@ export function assertOrderAssignmentEligible(input: {
   if (
     !boy ||
     boy.fleetId !== input.fleetId ||
-    boy.zoneId !== order.zoneId ||
+    (boy.zoneId !== order.zoneId && !input.areaApproved) ||
     boy.status !== "active" ||
     boy.availability !== "available"
   )
