@@ -9555,7 +9555,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Riders who reported a position in the last six hours, in the member's zones */
+        /** Active riders in the member's zones, with their last reported position if any */
         get: {
             parameters: {
                 query?: never;
@@ -9581,10 +9581,11 @@ export interface paths {
                             zoneName: string;
                             availability: string;
                             activeOrders: number;
-                            lat: number;
-                            lng: number;
+                            lat: number | null;
+                            lng: number | null;
                             /** Format: date-time */
-                            lastSeenAt: string;
+                            lastSeenAt: string | null;
+                            positionFresh: boolean;
                         }[];
                     };
                 };

@@ -21805,7 +21805,7 @@
         "tags": [
           "Delivery management"
         ],
-        "summary": "Riders who reported a position in the last six hours, in the member's zones",
+        "summary": "Active riders in the member's zones, with their last reported position if any",
         "responses": {
           "200": {
             "description": "OK",
@@ -21847,14 +21847,26 @@
                         "type": "integer"
                       },
                       "lat": {
-                        "type": "number"
+                        "type": [
+                          "number",
+                          "null"
+                        ]
                       },
                       "lng": {
-                        "type": "number"
+                        "type": [
+                          "number",
+                          "null"
+                        ]
                       },
                       "lastSeenAt": {
-                        "type": "string",
+                        "type": [
+                          "string",
+                          "null"
+                        ],
                         "format": "date-time"
+                      },
+                      "positionFresh": {
+                        "type": "boolean"
                       }
                     },
                     "required": [
@@ -21869,7 +21881,8 @@
                       "activeOrders",
                       "lat",
                       "lng",
-                      "lastSeenAt"
+                      "lastSeenAt",
+                      "positionFresh"
                     ]
                   }
                 }

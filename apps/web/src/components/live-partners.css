@@ -1,0 +1,48 @@
+/* Delivery partners below the live map: one collapsible group per company, with its riders. */
+.live-riders .lr-map-note {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+.live-riders .lr-partners {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.6rem;
+}
+.live-riders .lr-partners h4 {
+  margin: 0.25rem 0 0.25rem;
+  font-size: 0.95rem;
+}
+.live-riders .lr-partner {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #fff;
+  overflow: hidden;
+}
+.live-riders .lr-partner > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.7rem 0.9rem;
+  cursor: pointer;
+  list-style: none;
+}
+.live-riders .lr-partner > summary::-webkit-details-marker {
+  display: none;
+}
+.live-riders .lr-partner > summary > span {
+  color: #64748b;
+  font-size: 0.8125rem;
+}
+.live-riders .lr-partner > summary > svg {
+  transition: transform 0.15s ease;
+  color: #64748b;
+}
+.live-riders .lr-partner[open] > summary > svg {
+  transform: rotate(180deg);
+}
+.live-riders .lr-partner .lr-table-wrap {
+  border-top: 1px solid #e2e8f0;
+  overflow-x: auto;
+}

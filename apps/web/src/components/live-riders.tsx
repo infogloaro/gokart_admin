@@ -2,13 +2,13 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@zoauro/api-client"
-import { Bike } from "lucide-react"
+import { Bike, ChevronDown } from "lucide-react"
 import { useMemo, useState } from "react"
 import { LiveRidersMap, type MapRider } from "./live-riders-map"
+import "./live-partners.css"
 
-const PAGE_SIZE = 10
-
-const when = (iso: string) => {
+const when = (iso: string | null) => {
+  if (!iso) return "No position yet"
   const minutes = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60_000))
   return minutes < 1
     ? "just now"
@@ -17,27 +17,34 @@ const when = (iso: string) => {
       : `${Math.round(minutes / 60)} hr ago`
 }
 
-type Rider = MapRider & {
+type Rider = {
+  id: string
+  code: string
+  name: string
   fleetName: string
   district: string
   adminName: string | null
+  zoneName: string
+  availability: string
   activeOrders: number
-  lastSeenAt: string
+  lat: number | null
+  lng: number | null
+  lastSeenAt: string | null
+  positionFresh: boolean
 }
 
-/** The page numbers to show: the first, the last, and a window around the current page. */
-function pageItems(current: number, total: number): (number | "…")[] {
-  if (total <= 7) return Array.from({ length: total }, (_, index) => index + 1)
-  const items: (number | "…")[] = [1]
-  if (current > 3) items.push("…")
-  for (let page = Math.max(2, current - 1); page <= Math.min(total - 1, current + 1); page++)
-    items.push(page)
-  if (current < total - 2) items.push("…")
-  items.push(total)
-  return items
-}
+type LocatedRider = Rider & { lat: number; lng: number }
+const hasPosition = (rider: Rider): rider is LocatedRider =>
+  rider.lat !== null && rider.lng !== null
 
-/** Delivery boys who reported a position recently: filter by district or rider, see them on the map, page through the list. */
+/** Riders who are not offline or suspended are counted as on shift. */
+const onShift = (rider: Rider) =>
+  rider.availability !== "offline" && rider.availability !== "suspended"
+
+/**
+ * Every active rider in the member's zones. The map places riders with a known position; the
+ * partner groups below the map list every rider under the delivery company they work for.
+ */
 export function LiveRiders() {
   const q = useQuery({
     queryKey: ["riders", "live"],
@@ -47,14 +54,13 @@ export function LiveRiders() {
   const riders = useMemo<Rider[]>(() => q.data ?? [], [q.data])
   const [district, setDistrict] = useState("all")
   const [riderId, setRiderId] = useState("all")
-  const [page, setPage] = useState(1)
 
   const districts = useMemo(() => {
     const counts = new Map<string, number>()
     for (const rider of riders) counts.set(rider.district, (counts.get(rider.district) ?? 0) + 1)
     return [...counts.entries()].sort(([a], [b]) => a.localeCompare(b))
   }, [riders])
-  const sorted = useMemo(
+  const byName = useMemo(
     () =>
       [...riders].sort(
         (a, b) => a.district.localeCompare(b.district) || a.name.localeCompare(b.name),
@@ -62,8 +68,8 @@ export function LiveRiders() {
     [riders],
   )
   const riderOptions = useMemo(
-    () => (district === "all" ? sorted : sorted.filter((rider) => rider.district === district)),
-    [sorted, district],
+    () => (district === "all" ? byName : byName.filter((rider) => rider.district === district)),
+    [byName, district],
   )
   // A chosen rider narrows everything to that one rider; otherwise the district does.
   const chosen = riderId === "all" ? undefined : riders.find((rider) => rider.id === riderId)
@@ -72,22 +78,22 @@ export function LiveRiders() {
       chosen
         ? [chosen]
         : district === "all"
-          ? sorted
-          : sorted.filter((rider) => rider.district === district),
-    [chosen, district, sorted],
+          ? byName
+          : byName.filter((rider) => rider.district === district),
+    [chosen, district, byName],
   )
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const current = Math.min(page, totalPages)
-  const rows = filtered.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE)
+  const located = useMemo(() => filtered.filter(hasPosition), [filtered])
+  const partners = useMemo(() => {
+    const groups = new Map<string, Rider[]>()
+    for (const rider of filtered)
+      groups.set(rider.fleetName, [...(groups.get(rider.fleetName) ?? []), rider])
+    return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b))
+  }, [filtered])
+  const freshCount = riders.filter((rider) => rider.positionFresh).length
 
   const pickDistrict = (name: string) => {
     setDistrict(name)
     setRiderId("all")
-    setPage(1)
-  }
-  const pickRider = (id: string) => {
-    setRiderId(id)
-    setPage(1)
   }
 
   return (
@@ -97,8 +103,8 @@ export function LiveRiders() {
           <Bike size={16} /> Riders live
         </h3>
         <p>
-          {riders.length} rider{riders.length === 1 ? "" : "s"} reported a position in the last six
-          hours (latest 200).
+          {riders.length} active rider{riders.length === 1 ? "" : "s"} · {freshCount} reported a
+          position in the last six hours
         </p>
       </header>
       {q.isPending && <p className="lr-empty">Loading riders…</p>}
@@ -108,7 +114,7 @@ export function LiveRiders() {
         </p>
       )}
       {!q.isPending && riders.length === 0 && (
-        <p className="lr-empty">No rider has reported a position yet.</p>
+        <p className="lr-empty">No active riders in your zones yet.</p>
       )}
       {riders.length > 0 && (
         <>
@@ -128,7 +134,7 @@ export function LiveRiders() {
               <span>Rider</span>
               <select
                 value={chosen ? chosen.id : "all"}
-                onChange={(e) => pickRider(e.target.value)}
+                onChange={(e) => setRiderId(e.target.value)}
               >
                 <option value="all">All riders ({riderOptions.length})</option>
                 {riderOptions.map((rider) => (
@@ -139,92 +145,77 @@ export function LiveRiders() {
               </select>
             </label>
           </div>
-          <LiveRidersMap riders={filtered} />
-          <div className="lr-table-wrap">
-            <table className="lr-table">
-              <thead>
-                <tr>
-                  <th>Rider</th>
-                  <th>District</th>
-                  <th>Admin</th>
-                  <th>Partner</th>
-                  <th>Zone</th>
-                  <th>Status</th>
-                  <th>Active orders</th>
-                  <th>Last seen</th>
-                  <th>Map</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((rider) => (
-                  <tr key={rider.id}>
-                    <td>
-                      <strong>{rider.name}</strong>
-                      <small>{rider.code}</small>
-                    </td>
-                    <td>{rider.district}</td>
-                    <td>{rider.adminName ?? "Not assigned"}</td>
-                    <td>{rider.fleetName}</td>
-                    <td>{rider.zoneName}</td>
-                    <td>
-                      <span className={`lr-status ${rider.availability}`}>
-                        {rider.availability.replaceAll("_", " ")}
-                      </span>
-                    </td>
-                    <td>{rider.activeOrders}</td>
-                    <td>{when(rider.lastSeenAt)}</td>
-                    <td>
-                      <a
-                        href={`https://www.openstreetmap.org/?mlat=${rider.lat}&mlon=${rider.lng}#map=16/${rider.lat}/${rider.lng}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Open map
-                      </a>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <nav className="lr-pager" aria-label="Riders pages">
-            <p>
-              {filtered.length} rider{filtered.length === 1 ? "" : "s"}
-            </p>
-            <div>
-              <button
-                type="button"
-                aria-label="Previous page"
-                disabled={current === 1}
-                onClick={() => setPage(current - 1)}
-              >
-                &lt;
-              </button>
-              {pageItems(current, totalPages).map((item, index) =>
-                item === "…" ? (
-                  <span key={`gap-${index}`}>…</span>
-                ) : (
-                  <button
-                    type="button"
-                    key={item}
-                    aria-current={item === current ? "page" : undefined}
-                    className={item === current ? "active" : ""}
-                    onClick={() => setPage(item)}
-                  >
-                    {item}
-                  </button>
-                ),
-              )}
-              <button
-                type="button"
-                aria-label="Next page"
-                disabled={current === totalPages}
-                onClick={() => setPage(current + 1)}
-              >
-                &gt;
-              </button>
-            </div>
-          </nav>
+          <LiveRidersMap riders={located as MapRider[]} />
+          <p className="lr-map-note">
+            {located.length} of {filtered.length} riders have a position on the map.
+          </p>
+
+          <section className="lr-partners" aria-label="Delivery partners and their riders">
+            <h4>Delivery partners and their riders</h4>
+            {partners.length === 0 && <p className="lr-empty">No riders match these filters.</p>}
+            {partners.map(([partnerName, list]) => (
+              <details key={partnerName} className="lr-partner" open={partners.length <= 3}>
+                <summary>
+                  <ChevronDown size={16} aria-hidden="true" />
+                  <strong>{partnerName}</strong>
+                  <span>
+                    {list.length} rider{list.length === 1 ? "" : "s"} ·{" "}
+                    {list.filter(onShift).length} on shift · {list.filter(hasPosition).length} on
+                    the map
+                  </span>
+                </summary>
+                <div className="lr-table-wrap">
+                  <table className="lr-table">
+                    <thead>
+                      <tr>
+                        <th>Rider</th>
+                        <th>District</th>
+                        <th>Admin</th>
+                        <th>Zone</th>
+                        <th>Status</th>
+                        <th>Active orders</th>
+                        <th>Last seen</th>
+                        <th>Map</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {list.map((rider) => (
+                        <tr key={rider.id}>
+                          <td>
+                            <strong>{rider.name}</strong>
+                            <small>{rider.code}</small>
+                          </td>
+                          <td>{rider.district}</td>
+                          <td>{rider.adminName ?? "Not assigned"}</td>
+                          <td>{rider.zoneName}</td>
+                          <td>
+                            <span className={`lr-status ${rider.availability}`}>
+                              {rider.availability.replaceAll("_", " ")}
+                            </span>
+                          </td>
+                          <td>{rider.activeOrders}</td>
+                          <td>{when(rider.lastSeenAt)}</td>
+                          <td>
+                            {hasPosition(rider) ? (
+                              <a
+                                href={`https://www.openstreetmap.org/?mlat=${rider.lat}&mlon=${rider.lng}#map=16/${rider.lat}/${rider.lng}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                Open map
+                              </a>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            ))}
+          </section>
         </>
       )}
     </section>

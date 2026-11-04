@@ -359,7 +359,7 @@ registry.registerPath({
   method: "get",
   path: "/delivery/riders/live",
   tags,
-  summary: "Riders who reported a position in the last six hours, in the member's zones",
+  summary: "Active riders in the member's zones, with their last reported position if any",
   responses: {
     200: json(
       z.array(
@@ -373,9 +373,10 @@ registry.registerPath({
           zoneName: z.string(),
           availability: z.string(),
           activeOrders: z.number().int(),
-          lat: z.number(),
-          lng: z.number(),
-          lastSeenAt: z.iso.datetime(),
+          lat: z.number().nullable(),
+          lng: z.number().nullable(),
+          lastSeenAt: z.iso.datetime().nullable(),
+          positionFresh: z.boolean(),
         }),
       ),
     ),

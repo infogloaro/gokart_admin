@@ -2039,12 +2039,17 @@ export async function reportBoyLocation(
   return { ok: true as const }
 }
 
-/** Riders who have reported a position recently, in the member's zones. */
+/** How long a reported position counts as current for the live map. */
+const POSITION_WINDOW_MS = 6 * 60 * 60 * 1000
+
+/**
+ * Every active rider in the member's zones. Riders who have not reported a position are included
+ * with no location, so the list shows the whole workforce; the map only places riders with one.
+ */
 export async function liveRiders(member: MemberContext) {
   const rows = await prisma.deliveryBoy.findMany({
     where: {
       status: "active",
-      lastLocationAt: { not: null, gte: new Date(Date.now() - 6 * 60 * 60 * 1000) },
       ...(member.role !== "super_admin" && { zoneId: { in: member.zoneIds } }),
     },
     select: {
@@ -2060,12 +2065,13 @@ export async function liveRiders(member: MemberContext) {
       reviewAdmin: { select: { name: true } },
       _count: { select: { assignments: { where: { endedAt: null } } } },
     },
-    orderBy: { lastLocationAt: "desc" },
-    take: 200,
+    orderBy: [{ lastLocationAt: { sort: "desc", nulls: "last" } }, { name: "asc" }],
+    take: 1000,
   })
-  return rows
-    .filter((row) => row.lastLat !== null && row.lastLng !== null && row.lastLocationAt !== null)
-    .map((row) => ({
+  const cutoff = Date.now() - POSITION_WINDOW_MS
+  return rows.map((row) => {
+    const hasPosition = row.lastLat !== null && row.lastLng !== null && row.lastLocationAt !== null
+    return {
       id: row.id,
       code: row.code,
       name: row.name,
@@ -2075,8 +2081,11 @@ export async function liveRiders(member: MemberContext) {
       zoneName: `${row.zone.location}, ${row.zone.city}`,
       availability: row.availability,
       activeOrders: row._count.assignments,
-      lat: row.lastLat!,
-      lng: row.lastLng!,
-      lastSeenAt: row.lastLocationAt!.toISOString(),
-    }))
+      lat: hasPosition ? row.lastLat : null,
+      lng: hasPosition ? row.lastLng : null,
+      lastSeenAt: hasPosition ? row.lastLocationAt!.toISOString() : null,
+      /** True when the position was reported in the last six hours. */
+      positionFresh: hasPosition && row.lastLocationAt!.getTime() >= cutoff,
+    }
+  })
 }
