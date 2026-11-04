@@ -10,6 +10,8 @@ import type {
   CreateDistrictRequest,
   CreateAdminRequest,
   CreateFeeRuleRequest,
+  CreateSurgeRuleRequest,
+  SurgePreviewRequest,
   CreateZoneRequest,
   UpdateDistrictRequest,
   UpdateAdminRequest,
@@ -218,3 +220,45 @@ export function auditExportUrl(
   for (const [key, value] of Object.entries(filters)) if (value) params.set(key, String(value))
   return `/api/v1/audit/export?${params}`
 }
+
+export const useSurgeRules = () =>
+  useQuery({
+    queryKey: ["system", "surge"],
+    queryFn: () => api("get", "/settings/surge"),
+  })
+
+export function useSaveSurgeRule() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (input: { id: string | null; body: CreateSurgeRuleRequest }) =>
+      input.id
+        ? api("put", "/settings/surge/{id}", { params: { id: input.id }, body: input.body })
+        : api("post", "/settings/surge", { body: input.body }),
+    onSuccess: () => void client.invalidateQueries({ queryKey: ["system", "surge"] }),
+  })
+}
+
+export function useSetSurgeActive() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (input: { id: string; active: boolean }) =>
+      api("patch", "/settings/surge/{id}/active", {
+        params: { id: input.id },
+        body: { active: input.active },
+      }),
+    onSuccess: () => void client.invalidateQueries({ queryKey: ["system", "surge"] }),
+  })
+}
+
+export function useDeleteSurgeRule() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api("delete", "/settings/surge/{id}", { params: { id } }),
+    onSuccess: () => void client.invalidateQueries({ queryKey: ["system", "surge"] }),
+  })
+}
+
+export const useSurgePreview = () =>
+  useMutation({
+    mutationFn: (body: SurgePreviewRequest) => api("post", "/settings/surge/preview", { body }),
+  })

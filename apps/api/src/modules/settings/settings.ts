@@ -17,6 +17,7 @@ import { prisma } from "../../lib/prisma"
 import { actorOf, currentMember, requireAuth, requirePermission } from "../../middleware/auth"
 import { errors, json, registry } from "../../openapi/registry"
 import { z } from "zod"
+import { surgeRoutes } from "./surge"
 
 function assertSuperAdmin(req: Request) {
   if (currentMember(req).role !== "super_admin") throw forbidden()
@@ -284,10 +285,11 @@ async function deleteZone(req: Request<{ id: string }>, res: Response) {
       tx.deliveryBoy.count({ where: { zoneId: zone.id } }),
       tx.deliveryFleetZone.count({ where: { zoneId: zone.id } }),
       tx.feeRule.count({ where: { zoneId: zone.id } }),
+      tx.surgeRule.count({ where: { zoneId: zone.id } }),
     ])
     if (inUse.some(Boolean))
       throw conflict(
-        "This zone has orders, vendors, delivery partners, riders or fee rules. Deactivate it instead of deleting.",
+        "This zone has orders, vendors, delivery partners, riders, fee rules or surge rules. Deactivate it instead of deleting.",
       )
     await tx.zone.delete({ where: { id: zone.id } })
     await audit(
@@ -494,6 +496,7 @@ export const settingsRoutes = Router()
   .delete("/zones/:id", deleteZone)
   .get("/fees", fees)
   .post("/fees", createFee)
+  .use("/surge", surgeRoutes)
 
 registry.registerPath({
   method: "get",

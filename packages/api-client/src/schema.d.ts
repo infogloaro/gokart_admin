@@ -315,6 +315,581 @@ export interface paths {
         };
         trace?: never;
     };
+    "/settings/surge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List surge pricing rules */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            name: string;
+                            /** @enum {string} */
+                            kind: "peak" | "night" | "rain" | "festival" | "custom";
+                            /** @enum {string|null} */
+                            business: "food" | "mart" | null;
+                            zoneId: string | null;
+                            multiplierPercent: number;
+                            maxExtraPaise: number | null;
+                            startMinute: number | null;
+                            endMinute: number | null;
+                            days: number[];
+                            startsOn: string | null;
+                            endsOn: string | null;
+                            zoneName: string | null;
+                            active: boolean;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        }[];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Create a surge pricing rule */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        name: string;
+                        /** @enum {string} */
+                        kind: "peak" | "night" | "rain" | "festival" | "custom";
+                        /** @enum {string|null} */
+                        business: "food" | "mart" | null;
+                        zoneId: string | null;
+                        multiplierPercent: number;
+                        maxExtraPaise: number | null;
+                        startMinute: number | null;
+                        endMinute: number | null;
+                        days: number[];
+                        startsOn: string | null;
+                        endsOn: string | null;
+                        active: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            name: string;
+                            /** @enum {string} */
+                            kind: "peak" | "night" | "rain" | "festival" | "custom";
+                            /** @enum {string|null} */
+                            business: "food" | "mart" | null;
+                            zoneId: string | null;
+                            multiplierPercent: number;
+                            maxExtraPaise: number | null;
+                            startMinute: number | null;
+                            endMinute: number | null;
+                            days: number[];
+                            startsOn: string | null;
+                            endsOn: string | null;
+                            zoneName: string | null;
+                            active: boolean;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/surge/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Price a delivery with and without a draft surge rule */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        business: "food" | "mart";
+                        zoneId: string | null;
+                        distanceKm: number;
+                        cartPaise: number;
+                        /** Format: date-time */
+                        at: string;
+                        draft: {
+                            name: string;
+                            /** @enum {string} */
+                            kind: "peak" | "night" | "rain" | "festival" | "custom";
+                            /** @enum {string|null} */
+                            business: "food" | "mart" | null;
+                            zoneId: string | null;
+                            multiplierPercent: number;
+                            maxExtraPaise: number | null;
+                            startMinute: number | null;
+                            endMinute: number | null;
+                            days: number[];
+                            startsOn: string | null;
+                            endsOn: string | null;
+                        } | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            feeRule: {
+                                id: string;
+                                baseFeePaise: number;
+                                perKmPaise: number;
+                                freeAbovePaise: number | null;
+                                /** Format: date-time */
+                                effectiveFrom: string;
+                                zoneName: string | null;
+                            } | null;
+                            without: {
+                                subtotalPaise: number;
+                                totalPaise: number;
+                                freeDelivery: boolean;
+                                matched: string[];
+                                surgeName: string | null;
+                                extraPaise: number;
+                            };
+                            with: {
+                                baseFeePaise: number;
+                                distanceFeePaise: number;
+                                subtotalPaise: number;
+                                freeDelivery: boolean;
+                                matched: string[];
+                                surgeName: string | null;
+                                multiplierPercent: number | null;
+                                extraPaise: number;
+                                capped: boolean;
+                                totalPaise: number;
+                            };
+                        };
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Changed by someone else; reload and retry */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/surge/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace a surge pricing rule */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        name: string;
+                        /** @enum {string} */
+                        kind: "peak" | "night" | "rain" | "festival" | "custom";
+                        /** @enum {string|null} */
+                        business: "food" | "mart" | null;
+                        zoneId: string | null;
+                        multiplierPercent: number;
+                        maxExtraPaise: number | null;
+                        startMinute: number | null;
+                        endMinute: number | null;
+                        days: number[];
+                        startsOn: string | null;
+                        endsOn: string | null;
+                        active: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            name: string;
+                            /** @enum {string} */
+                            kind: "peak" | "night" | "rain" | "festival" | "custom";
+                            /** @enum {string|null} */
+                            business: "food" | "mart" | null;
+                            zoneId: string | null;
+                            multiplierPercent: number;
+                            maxExtraPaise: number | null;
+                            startMinute: number | null;
+                            endMinute: number | null;
+                            days: number[];
+                            startsOn: string | null;
+                            endsOn: string | null;
+                            zoneName: string | null;
+                            active: boolean;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        /** Delete a surge pricing rule */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/surge/{id}/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Switch a surge pricing rule on or off */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        active: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            name: string;
+                            /** @enum {string} */
+                            kind: "peak" | "night" | "rain" | "festival" | "custom";
+                            /** @enum {string|null} */
+                            business: "food" | "mart" | null;
+                            zoneId: string | null;
+                            multiplierPercent: number;
+                            maxExtraPaise: number | null;
+                            startMinute: number | null;
+                            endMinute: number | null;
+                            days: number[];
+                            startsOn: string | null;
+                            endsOn: string | null;
+                            zoneName: string | null;
+                            active: boolean;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
     "/settings/districts": {
         parameters: {
             query?: never;
