@@ -25,6 +25,8 @@ declare global {
       member?: MemberContext
       sessionToken?: string
       deliveryFleetId?: string
+      riderBoyId?: string
+      riderSessionToken?: string
     }
   }
 }

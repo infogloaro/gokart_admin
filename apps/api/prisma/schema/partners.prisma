@@ -198,6 +198,9 @@ model DeliveryBoy {
   payoutIfsc      String?
   status          DeliveryBoyStatus       @default(pending_admin)
   availability    DeliveryBoyAvailability @default(offline)
+  /// Hashed password the rider uses to sign in to the rider app. Set by the team.
+  appPasswordHash String?
+  appPasswordSetAt DateTime?
   maxActiveOrders Int                     @default(1)
   reviewAdminId   String?
   version         Int                     @default(0)
@@ -216,6 +219,8 @@ model DeliveryBoy {
   history       DeliveryHistory[]
   supportTickets RiderSupportTicket[]
   offers DeliveryOffer[]
+  shifts RiderShift[]
+  profileChanges RiderProfileChange[]
   serviceAreas DeliveryBoyArea[]
   codCollections CodCollection[]
 
@@ -372,4 +377,41 @@ model DeliveryBoyArea {
   @@unique([boyId, zoneId])
   @@index([zoneId, status])
   @@map("delivery_boy_areas")
+}
+
+/// A rider's time on shift: from start to end. Open while the rider is on shift.
+model RiderShift {
+  id         String      @id @default(cuid())
+  boyId      String
+  startedAt  DateTime    @default(now())
+  endedAt    DateTime?
+  endedById  String?
+  boy        DeliveryBoy @relation(fields: [boyId], references: [id], onDelete: Cascade)
+
+  @@index([boyId, endedAt])
+  @@index([endedAt, startedAt])
+  @@map("rider_shifts")
+}
+
+enum ProfileChangeStatus {
+  pending
+  approved
+  rejected
+}
+
+/// A change to a rider's details, asked for in the app. The team approves it before it applies.
+model RiderProfileChange {
+  id          String              @id @default(cuid())
+  boyId       String
+  changes     Json
+  status      ProfileChangeStatus @default(pending)
+  requestedAt DateTime            @default(now())
+  decidedAt   DateTime?
+  decidedById String?
+  reason      String?
+  boy         DeliveryBoy         @relation(fields: [boyId], references: [id], onDelete: Cascade)
+
+  @@index([status, requestedAt])
+  @@index([boyId, status])
+  @@map("rider_profile_changes")
 }

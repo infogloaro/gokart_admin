@@ -49,8 +49,14 @@ import { Badge, Button, ErrorBox, Input, Modal, Select, Tabs, Toast } from "./ui
 import { ReasonDialog } from "./reason-dialog"
 import { BoyTimeline, FleetHistory } from "./history-list"
 import { RiderOps } from "@/components/rider-ops"
+import { RiderPhase3 } from "@/components/rider-phase3"
 
-const MANAGEMENT_TABS = ["Fleet partners", "Rider applications", "Support & cash"] as const
+const MANAGEMENT_TABS = [
+  "Fleet partners",
+  "Rider applications",
+  "Support & cash",
+  "Shifts & earnings",
+] as const
 type ManagementTab = (typeof MANAGEMENT_TABS)[number]
 
 const FLEET_STATUS_LABEL: Record<DeliveryFleet["status"], string> = {
@@ -101,6 +107,7 @@ export function SuperDeliveryManagement() {
       {tab === "Fleet partners" && <FleetPartners />}
       {tab === "Rider applications" && <RiderApplications />}
       {tab === "Support & cash" && <RiderOps />}
+      {tab === "Shifts & earnings" && <RiderPhase3 />}
     </>
   )
 }

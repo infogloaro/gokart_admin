@@ -7,6 +7,7 @@ import { redis } from "./lib/redis"
 import { authRoutes } from "./modules/auth/auth.routes"
 import { dashboardRoutes, searchRoutes } from "./modules/dashboard/dashboard.routes"
 import { deliveryRoutes } from "./modules/delivery/delivery.routes"
+import { riderAppRoutes } from "./modules/delivery/rider-app.routes"
 import { riderOpsRoutes } from "./modules/rider-ops/rider-ops.routes"
 import { auditRoutes } from "./modules/audit/audit"
 import { complaintRoutes } from "./modules/complaints/complaints.routes"
@@ -34,6 +35,7 @@ import "./modules/ledger/ledger.openapi"
 import "./modules/dashboard/dashboard.openapi"
 import "./modules/delivery/delivery.openapi"
 import "./modules/rider-ops/rider-ops.openapi"
+import "./modules/delivery/rider-phase3.openapi"
 import "./modules/orders/orders.openapi"
 import "./modules/notifications/notifications.openapi"
 import "./modules/partners/partners.openapi"
@@ -61,6 +63,7 @@ export function createApp() {
   v1.use("/dashboard", dashboardRoutes)
   v1.use("/delivery", deliveryRoutes)
   v1.use("/delivery", riderOpsRoutes)
+  v1.use("/delivery", riderAppRoutes)
   v1.use("/audit", auditRoutes)
   v1.use("/complaints", complaintRoutes)
   v1.use("/finance", financeRoutes)

@@ -12,6 +12,7 @@ import { initials, maskPhone } from "@/lib/partners"
 import { useDeliveryBoys, useReviewDeliveryBoy, useVerifyBoyDocument } from "@/lib/delivery"
 import { useMe } from "@/lib/session"
 import { RiderOps } from "@/components/rider-ops"
+import { RiderPhase3 } from "@/components/rider-phase3"
 import { AdminPartnerRequests, PartnerRequestDialog } from "./partner-request"
 import { AdminBadge, AdminButton, PageHeader } from "./ui"
 
@@ -48,6 +49,7 @@ function RidersScreen({ business, initialSearch }: { business: Business; initial
   const [reviewing, setReviewing] = useState(false)
   const [adding, setAdding] = useState(false)
   const [ops, setOps] = useState(false)
+  const [insights, setInsights] = useState(false)
   const [openId, setOpenId] = useState<string | null>(null)
   const riders = useDeliveryBoys({
     business,
@@ -75,6 +77,9 @@ function RidersScreen({ business, initialSearch }: { business: Business; initial
             <AdminButton kind="secondary" onClick={() => setOps((open) => !open)}>
               {ops ? "Hide support & cash" : "Support & cash"}
             </AdminButton>
+            <AdminButton kind="secondary" onClick={() => setInsights((open) => !open)}>
+              {insights ? "Hide shifts & earnings" : "Shifts & earnings"}
+            </AdminButton>
             <AdminButton kind="secondary" icon={ShieldCheck} onClick={() => setReviewing(true)}>
               Rider applications
             </AdminButton>
@@ -85,6 +90,7 @@ function RidersScreen({ business, initialSearch }: { business: Business; initial
         )}
       </PageHeader>
       {ops && <RiderOps />}
+      {insights && <RiderPhase3 />}
       <AdminPartnerRequests business={business} />
       <section className="panel full-panel">
         <div className="toolbar">
