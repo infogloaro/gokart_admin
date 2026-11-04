@@ -145,7 +145,7 @@ export const deliveryRoutes = Router()
     requireFleetCredential,
     async (req, res) => {
       const body = parse(
-        z.object({ code: z.string().regex(/^d{4}$/, "Enter the 4-digit code.") }),
+        z.object({ code: z.string().regex(/^\d{4}$/, "Enter the 4-digit code.") }),
         req.body,
       )
       await verifyDeliveryCode(
