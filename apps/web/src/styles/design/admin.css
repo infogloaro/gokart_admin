@@ -166,7 +166,23 @@
 .admin-ui .demo-line > span{ color:#94a3b8;font-size:9px; }
 .admin-ui .page-header h1{ font-size:26px;line-height:1.15;letter-spacing:-.7px;margin:7px 0 6px; }
 .admin-ui .page-header p{ margin:0;color:var(--muted);font-size:11px; }
-.admin-ui .page-actions{ display:flex;align-items:center;gap:8px; }
+.admin-ui .page-actions{ display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:8px; }
+
+/* Rider list: fixed column widths, readable two-line cells, scrolls sideways on narrow screens. */
+.admin-ui .rider-table-wrap{ overflow-x:auto; }
+.admin-ui .rider-table{ table-layout:fixed;min-width:980px; }
+.admin-ui .rider-table th{ text-align:left;vertical-align:middle;white-space:nowrap;padding:12px 14px; }
+.admin-ui .rider-table td{ white-space:normal;vertical-align:middle;padding:12px 14px;line-height:1.45;overflow-wrap:anywhere; }
+.admin-ui .rider-table td strong{ font-size:13px;font-weight:600; }
+.admin-ui .rider-table td small{ font-size:11px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.admin-ui .rider-table .col-rider{ width:22%; }
+.admin-ui .rider-table .col-company{ width:16%; }
+.admin-ui .rider-table .col-zone{ width:17%; }
+.admin-ui .rider-table .col-vehicle{ width:18%; }
+.admin-ui .rider-table .col-avail{ width:11%; }
+.admin-ui .rider-table .col-status{ width:9%; }
+.admin-ui .rider-table .col-docs{ width:12%; }
+.admin-ui .rider-table .rider-availability{ text-transform:capitalize;white-space:nowrap; }
 .admin-ui .date-filter{ height:40px;display:flex;align-items:center;gap:8px;background:white;border:1px solid var(--line);border-radius:9px;padding:0 13px;color:#475569;font-size:11px; }
 .admin-ui .app-footer{ display:flex;justify-content:space-between;padding:15px 30px;border-top:1px solid var(--line);color:#94a3b8;font-size:9px; }
 .admin-ui .app-footer button{ border:0;background:none;color:var(--navy);font-size:9px;font-weight:600; }

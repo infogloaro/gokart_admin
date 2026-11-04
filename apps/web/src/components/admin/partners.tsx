@@ -123,17 +123,17 @@ function RidersScreen({ business, initialSearch }: { business: Business; initial
           <p className="admin-empty">No riders match these filters.</p>
         )}
         {items.length > 0 && (
-          <div className="table-wrap">
-            <table className="fp-table">
+          <div className="table-wrap rider-table-wrap">
+            <table className="data-table rider-table">
               <thead>
                 <tr>
-                  <th>Rider</th>
-                  <th>Company</th>
-                  <th>Zone</th>
-                  <th>Vehicle</th>
-                  <th>Availability</th>
-                  <th>Status</th>
-                  <th>Documents</th>
+                  <th className="col-rider">Rider</th>
+                  <th className="col-company">Company</th>
+                  <th className="col-zone">Zone</th>
+                  <th className="col-vehicle">Vehicle</th>
+                  <th className="col-avail">Availability</th>
+                  <th className="col-status">Status</th>
+                  <th className="col-docs">Documents</th>
                 </tr>
               </thead>
               <tbody>
@@ -155,7 +155,7 @@ function RidersScreen({ business, initialSearch }: { business: Business; initial
                     <td>
                       {vehicleLabel[boy.vehicleType]} · {boy.vehicleNumber}
                     </td>
-                    <td>{boy.availability.replaceAll("_", " ")}</td>
+                    <td className="rider-availability">{boy.availability.replaceAll("_", " ")}</td>
                     <td>
                       <AdminBadge tone={STATUS_TONE[boy.status] ?? "neutral"}>
                         {STATUS_LABEL[boy.status] ?? boy.status}
