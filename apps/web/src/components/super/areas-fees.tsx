@@ -15,6 +15,7 @@ import { useMemo, useState, type FormEvent } from "react"
 import { Button, Input, Modal, Panel, Select, Badge } from "./ui"
 import { Count, HeadActions } from "./dashboard"
 import { useRefreshToast } from "@/components/refresh-toast"
+import { useGeography } from "@/lib/finance"
 import {
   useCreateDistrict,
   useCreateFeeRule,
@@ -28,6 +29,7 @@ import {
 
 const PAGE_SIZE = 10
 type ZoneDraft = {
+  state: string
   districtId: string
   city: string
   location: string
@@ -51,6 +53,7 @@ type FeeDraft = {
   effectiveFrom: string
 }
 const blankZone = (): ZoneDraft => ({
+  state: "",
   districtId: "",
   city: "",
   location: "",
@@ -61,7 +64,7 @@ const blankZone = (): ZoneDraft => ({
 const blankDistrict = (): DistrictDraft => ({
   code: "",
   name: "",
-  state: "Tamil Nadu",
+  state: "",
   description: "",
   active: true,
 })
@@ -88,6 +91,7 @@ const rupees = (paise: number) => formatINR(paise)
 export function AreasFees() {
   const runRefresh = useRefreshToast()
   const districts = useManagedDistricts()
+  const geography = useGeography().data ?? []
   const zones = useManagedZones()
   const createDistrict = useCreateDistrict()
   const updateDistrict = useUpdateDistrict()
@@ -210,6 +214,7 @@ export function AreasFees() {
     setZoneEditor(
       zone
         ? {
+            state: districts.data?.find((d) => d.id === zone.districtId)?.state ?? "",
             districtId: zone.districtId,
             city: zone.city,
             location: zone.location,
@@ -501,7 +506,7 @@ export function AreasFees() {
             <option value="">All districts</option>
             {districts.data?.map((district) => (
               <option key={district.id} value={district.id}>
-                {district.name}
+                {district.name}, {district.state}
               </option>
             ))}
           </select>
@@ -708,9 +713,29 @@ export function AreasFees() {
         >
           <form className="sys-editor" onSubmit={(event) => void saveZone(event)}>
             <label className="sys-field">
+              <span>State</span>
+              <select
+                required
+                value={zoneEditor.state}
+                onChange={(event) =>
+                  setZoneEditor({ ...zoneEditor, state: event.target.value, districtId: "" })
+                }
+              >
+                <option value="">Select state</option>
+                {[...new Set((districts.data ?? []).map((district) => district.state))]
+                  .sort()
+                  .map((state) => (
+                    <option key={state} value={state}>
+                      {state}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label className="sys-field">
               <span>District</span>
               <select
                 required
+                disabled={!zoneEditor.state}
                 value={zoneEditor.districtId}
                 onChange={(event) =>
                   setZoneEditor({ ...zoneEditor, districtId: event.target.value })
@@ -718,7 +743,11 @@ export function AreasFees() {
               >
                 <option value="">Select district</option>
                 {districts.data
-                  ?.filter((district) => district.active || district.id === editingZone?.districtId)
+                  ?.filter(
+                    (district) =>
+                      district.state === zoneEditor.state &&
+                      (district.active || district.id === editingZone?.districtId),
+                  )
                   .map((district) => (
                     <option key={district.id} value={district.id}>
                       {district.name}
@@ -807,12 +836,20 @@ export function AreasFees() {
                   required
                   minLength={2}
                   maxLength={120}
+                  list="india-districts"
                   value={districtEditor.name}
                   onChange={(event) =>
                     setDistrictEditor({ ...districtEditor, name: event.target.value })
                   }
                 />
               </label>
+              <datalist id="india-districts">
+                {geography
+                  .find((item) => item.state === districtEditor.state.trim())
+                  ?.districts.map((name) => (
+                    <option key={name} value={name} />
+                  ))}
+              </datalist>
               <label className="sys-field">
                 <span>District code</span>
                 <input
@@ -832,11 +869,18 @@ export function AreasFees() {
                   required
                   minLength={2}
                   maxLength={120}
+                  list="india-states"
+                  placeholder="Choose or type a state / union territory"
                   value={districtEditor.state}
                   onChange={(event) =>
                     setDistrictEditor({ ...districtEditor, state: event.target.value })
                   }
                 />
+                <datalist id="india-states">
+                  {geography.map((item) => (
+                    <option key={item.state} value={item.state} />
+                  ))}
+                </datalist>
               </label>
             </div>
             <label className="sys-field">

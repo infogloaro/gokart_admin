@@ -38,12 +38,7 @@ export function AreaSelect({
         ))}
       </Select>
       {showDistrict && (
-        <Input
-          label="District"
-          value={pick.district ? `${pick.district}, Tamil Nadu` : ""}
-          readOnly
-          placeholder="Set by the zone"
-        />
+        <Input label="District" value={pick.district} readOnly placeholder="Set by the zone" />
       )}
     </>
   )
