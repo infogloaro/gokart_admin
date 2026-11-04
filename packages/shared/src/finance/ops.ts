@@ -314,7 +314,7 @@ export type LedgerEntry = z.infer<typeof LedgerEntry>
 
 // ---------- reports & analytics ----------
 
-const reportDate = z.string().regex(/^d{4}-d{2}-d{2}$/, "Use a YYYY-MM-DD date.")
+const reportDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a YYYY-MM-DD date.")
 
 /** A "custom" period reports the days from `from` to `to` inclusive (IST), at most three years. */
 export const AnalyticsQuery = z
