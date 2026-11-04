@@ -16,26 +16,78 @@ const istDay = (t: number) => new Date(t + IST).toISOString().slice(0, 10)
 const istStart = (day: string) => new Date(Date.parse(`${day}T00:00:00Z`) - IST)
 const DAY = 86_400_000
 
-/** The reporting window and how many buckets it has. */
-function window(period: ReportPeriod, now = Date.now()) {
+type Unit = "day" | "week" | "month"
+type Window = { from: Date; to: Date; unit: Unit; buckets: number; first: string }
+
+const MAX_CUSTOM_DAYS = 1095
+
+/**
+ * A picked span of IST days, inclusive. Dates are swapped if inverted, never run past today, and
+ * reach back at most three years. Short spans report per day, medium ones per week, long ones per month.
+ */
+export function customWindow(fromDay: string, toDay: string, now = Date.now()): Window {
   const today = istDay(now)
+  let last = fromDay > toDay ? fromDay : toDay
+  let first = fromDay > toDay ? toDay : fromDay
+  if (last > today) last = today
+  if (first > last) first = last
+  const dayMs = (d: string) => istStart(d).getTime()
+  if ((dayMs(last) - dayMs(first)) / DAY + 1 > MAX_CUSTOM_DAYS)
+    first = istDay(dayMs(last) - (MAX_CUSTOM_DAYS - 1) * DAY + 3_600_000)
+  const days = Math.round((dayMs(last) - dayMs(first)) / DAY) + 1
+  const from = istStart(first)
+  const to = new Date(Math.min(dayMs(last) + DAY, now))
+  if (days <= 31) return { from, to, unit: "day", buckets: days, first }
+  if (days <= 140) {
+    const dow = (new Date(`${first}T00:00:00Z`).getUTCDay() + 6) % 7
+    const monday = istDay(dayMs(first) - dow * DAY + 3_600_000)
+    const weeks = Math.floor((dayMs(last) - dayMs(monday)) / DAY / 7) + 1
+    return { from, to, unit: "week", buckets: weeks, first: monday }
+  }
+  const [fy, fm] = first.split("-").map(Number) as [number, number]
+  const [ly, lm] = last.split("-").map(Number) as [number, number]
+  return {
+    from,
+    to,
+    unit: "month",
+    buckets: (ly - fy) * 12 + (lm - fm) + 1,
+    first: new Date(Date.UTC(fy, fm - 1, 1)).toISOString().slice(0, 10),
+  }
+}
+
+/** The reporting window and how many buckets it has. */
+export function window(
+  period: ReportPeriod,
+  now = Date.now(),
+  range?: { from: string; to: string },
+): Window {
+  const today = istDay(now)
+  if (period === "custom") return customWindow(range?.from ?? today, range?.to ?? today, now)
   if (period === "daily") {
     const from = istStart(istDay(istStart(today).getTime() - 13 * DAY + 3_600_000))
-    return { from, to: new Date(now), unit: "day" as const, buckets: 14 }
+    return {
+      from,
+      to: new Date(now),
+      unit: "day",
+      buckets: 14,
+      first: istDay(from.getTime() + 3_600_000),
+    }
   }
   if (period === "weekly") {
     const dow = (new Date(`${today}T00:00:00Z`).getUTCDay() + 6) % 7
     const monday = istStart(today).getTime() - dow * DAY
+    const from = new Date(monday - 7 * 7 * DAY)
     return {
-      from: new Date(monday - 7 * 7 * DAY),
+      from,
       to: new Date(now),
-      unit: "week" as const,
+      unit: "week",
       buckets: 8,
+      first: istDay(from.getTime() + 3_600_000),
     }
   }
   const [y, m] = today.split("-").map(Number) as [number, number]
   const first = new Date(Date.UTC(y, m - 1 - 5, 1)).toISOString().slice(0, 10)
-  return { from: istStart(first), to: new Date(now), unit: "month" as const, buckets: 6 }
+  return { from: istStart(first), to: new Date(now), unit: "month", buckets: 6, first }
 }
 
 function where(s: Scope, from: Date, to: Date) {
@@ -55,15 +107,19 @@ async function totals(s: Scope, from: Date, to: Date) {
   return { orders: r!.orders, gross: Number(r!.gross), platform: Number(r!.platform) }
 }
 
-const label = (unit: "day" | "week" | "month", day: string) => {
+const label = (unit: Unit, day: string) => {
   const d = new Date(`${day}T00:00:00Z`)
   const opts: Intl.DateTimeFormatOptions =
     unit === "month" ? { month: "short", year: "numeric" } : { day: "numeric", month: "short" }
   return `${unit === "week" ? "Wk of " : ""}${d.toLocaleDateString("en-IN", { ...opts, timeZone: "UTC" })}`
 }
 
-export async function analytics(s: Scope, period: ReportPeriod): Promise<Analytics> {
-  const w = window(period)
+export async function analytics(
+  s: Scope,
+  period: ReportPeriod,
+  range?: { from: string; to: string },
+): Promise<Analytics> {
+  const w = window(period, Date.now(), range)
   const span = w.to.getTime() - w.from.getTime()
   const prevFrom = new Date(w.from.getTime() - span)
   const unit = Prisma.raw(`'${w.unit}'`)
@@ -94,12 +150,16 @@ export async function analytics(s: Scope, period: ReportPeriod): Promise<Analyti
   ])
   // Every bucket in the window, including empty ones.
   const starts: string[] = []
-  const firstDay = istDay(w.from.getTime())
   for (let i = 0; i < w.buckets; i++) {
     if (w.unit === "month") {
-      const [y, m] = firstDay.split("-").map(Number) as [number, number]
+      const [y, m] = w.first.split("-").map(Number) as [number, number]
       starts.push(new Date(Date.UTC(y, m - 1 + i, 1)).toISOString().slice(0, 10))
-    } else starts.push(istDay(w.from.getTime() + i * (w.unit === "week" ? 7 : 1) * DAY + 3_600_000))
+    } else
+      starts.push(
+        new Date(Date.parse(`${w.first}T00:00:00Z`) + i * (w.unit === "week" ? 7 : 1) * DAY)
+          .toISOString()
+          .slice(0, 10),
+      )
   }
   const avg = (t: { orders: number; gross: number }) =>
     t.orders ? Math.round(t.gross / t.orders) : 0
@@ -142,5 +202,11 @@ export const reportRoutes = Router()
     const q = parse(AnalyticsQuery, req.query)
     const s = scope(req)
     const zoneIds = await geoZoneIds(parse(GeoQuery, req.query), s.zoneIds)
-    res.json(await analytics({ ...s, zoneIds }, q.period))
+    res.json(
+      await analytics(
+        { ...s, zoneIds },
+        q.period,
+        q.from && q.to ? { from: q.from, to: q.to } : undefined,
+      ),
+    )
   })

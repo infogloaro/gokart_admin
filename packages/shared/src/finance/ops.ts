@@ -209,7 +209,7 @@ export const MoneyMovement = z.object({
 })
 export type MoneyMovement = z.infer<typeof MoneyMovement>
 
-export const REPORT_PERIODS = ["daily", "weekly", "monthly"] as const
+export const REPORT_PERIODS = ["daily", "weekly", "monthly", "custom"] as const
 export const ReportPeriod = z.enum(REPORT_PERIODS)
 export type ReportPeriod = z.infer<typeof ReportPeriod>
 
@@ -314,10 +314,20 @@ export type LedgerEntry = z.infer<typeof LedgerEntry>
 
 // ---------- reports & analytics ----------
 
-export const AnalyticsQuery = z.object({
-  period: ReportPeriod.default("monthly"),
-  ...GeoFields.shape,
-})
+const reportDate = z.string().regex(/^d{4}-d{2}-d{2}$/, "Use a YYYY-MM-DD date.")
+
+/** A "custom" period reports the days from `from` to `to` inclusive (IST), at most three years. */
+export const AnalyticsQuery = z
+  .object({
+    period: ReportPeriod.default("monthly"),
+    from: reportDate.optional(),
+    to: reportDate.optional(),
+    ...GeoFields.shape,
+  })
+  .refine((q) => q.period !== "custom" || (q.from !== undefined && q.to !== undefined), {
+    message: "Choose a first and a last date for a custom period.",
+    path: ["from"],
+  })
 export const Analytics = z.object({
   period: ReportPeriod,
   metrics: z.object({

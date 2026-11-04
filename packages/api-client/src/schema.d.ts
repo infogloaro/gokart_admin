@@ -4919,7 +4919,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    period?: "daily" | "weekly" | "monthly";
+                    period?: "daily" | "weekly" | "monthly" | "custom";
                     state?: string;
                     district?: string;
                 };
@@ -6280,7 +6280,9 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    period?: "daily" | "weekly" | "monthly";
+                    period?: "daily" | "weekly" | "monthly" | "custom";
+                    from?: string;
+                    to?: string;
                     state?: string;
                     district?: string;
                 };
@@ -15536,7 +15538,7 @@ export interface components {
         };
         Analytics: {
             /** @enum {string} */
-            period: "daily" | "weekly" | "monthly";
+            period: "daily" | "weekly" | "monthly" | "custom";
             metrics: {
                 orders: {
                     value: number;

@@ -233,10 +233,18 @@ export const useLedger = (q: LedgerFilters) =>
 
 // ---------- reports ----------
 
-export const useAnalytics = (period: ReportPeriod, geo: Geo = {}) =>
+/** `range` (IST dates, inclusive) applies to the "custom" period only. */
+export const useAnalytics = (
+  period: ReportPeriod,
+  geo: Geo = {},
+  range?: { from: string; to: string },
+) =>
   useQuery({
-    queryKey: ["reports", "analytics", period, geo],
-    queryFn: () => api("get", "/reports/analytics", { query: { period, ...geo } }),
+    queryKey: ["reports", "analytics", period, geo, period === "custom" ? range : null],
+    queryFn: () =>
+      api("get", "/reports/analytics", {
+        query: { period, ...geo, ...(period === "custom" ? range : {}) },
+      }),
     placeholderData: keepPreviousData,
   })
 

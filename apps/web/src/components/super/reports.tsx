@@ -15,8 +15,13 @@ import { TrendChart } from "./overview"
 import { useBusinessFilter } from "./shell"
 import { Badge, Button, ErrorBox, Panel, Tabs, Toast, type ToastMessage } from "./ui"
 
-const PERIODS = ["Daily", "Weekly", "Monthly"] as const
+const PERIODS = ["Daily", "Weekly", "Monthly", "Custom"] as const
 type Period = (typeof PERIODS)[number]
+
+const DAY = 86_400_000
+const istDay = (t: number) => new Date(t + 330 * 60_000).toISOString().slice(0, 10)
+const daysBetween = (from: string, to: string) =>
+  Math.round((Date.parse(to) - Date.parse(from)) / DAY) + 1
 
 const change = (value: number, previous: number) => {
   if (!previous) return value ? "New" : "—"
@@ -30,7 +35,11 @@ export function ReportsAnalytics() {
   const [period, setPeriod] = useState<Period>("Monthly")
   const [toast, setToast] = useState<ToastMessage | null>(null)
   const [geo, setGeo] = useState<Geo>({})
-  const q = useAnalytics(period.toLowerCase() as ReportPeriod, geo)
+  const [from, setFrom] = useState(() => istDay(Date.now() - 29 * DAY))
+  const [to, setTo] = useState(() => istDay(Date.now()))
+  const custom = period === "Custom"
+  const label = custom ? `${from} to ${to}` : period
+  const q = useAnalytics(period.toLowerCase() as ReportPeriod, geo, { from, to })
   const a = q.data
   const m = a?.metrics
   const series = [
@@ -59,7 +68,7 @@ export function ReportsAnalytics() {
     if (!a) return
     const r = (p: number) => (p / 100).toFixed(2)
     const rows: (string | number)[][] = [
-      [`${period} analytics`, new Date().toISOString().slice(0, 10)],
+      [`${label} analytics`, new Date().toISOString().slice(0, 10)],
       [],
       ["Metric", "This period", "Previous period"],
       ["Total orders", a.metrics.orders.value, a.metrics.orders.previous],
@@ -95,7 +104,7 @@ export function ReportsAnalytics() {
     const cell = (v: string | number) =>
       /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v)
     download(
-      `gloaro-analytics-${period.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`,
+      `gloaro-analytics-${custom ? `${from}_to_${to}` : period.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`,
       rows.map((x) => x.map(cell).join(",")).join("\n"),
     )
     setToast({ tone: "success", title: "Done", message: "Analytics workbook downloaded." })
@@ -105,6 +114,26 @@ export function ReportsAnalytics() {
     <>
       <div className="report-tools">
         <Tabs items={PERIODS} value={period} onChange={setPeriod} />
+        {custom && (
+          <span className="range-custom">
+            <input
+              type="date"
+              aria-label="From date"
+              value={from}
+              max={to}
+              onChange={(e) => e.target.value && setFrom(e.target.value)}
+            />
+            <span>to</span>
+            <input
+              type="date"
+              aria-label="To date"
+              value={to}
+              min={from}
+              max={istDay(Date.now())}
+              onChange={(e) => e.target.value && setTo(e.target.value)}
+            />
+          </span>
+        )}
         <GeoFilter value={geo} onChange={setGeo} />
         <Button icon={Download} onClick={exportReport} disabled={!a}>
           Export report
@@ -145,18 +174,20 @@ export function ReportsAnalytics() {
               {delta}{" "}
               <small>
                 vs previous{" "}
-                {period.toLowerCase() === "daily"
-                  ? "14 days"
-                  : period === "Weekly"
-                    ? "8 weeks"
-                    : "6 months"}
+                {custom
+                  ? `${daysBetween(from, to)} days`
+                  : period === "Daily"
+                    ? "14 days"
+                    : period === "Weekly"
+                      ? "8 weeks"
+                      : "6 months"}
               </small>
             </em>
           </div>
         ))}
       </div>
       <div className="grid-two">
-        <Panel title="Business comparison" subtitle={`${period} platform revenue`}>
+        <Panel title="Business comparison" subtitle={`${label} platform revenue`}>
           <TrendChart dates={a?.series.map((s) => s.from) ?? []} series={series} />
         </Panel>
         <Panel title="Top vendor performance" subtitle="By gross order value">

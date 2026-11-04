@@ -2659,7 +2659,8 @@
             "enum": [
               "daily",
               "weekly",
-              "monthly"
+              "monthly",
+              "custom"
             ]
           },
           "metrics": {
@@ -13971,7 +13972,8 @@
               "enum": [
                 "daily",
                 "weekly",
-                "monthly"
+                "monthly",
+                "custom"
               ]
             },
             "required": false,
@@ -15755,12 +15757,31 @@
               "enum": [
                 "daily",
                 "weekly",
-                "monthly"
+                "monthly",
+                "custom"
               ],
               "default": "monthly"
             },
             "required": false,
             "name": "period",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^d{4}-d{2}-d{2}$"
+            },
+            "required": false,
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^d{4}-d{2}-d{2}$"
+            },
+            "required": false,
+            "name": "to",
             "in": "query"
           },
           {
