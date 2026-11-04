@@ -219,64 +219,68 @@ export function ReportsAnalytics() {
 
   return (
     <>
-      <div className="report-tools">
-        <Tabs items={PERIODS} value={period} onChange={setPeriod} />
-        {custom && (
-          <span className="range-custom">
-            <input
-              type="date"
-              aria-label="From date"
-              value={from}
-              max={to}
-              onChange={(e) => e.target.value && setFrom(e.target.value)}
-            />
-            <span>to</span>
-            <input
-              type="date"
-              aria-label="To date"
-              value={to}
-              min={from}
-              max={istDay(Date.now())}
-              onChange={(e) => e.target.value && setTo(e.target.value)}
-            />
-          </span>
-        )}
-        <GeoFilter value={geo} onChange={setGeo} />
-        <label className="report-filter">
-          <span>Delivery partner</span>
-          <select
-            value={fleetId}
-            onChange={(event) => {
-              setFleetId(event.target.value)
-              setBoyId("")
-            }}
-          >
-            <option value="">All partners</option>
-            {(fleets.data?.items ?? []).map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="report-filter">
-          <span>Delivery boy</span>
-          <select
-            value={boyId}
-            disabled={!fleetId}
-            onChange={(event) => setBoyId(event.target.value)}
-          >
-            <option value="">{fleetId ? "All riders" : "Choose a partner first"}</option>
-            {(riders.data?.items ?? []).map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name} · {b.code}
-              </option>
-            ))}
-          </select>
-        </label>
-        <Button icon={Download} onClick={exportReport} disabled={!a}>
-          Export report
-        </Button>
+      <div className="report-bar">
+        <div className="report-bar-row">
+          <Tabs items={PERIODS} value={period} onChange={setPeriod} />
+          <Button icon={Download} onClick={exportReport} disabled={!a}>
+            Export report
+          </Button>
+        </div>
+        <div className="report-filters">
+          {custom && (
+            <span className="range-custom">
+              <input
+                type="date"
+                aria-label="From date"
+                value={from}
+                max={to}
+                onChange={(e) => e.target.value && setFrom(e.target.value)}
+              />
+              <span>to</span>
+              <input
+                type="date"
+                aria-label="To date"
+                value={to}
+                min={from}
+                max={istDay(Date.now())}
+                onChange={(e) => e.target.value && setTo(e.target.value)}
+              />
+            </span>
+          )}
+          <GeoFilter value={geo} onChange={setGeo} />
+          <label className="report-filter">
+            <span>Delivery partner</span>
+            <select
+              value={fleetId}
+              onChange={(event) => {
+                setFleetId(event.target.value)
+                setBoyId("")
+              }}
+            >
+              <option value="">All partners</option>
+              {(fleets.data?.items ?? []).map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="report-filter">
+            <span>Delivery boy</span>
+            <select
+              value={boyId}
+              disabled={!fleetId}
+              onChange={(event) => setBoyId(event.target.value)}
+            >
+              <option value="">{fleetId ? "All riders" : "Choose a partner first"}</option>
+              {(riders.data?.items ?? []).map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name} · {b.code}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </div>
       {q.isError && (
         <ErrorBox icon={AlertTriangle}>

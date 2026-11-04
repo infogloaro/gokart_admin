@@ -122,3 +122,12 @@
 .super-ui .delivery-steps li.pending{color:#94a3b8}
 .super-ui .delivery-steps small{color:#64748b;font-size:.75rem}
 .super-ui .delivery-meta{display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:center;font-size:.8125rem;color:#334155}
+
+/* Reports toolbar: period tabs and export on one row, every filter on the row below, aligned. */
+.super-ui .report-bar{display:grid;gap:.9rem;margin-bottom:1rem}
+.super-ui .report-bar-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem}
+.super-ui .report-bar-row .tabs{border:0}
+.super-ui .report-filters{display:flex;flex-wrap:wrap;align-items:flex-end;gap:.75rem 1rem}
+.super-ui .report-filters .geo-filter > *{min-width:11rem}
+.super-ui .report-filters .report-filter{min-width:12.5rem;flex:1 1 12.5rem;max-width:18rem}
+.super-ui .report-filters .range-custom{align-self:flex-end}
