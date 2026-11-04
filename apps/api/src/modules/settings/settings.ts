@@ -243,6 +243,68 @@ async function findZoneDistrict(
   return matches[0]!
 }
 
+async function deleteDistrict(req: Request<{ id: string }>, res: Response) {
+  assertSuperAdmin(req)
+  await prisma.$transaction(async (tx) => {
+    const district = await tx.district.findUnique({ where: { id: req.params.id } })
+    if (!district) throw notFound("District")
+    const [zones, fleets] = await Promise.all([
+      tx.zone.count({ where: { districtId: district.id } }),
+      tx.deliveryFleet.count({ where: { districtId: district.id } }),
+    ])
+    if (zones || fleets)
+      throw conflict(
+        "This district still has zones or delivery companies. Remove them first, or deactivate the district instead.",
+      )
+    await tx.district.delete({ where: { id: district.id } })
+    await audit(
+      tx,
+      actorOf(req),
+      "district.deleted",
+      { type: "district", id: district.id },
+      {
+        code: district.code,
+        name: district.name,
+        state: district.state,
+      },
+    )
+  })
+  res.status(204).end()
+}
+
+async function deleteZone(req: Request<{ id: string }>, res: Response) {
+  assertSuperAdmin(req)
+  await prisma.$transaction(async (tx) => {
+    const zone = await tx.zone.findUnique({ where: { id: req.params.id } })
+    if (!zone) throw notFound("Service area")
+    const inUse = await Promise.all([
+      tx.order.count({ where: { zoneId: zone.id } }),
+      tx.vendor.count({ where: { zoneId: zone.id } }),
+      tx.partner.count({ where: { zoneId: zone.id } }),
+      tx.deliveryBoy.count({ where: { zoneId: zone.id } }),
+      tx.deliveryFleetZone.count({ where: { zoneId: zone.id } }),
+      tx.feeRule.count({ where: { zoneId: zone.id } }),
+    ])
+    if (inUse.some(Boolean))
+      throw conflict(
+        "This zone has orders, vendors, delivery partners, riders or fee rules. Deactivate it instead of deleting.",
+      )
+    await tx.zone.delete({ where: { id: zone.id } })
+    await audit(
+      tx,
+      actorOf(req),
+      "zone.deleted",
+      { type: "zone", id: zone.id },
+      {
+        district: zone.district,
+        city: zone.city,
+        location: zone.location,
+      },
+    )
+  })
+  res.status(204).end()
+}
+
 async function createZone(req: Request, res: Response) {
   assertSuperAdmin(req)
   const input = parse(CreateZoneRequest, req.body)
@@ -422,12 +484,14 @@ export const settingsRoutes = Router()
   .get("/districts", districts)
   .post("/districts", createDistrict)
   .patch("/districts/:id", updateDistrict)
+  .delete("/districts/:id", deleteDistrict)
   .get("/districts", districts)
   .post("/districts", createDistrict)
   .patch("/districts/:id", updateDistrict)
   .get("/zones", zones)
   .post("/zones", createZone)
   .patch("/zones/:id", updateZone)
+  .delete("/zones/:id", deleteZone)
   .get("/fees", fees)
   .post("/fees", createFee)
 
@@ -456,6 +520,14 @@ registry.registerPath({
   responses: { 200: json(DistrictRef), ...errors(400, 401, 403, 404, 409) },
 })
 registry.registerPath({
+  method: "delete",
+  path: "/settings/districts/{id}",
+  tags: ["Settings"],
+  summary: "Delete a district that has no zones or delivery companies",
+  request: { params: idParams },
+  responses: { 204: { description: "Deleted" }, ...errors(401, 403, 404, 409) },
+})
+registry.registerPath({
   method: "get",
   path: "/settings/zones",
   tags: ["Settings"],
@@ -477,6 +549,14 @@ registry.registerPath({
   summary: "Update or deactivate a service area",
   request: { params: idParams, body: json(UpdateZoneRequest) },
   responses: { 200: json(ManagedZoneRef), ...errors(400, 401, 403, 404, 409) },
+})
+registry.registerPath({
+  method: "delete",
+  path: "/settings/zones/{id}",
+  tags: ["Settings"],
+  summary: "Delete a service area that nothing refers to",
+  request: { params: idParams },
+  responses: { 204: { description: "Deleted" }, ...errors(401, 403, 404, 409) },
 })
 registry.registerPath({
   method: "get",

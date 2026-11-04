@@ -119,6 +119,29 @@ export function useUpdateDistrict() {
   })
 }
 
+export function useDeleteDistrict() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api("delete", "/settings/districts/{id}", { params: { id } }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["system", "districts"] })
+      void client.invalidateQueries({ queryKey: ["geography"] })
+    },
+  })
+}
+
+export function useDeleteZone() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api("delete", "/settings/zones/{id}", { params: { id } }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["system", "zones"] })
+      void client.invalidateQueries({ queryKey: ["system", "districts"] })
+      void client.invalidateQueries({ queryKey: ["zones"] })
+    },
+  })
+}
+
 export function useCreateZone() {
   const client = useQueryClient()
   return useMutation({

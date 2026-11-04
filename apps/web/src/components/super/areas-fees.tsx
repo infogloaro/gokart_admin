@@ -20,6 +20,8 @@ import {
   useCreateDistrict,
   useCreateFeeRule,
   useCreateZone,
+  useDeleteDistrict,
+  useDeleteZone,
   useManagedDistricts,
   useFeeRules,
   useManagedZones,
@@ -96,6 +98,9 @@ export function AreasFees() {
   const createDistrict = useCreateDistrict()
   const updateDistrict = useUpdateDistrict()
   const createZone = useCreateZone()
+  const deleteDistrict = useDeleteDistrict()
+  const deleteZone = useDeleteZone()
+  const [deleteError, setDeleteError] = useState("")
   const updateZone = useUpdateZone()
   const [districtSearch, setDistrictSearch] = useState("")
   const [districtStatus, setDistrictStatus] = useState<"all" | "active" | "inactive">("all")
@@ -211,6 +216,26 @@ export function AreasFees() {
       closeDistrict()
     } catch (error) {
       setDistrictError(message(error))
+    }
+  }
+
+  const removeDistrict = async (district: District) => {
+    if (!window.confirm(`Delete ${district.name}, ${district.state}? This cannot be undone.`))
+      return
+    setDeleteError("")
+    try {
+      await deleteDistrict.mutateAsync(district.id)
+    } catch (error) {
+      setDeleteError(message(error))
+    }
+  }
+  const removeZone = async (zone: ManagedZone) => {
+    if (!window.confirm(`Delete ${zone.location}, ${zone.city}? This cannot be undone.`)) return
+    setDeleteError("")
+    try {
+      await deleteZone.mutateAsync(zone.id)
+    } catch (error) {
+      setDeleteError(message(error))
     }
   }
 
@@ -420,6 +445,11 @@ export function AreasFees() {
             <option value="inactive">Inactive</option>
           </select>
         </div>
+        {deleteError && (
+          <p className="sys-state error" role="alert">
+            {deleteError}
+          </p>
+        )}
         {districts.isError ? (
           <p className="sys-state error" role="alert">
             Could not load districts. {districts.error.message}
@@ -455,7 +485,8 @@ export function AreasFees() {
                       </Badge>
                     </td>
                     <td>
-                      <Button onClick={() => openDistrict(district)}>Edit district</Button>
+                      <Button onClick={() => openDistrict(district)}>Edit district</Button>{" "}
+                      <Button onClick={() => void removeDistrict(district)}>Delete</Button>
                     </td>
                   </tr>
                 ))}
@@ -578,7 +609,8 @@ export function AreasFees() {
                       </Badge>
                     </td>
                     <td>
-                      <Button onClick={() => openZone(zone)}>Edit area</Button>
+                      <Button onClick={() => openZone(zone)}>Edit area</Button>{" "}
+                      <Button onClick={() => void removeZone(zone)}>Delete</Button>
                     </td>
                   </tr>
                 ))}
