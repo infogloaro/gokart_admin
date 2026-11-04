@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto"
+import { createRiderTicket, riderTickets } from "../rider-ops/rider-ops"
 import express, { Router, type RequestHandler } from "express"
 import { DeliveryBoyDocumentKind } from "@zoauro/shared"
 import { hashForLookup } from "../../lib/crypto"
@@ -117,6 +118,16 @@ export const deliveryRoutes = Router()
     c.readBoyNotification,
   )
   .post("/intake/fleet/me/boys/otp", requireFleetCredential, c.sendBoyOtp)
+  .get("/intake/fleet/me/boys/:id/support", requireFleetCredential, async (req, res) => {
+    res.json(await riderTickets(req.deliveryFleetId as string, req.params.id as string))
+  })
+  .post("/intake/fleet/me/boys/:id/support", requireFleetCredential, async (req, res) => {
+    res
+      .status(201)
+      .json(
+        await createRiderTicket(req.deliveryFleetId as string, req.params.id as string, req.body),
+      )
+  })
   .post("/intake/fleet/me/boys", requireFleetCredential, c.submitBoy)
   .patch("/intake/fleet/me/boys/:id", requireFleetCredential, c.correctBoy)
   .put(

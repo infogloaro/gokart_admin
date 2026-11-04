@@ -1,0 +1,61 @@
+// Owner: operations. Rider support tickets and cash-on-delivery collections, both handled by the
+// Admin and Super Admin portals. The rider app reports into these tables through the intake API.
+
+enum RiderTicketStatus {
+  open
+  resolved
+}
+
+/// A question or problem a rider raises, with the replies from the team.
+model RiderSupportTicket {
+  id        String             @id @default(cuid())
+  boyId     String
+  subject   String
+  status    RiderTicketStatus  @default(open)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  resolvedAt DateTime?
+  boy       DeliveryBoy        @relation(fields: [boyId], references: [id], onDelete: Cascade)
+  messages  RiderSupportMessage[]
+
+  @@index([boyId, status])
+  @@index([status, updatedAt])
+  @@map("rider_support_tickets")
+}
+
+model RiderSupportMessage {
+  id         String             @id @default(cuid())
+  ticketId   String
+  /// rider or team
+  fromRole   String
+  authorName String
+  body       String
+  createdAt  DateTime           @default(now())
+  ticket     RiderSupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, createdAt])
+  @@map("rider_support_messages")
+}
+
+enum CodStatus {
+  collected
+  handed_over
+}
+
+/// Cash a rider collected for a cash-on-delivery order, until the company confirms the handover.
+model CodCollection {
+  id           String    @id @default(cuid())
+  orderId      String    @unique
+  boyId        String
+  zoneId       String
+  amountPaise  Int
+  status       CodStatus @default(collected)
+  collectedAt  DateTime  @default(now())
+  handedOverAt DateTime?
+  confirmedById String?
+  boy          DeliveryBoy @relation(fields: [boyId], references: [id], onDelete: Restrict)
+
+  @@index([boyId, status])
+  @@index([zoneId, status])
+  @@map("cod_collections")
+}

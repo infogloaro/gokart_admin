@@ -214,6 +214,8 @@ model DeliveryBoy {
   assignments   DeliveryAssignment[]
   orders        Order[]
   history       DeliveryHistory[]
+  supportTickets RiderSupportTicket[]
+  codCollections CodCollection[]
 
   @@index([fleetId, status])
   @@index([zoneId, status, availability])

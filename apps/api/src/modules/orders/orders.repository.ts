@@ -8,6 +8,7 @@ import type { Prisma } from "../../generated/prisma/client"
 import { audit, type Actor } from "../../lib/audit"
 import { conflict } from "../../lib/errors"
 import { prisma } from "../../lib/prisma"
+import { recordCodCollection } from "../rider-ops/cod"
 
 const withNames = {
   vendor: { select: { name: true } },
@@ -377,6 +378,7 @@ export function changeStatus(
     })
     if (count === 0)
       throw conflict("This order was updated by someone else. Reload to see the latest.")
+    if (to === "delivered") await recordCodCollection(tx, order.id)
     if (order.deliveryBoyId && ["cancelled", "delivered", "ready"].includes(to)) {
       await tx.deliveryAssignment.updateMany({
         where: { orderId: order.id, boyId: order.deliveryBoyId, endedAt: null },
