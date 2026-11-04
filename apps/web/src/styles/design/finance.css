@@ -104,3 +104,21 @@
 .super-ui .fp-stack > .fp-status-cards { margin-bottom: 0; }
 .super-ui .fp-lines .badge { flex: 0 0 auto; width: max-content; }
 .super-ui .geo-filter{display:flex;gap:.5rem;align-items:flex-end}
+
+/* Reports: partner and rider filters, comparison bars and the per-rider delivery trail. */
+.super-ui .report-filter{display:flex;flex-direction:column;gap:.25rem;font-size:.75rem;color:#64748b;min-width:11rem}
+.super-ui .report-filter select{height:2.5rem;border:1px solid #d7dee8;border-radius:.6rem;padding:0 .6rem;background:#fff;color:#0f172a;font-size:.875rem}
+.super-ui .report-filter select:disabled{background:#f1f5f9;color:#94a3b8}
+.super-ui .cmp-track{display:block;height:.4rem;margin-top:.35rem;background:#e8eef6;border-radius:999px;overflow:hidden;min-width:5rem}
+.super-ui .cmp-fill{display:block;height:100%;background:var(--navy,#0b2a4a);border-radius:999px}
+.super-ui tr.clickable.selected td{background:#eef4fb}
+.super-ui .delivery-trail{list-style:none;margin:0;padding:0;display:grid;gap:.9rem}
+.super-ui .delivery-row{border:1px solid #e5eaf1;border-radius:.75rem;padding:.9rem 1rem;background:#fff}
+.super-ui .delivery-head{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem .9rem}
+.super-ui .delivery-head small{color:#64748b}
+.super-ui .delivery-steps{display:flex;flex-wrap:wrap;gap:.5rem;list-style:none;margin:.75rem 0;padding:0}
+.super-ui .delivery-steps li{display:flex;flex-direction:column;border:1px solid #e5eaf1;border-radius:.5rem;padding:.4rem .6rem;min-width:8.5rem;font-size:.8125rem}
+.super-ui .delivery-steps li.done{border-color:#86efac;background:#f0fdf4}
+.super-ui .delivery-steps li.pending{color:#94a3b8}
+.super-ui .delivery-steps small{color:#64748b;font-size:.75rem}
+.super-ui .delivery-meta{display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:center;font-size:.8125rem;color:#334155}

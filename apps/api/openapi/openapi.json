@@ -2660,6 +2660,7 @@
               "daily",
               "weekly",
               "monthly",
+              "yearly",
               "custom"
             ]
           },
@@ -15758,6 +15759,7 @@
                 "daily",
                 "weekly",
                 "monthly",
+                "yearly",
                 "custom"
               ],
               "default": "monthly"
@@ -15782,6 +15784,22 @@
             },
             "required": false,
             "name": "to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "fleetId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "boyId",
             "in": "query"
           },
           {
@@ -24807,6 +24825,542 @@
                   "required": [
                     "password"
                   ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/partners": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Delivery partner comparison for the period: deliveries, speed, offers, complaints and cash",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "daily",
+                "weekly",
+                "monthly",
+                "yearly",
+                "custom"
+              ],
+              "default": "monthly"
+            },
+            "required": false,
+            "name": "period",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "required": false,
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "required": false,
+            "name": "to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": false,
+            "name": "state",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": false,
+            "name": "district",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "fleetId": {
+                        "type": "string"
+                      },
+                      "fleetName": {
+                        "type": "string"
+                      },
+                      "riders": {
+                        "type": "integer"
+                      },
+                      "deliveries": {
+                        "type": "integer"
+                      },
+                      "avgMinutes": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "offersSent": {
+                        "type": "integer"
+                      },
+                      "offersAccepted": {
+                        "type": "integer"
+                      },
+                      "complaints": {
+                        "type": "integer"
+                      },
+                      "codCollectedPaise": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "fleetId",
+                      "fleetName",
+                      "riders",
+                      "deliveries",
+                      "avgMinutes",
+                      "offersSent",
+                      "offersAccepted",
+                      "complaints",
+                      "codCollectedPaise"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/riders": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Rider comparison for the period, optionally for one delivery partner",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "daily",
+                "weekly",
+                "monthly",
+                "yearly",
+                "custom"
+              ],
+              "default": "monthly"
+            },
+            "required": false,
+            "name": "period",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "required": false,
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "required": false,
+            "name": "to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "fleetId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": false,
+            "name": "state",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": false,
+            "name": "district",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "boyId": {
+                        "type": "string"
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "fleetId": {
+                        "type": "string"
+                      },
+                      "fleetName": {
+                        "type": "string"
+                      },
+                      "zoneName": {
+                        "type": "string"
+                      },
+                      "deliveries": {
+                        "type": "integer"
+                      },
+                      "avgMinutes": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "offersSent": {
+                        "type": "integer"
+                      },
+                      "offersAccepted": {
+                        "type": "integer"
+                      },
+                      "complaints": {
+                        "type": "integer"
+                      },
+                      "codCollectedPaise": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "boyId",
+                      "code",
+                      "name",
+                      "fleetId",
+                      "fleetName",
+                      "zoneName",
+                      "deliveries",
+                      "avgMinutes",
+                      "offersSent",
+                      "offersAccepted",
+                      "complaints",
+                      "codCollectedPaise"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/riders/{id}/deliveries": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "One rider's orders for the period, with each step, delivery code, proof and complaints",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "daily",
+                "weekly",
+                "monthly",
+                "yearly",
+                "custom"
+              ],
+              "default": "monthly"
+            },
+            "required": false,
+            "name": "period",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "required": false,
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "required": false,
+            "name": "to",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "orderId": {
+                        "type": "string"
+                      },
+                      "orderCode": {
+                        "type": "string"
+                      },
+                      "business": {
+                        "type": "string",
+                        "enum": [
+                          "food",
+                          "mart"
+                        ]
+                      },
+                      "vendorName": {
+                        "type": "string"
+                      },
+                      "placedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "delivered": {
+                        "type": "boolean"
+                      },
+                      "steps": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "key": {
+                              "type": "string",
+                              "enum": [
+                                "placed",
+                                "accepted",
+                                "picked_up",
+                                "out_for_delivery",
+                                "delivered"
+                              ]
+                            },
+                            "label": {
+                              "type": "string"
+                            },
+                            "at": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "key",
+                            "label",
+                            "at"
+                          ]
+                        }
+                      },
+                      "codeVerified": {
+                        "type": "boolean"
+                      },
+                      "proofAt": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "date-time"
+                      },
+                      "amountPaise": {
+                        "type": "integer"
+                      },
+                      "complaints": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string"
+                            },
+                            "category": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            },
+                            "priority": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "category",
+                            "status",
+                            "priority"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "orderId",
+                      "orderCode",
+                      "business",
+                      "vendorName",
+                      "placedAt",
+                      "delivered",
+                      "steps",
+                      "codeVerified",
+                      "proofAt",
+                      "amountPaise",
+                      "complaints"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }

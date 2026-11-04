@@ -1,7 +1,15 @@
 // Reports & Analytics (Super Admin): totals against the previous window of the same length,
 // platform revenue per day / week / month per business, and the top vendors.
 // GET /reports/analytics?period=daily|weekly|monthly (reports.view). Amounts in paise.
-import { AnalyticsQuery, type Analytics, type Business, type ReportPeriod } from "@zoauro/shared"
+import {
+  AnalyticsQuery,
+  PartnerComparisonQuery,
+  RiderComparisonQuery,
+  RiderDeliveriesQuery,
+  type Analytics,
+  type AnalyticsPeriod,
+  type Business,
+} from "@zoauro/shared"
 import { Router, type Request, type Response } from "express"
 import { Prisma } from "../../generated/prisma/client"
 import { parse } from "../../lib/errors"
@@ -9,14 +17,21 @@ import { prisma } from "../../lib/prisma"
 import { requireAuth, requirePermission, scope } from "../../middleware/auth"
 import { GeoQuery, geoZoneIds } from "../geography"
 import { zoneInsights } from "./insights"
+import { partnerComparison, riderComparison, riderDeliveries } from "./rider-reports"
 
-type Scope = { businesses: Business[]; zoneIds: string[] | null }
+/** Who the report covers. Delivery partner and rider narrow the orders to those they delivered. */
+type Scope = {
+  businesses: Business[]
+  zoneIds: string[] | null
+  fleetId?: string
+  boyId?: string
+}
 const IST = 330 * 60_000
 const istDay = (t: number) => new Date(t + IST).toISOString().slice(0, 10)
 const istStart = (day: string) => new Date(Date.parse(`${day}T00:00:00Z`) - IST)
 const DAY = 86_400_000
 
-type Unit = "day" | "week" | "month"
+type Unit = "day" | "week" | "month" | "year"
 type Window = { from: Date; to: Date; unit: Unit; buckets: number; first: string }
 
 const MAX_CUSTOM_DAYS = 1095
@@ -57,12 +72,17 @@ export function customWindow(fromDay: string, toDay: string, now = Date.now()): 
 
 /** The reporting window and how many buckets it has. */
 export function window(
-  period: ReportPeriod,
+  period: AnalyticsPeriod,
   now = Date.now(),
   range?: { from: string; to: string },
 ): Window {
   const today = istDay(now)
   if (period === "custom") return customWindow(range?.from ?? today, range?.to ?? today, now)
+  if (period === "yearly") {
+    // The last five calendar years, this one included.
+    const first = `${Number(today.slice(0, 4)) - 4}-01-01`
+    return { from: istStart(first), to: new Date(now), unit: "year", buckets: 5, first }
+  }
   if (period === "daily") {
     const from = istStart(istDay(istStart(today).getTime() - 13 * DAY + 3_600_000))
     return {
@@ -93,6 +113,8 @@ export function window(
 function where(s: Scope, from: Date, to: Date) {
   return Prisma.sql`o."business"::text = ANY(${s.businesses}::text[])
     ${s.zoneIds ? Prisma.sql`AND o."zoneId" = ANY(${s.zoneIds}::text[])` : Prisma.empty}
+    ${s.fleetId ? Prisma.sql`AND o."deliveryFleetId" = ${s.fleetId}` : Prisma.empty}
+    ${s.boyId ? Prisma.sql`AND o."deliveryBoyId" = ${s.boyId}` : Prisma.empty}
     AND o."placedAt" >= ${from} AND o."placedAt" < ${to}
     AND o."status" NOT IN ('cancelled', 'refunded')`
 }
@@ -110,13 +132,17 @@ async function totals(s: Scope, from: Date, to: Date) {
 const label = (unit: Unit, day: string) => {
   const d = new Date(`${day}T00:00:00Z`)
   const opts: Intl.DateTimeFormatOptions =
-    unit === "month" ? { month: "short", year: "numeric" } : { day: "numeric", month: "short" }
+    unit === "year"
+      ? { year: "numeric" }
+      : unit === "month"
+        ? { month: "short", year: "numeric" }
+        : { day: "numeric", month: "short" }
   return `${unit === "week" ? "Wk of " : ""}${d.toLocaleDateString("en-IN", { ...opts, timeZone: "UTC" })}`
 }
 
 export async function analytics(
   s: Scope,
-  period: ReportPeriod,
+  period: AnalyticsPeriod,
   range?: { from: string; to: string },
 ): Promise<Analytics> {
   const w = window(period, Date.now(), range)
@@ -151,7 +177,10 @@ export async function analytics(
   // Every bucket in the window, including empty ones.
   const starts: string[] = []
   for (let i = 0; i < w.buckets; i++) {
-    if (w.unit === "month") {
+    if (w.unit === "year") {
+      const [y] = w.first.split("-").map(Number) as [number]
+      starts.push(new Date(Date.UTC(y + i, 0, 1)).toISOString().slice(0, 10))
+    } else if (w.unit === "month") {
       const [y, m] = w.first.split("-").map(Number) as [number, number]
       starts.push(new Date(Date.UTC(y, m - 1 + i, 1)).toISOString().slice(0, 10))
     } else
@@ -187,6 +216,10 @@ export async function analytics(
   }
 }
 
+/** The span a comparison covers: its period, or the custom first and last date. */
+const spanOf = (q: { period: AnalyticsPeriod; from?: string; to?: string }) =>
+  window(q.period, Date.now(), q.from && q.to ? { from: q.from, to: q.to } : undefined)
+
 export const reportRoutes = Router()
   .use(requireAuth, requirePermission("reports.view"))
   .get("/insights", async (req: Request, res: Response) => {
@@ -204,9 +237,26 @@ export const reportRoutes = Router()
     const zoneIds = await geoZoneIds(parse(GeoQuery, req.query), s.zoneIds)
     res.json(
       await analytics(
-        { ...s, zoneIds },
+        { ...s, zoneIds, fleetId: q.fleetId, boyId: q.boyId },
         q.period,
         q.from && q.to ? { from: q.from, to: q.to } : undefined,
       ),
     )
+  })
+  .get("/partners", async (req: Request, res: Response) => {
+    const q = parse(PartnerComparisonQuery, req.query)
+    const s = scope(req)
+    const zoneIds = await geoZoneIds(parse(GeoQuery, req.query), s.zoneIds)
+    res.json(await partnerComparison({ ...s, zoneIds }, spanOf(q)))
+  })
+  .get("/riders", async (req: Request, res: Response) => {
+    const q = parse(RiderComparisonQuery, req.query)
+    const s = scope(req)
+    const zoneIds = await geoZoneIds(parse(GeoQuery, req.query), s.zoneIds)
+    res.json(await riderComparison({ ...s, zoneIds, fleetId: q.fleetId }, spanOf(q)))
+  })
+  .get("/riders/:id/deliveries", async (req: Request, res: Response) => {
+    const s = scope(req)
+    const q = parse(RiderDeliveriesQuery, req.query)
+    res.json(await riderDeliveries({ ...s, boyId: String(req.params.id) }, spanOf(q)))
   })

@@ -317,11 +317,20 @@ export type LedgerEntry = z.infer<typeof LedgerEntry>
 const reportDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a YYYY-MM-DD date.")
 
 /** A "custom" period reports the days from `from` to `to` inclusive (IST), at most three years. */
+/** Reports & Analytics adds a yearly view (the last five calendar years) to the finance periods. */
+export const ANALYTICS_PERIODS = ["daily", "weekly", "monthly", "yearly", "custom"] as const
+export const AnalyticsPeriod = z.enum(ANALYTICS_PERIODS)
+export type AnalyticsPeriod = z.infer<typeof AnalyticsPeriod>
+
 export const AnalyticsQuery = z
   .object({
-    period: ReportPeriod.default("monthly"),
+    period: AnalyticsPeriod.default("monthly"),
     from: reportDate.optional(),
     to: reportDate.optional(),
+    /** Only orders fulfilled by this delivery company. */
+    fleetId: z.string().optional(),
+    /** Only orders delivered by this rider. */
+    boyId: z.string().optional(),
     ...GeoFields.shape,
   })
   .refine((q) => q.period !== "custom" || (q.from !== undefined && q.to !== undefined), {
@@ -329,7 +338,7 @@ export const AnalyticsQuery = z
     path: ["from"],
   })
 export const Analytics = z.object({
-  period: ReportPeriod,
+  period: AnalyticsPeriod,
   metrics: z.object({
     orders: z.object({ value: z.number().int(), previous: z.number().int() }),
     grossPaise: z.object({ value: Paise, previous: Paise }),
@@ -350,3 +359,88 @@ export const Analytics = z.object({
   ),
 })
 export type Analytics = z.infer<typeof Analytics>
+
+// Delivery partner and rider comparison. Orders are counted by the month/week/day/year they were placed.
+const Minutes = z.number().nullable()
+
+/** The period, or a custom first and last date. */
+const ComparisonPeriod = {
+  period: AnalyticsPeriod.default("monthly"),
+  from: reportDate.optional(),
+  to: reportDate.optional(),
+}
+export const PartnerComparisonQuery = z.object({ ...ComparisonPeriod, ...GeoFields.shape })
+export const RiderComparisonQuery = z.object({
+  ...ComparisonPeriod,
+  fleetId: z.string().optional(),
+  ...GeoFields.shape,
+})
+export const RiderDeliveriesQuery = z.object(ComparisonPeriod)
+
+const ComparisonCounts = {
+  deliveries: z.number().int(),
+  /**
+   * Average minutes from the rider taking an order (the accepted offer or assignment, else when it
+   * was placed) to delivering it. Null when nothing was delivered.
+   */
+  avgMinutes: Minutes,
+  offersSent: z.number().int(),
+  offersAccepted: z.number().int(),
+  complaints: z.number().int(),
+  codCollectedPaise: Paise,
+}
+
+export const PartnerComparisonRow = z.object({
+  fleetId: z.string(),
+  fleetName: z.string(),
+  riders: z.number().int(),
+  ...ComparisonCounts,
+})
+export type PartnerComparisonRow = z.infer<typeof PartnerComparisonRow>
+
+export const RiderComparisonRow = z.object({
+  boyId: z.string(),
+  code: z.string(),
+  name: z.string(),
+  fleetId: z.string(),
+  fleetName: z.string(),
+  zoneName: z.string(),
+  ...ComparisonCounts,
+})
+export type RiderComparisonRow = z.infer<typeof RiderComparisonRow>
+
+export const RIDER_STEPS = [
+  "placed",
+  "accepted",
+  "picked_up",
+  "out_for_delivery",
+  "delivered",
+] as const
+export const RiderDeliveryStep = z.object({
+  key: z.enum(RIDER_STEPS),
+  label: z.string(),
+  at: z.string().nullable(),
+})
+
+/** One order the rider handled, with the steps it went through. */
+export const RiderDeliveryRow = z.object({
+  orderId: z.string(),
+  orderCode: z.string(),
+  business: Business,
+  vendorName: z.string(),
+  placedAt: z.iso.datetime(),
+  delivered: z.boolean(),
+  steps: z.array(RiderDeliveryStep),
+  codeVerified: z.boolean(),
+  proofAt: z.iso.datetime().nullable(),
+  amountPaise: Paise,
+  complaints: z.array(
+    z.object({
+      code: z.string(),
+      category: z.string(),
+      status: z.string(),
+      priority: z.string(),
+    }),
+  ),
+})
+export type RiderDeliveryRow = z.infer<typeof RiderDeliveryRow>

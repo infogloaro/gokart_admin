@@ -6280,9 +6280,11 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    period?: "daily" | "weekly" | "monthly" | "custom";
+                    period?: "daily" | "weekly" | "monthly" | "yearly" | "custom";
                     from?: string;
                     to?: string;
+                    fleetId?: string;
+                    boyId?: string;
                     state?: string;
                     district?: string;
                 };
@@ -11832,6 +11834,271 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reports/partners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Delivery partner comparison for the period: deliveries, speed, offers, complaints and cash */
+        get: {
+            parameters: {
+                query?: {
+                    period?: "daily" | "weekly" | "monthly" | "yearly" | "custom";
+                    from?: string;
+                    to?: string;
+                    state?: string;
+                    district?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            fleetId: string;
+                            fleetName: string;
+                            riders: number;
+                            deliveries: number;
+                            avgMinutes: number | null;
+                            offersSent: number;
+                            offersAccepted: number;
+                            complaints: number;
+                            codCollectedPaise: number;
+                        }[];
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reports/riders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Rider comparison for the period, optionally for one delivery partner */
+        get: {
+            parameters: {
+                query?: {
+                    period?: "daily" | "weekly" | "monthly" | "yearly" | "custom";
+                    from?: string;
+                    to?: string;
+                    fleetId?: string;
+                    state?: string;
+                    district?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            boyId: string;
+                            code: string;
+                            name: string;
+                            fleetId: string;
+                            fleetName: string;
+                            zoneName: string;
+                            deliveries: number;
+                            avgMinutes: number | null;
+                            offersSent: number;
+                            offersAccepted: number;
+                            complaints: number;
+                            codCollectedPaise: number;
+                        }[];
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reports/riders/{id}/deliveries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One rider's orders for the period, with each step, delivery code, proof and complaints */
+        get: {
+            parameters: {
+                query?: {
+                    period?: "daily" | "weekly" | "monthly" | "yearly" | "custom";
+                    from?: string;
+                    to?: string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            orderId: string;
+                            orderCode: string;
+                            /** @enum {string} */
+                            business: "food" | "mart";
+                            vendorName: string;
+                            /** Format: date-time */
+                            placedAt: string;
+                            delivered: boolean;
+                            steps: {
+                                /** @enum {string} */
+                                key: "placed" | "accepted" | "picked_up" | "out_for_delivery" | "delivered";
+                                label: string;
+                                at: string | null;
+                            }[];
+                            codeVerified: boolean;
+                            /** Format: date-time */
+                            proofAt: string | null;
+                            amountPaise: number;
+                            complaints: {
+                                code: string;
+                                category: string;
+                                status: string;
+                                priority: string;
+                            }[];
+                        }[];
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/orders": {
         parameters: {
             query?: never;
@@ -15538,7 +15805,7 @@ export interface components {
         };
         Analytics: {
             /** @enum {string} */
-            period: "daily" | "weekly" | "monthly" | "custom";
+            period: "daily" | "weekly" | "monthly" | "yearly" | "custom";
             metrics: {
                 orders: {
                     value: number;

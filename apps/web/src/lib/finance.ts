@@ -11,6 +11,7 @@ import type {
   LedgerType,
   PartnerPlan,
   PayoutDisplayStatus,
+  AnalyticsPeriod,
   ReportPeriod,
 } from "@zoauro/shared"
 
@@ -234,17 +235,68 @@ export const useLedger = (q: LedgerFilters) =>
 // ---------- reports ----------
 
 /** `range` (IST dates, inclusive) applies to the "custom" period only. */
+/** Delivery partner and rider narrow the orders; empty means all of them. */
+export type ReportFilters = { fleetId?: string; boyId?: string }
+
 export const useAnalytics = (
-  period: ReportPeriod,
+  period: AnalyticsPeriod,
+  geo: Geo = {},
+  range?: { from: string; to: string },
+  filters: ReportFilters = {},
+) =>
+  useQuery({
+    queryKey: ["reports", "analytics", period, geo, period === "custom" ? range : null, filters],
+    queryFn: () =>
+      api("get", "/reports/analytics", {
+        query: { period, ...geo, ...(period === "custom" ? range : {}), ...filters },
+      }),
+    placeholderData: keepPreviousData,
+  })
+
+/** The same span as the analytics, for the partner and rider comparisons. */
+const spanQuery = (period: AnalyticsPeriod, range?: { from: string; to: string }) =>
+  period === "custom" && range ? { period, ...range } : { period }
+
+export const usePartnerComparison = (
+  period: AnalyticsPeriod,
   geo: Geo = {},
   range?: { from: string; to: string },
 ) =>
   useQuery({
-    queryKey: ["reports", "analytics", period, geo, period === "custom" ? range : null],
+    queryKey: ["reports", "partners", period, geo, range ?? null],
     queryFn: () =>
-      api("get", "/reports/analytics", {
-        query: { period, ...geo, ...(period === "custom" ? range : {}) },
+      api("get", "/reports/partners", { query: { ...spanQuery(period, range), ...geo } }),
+    placeholderData: keepPreviousData,
+  })
+
+export const useRiderComparison = (
+  period: AnalyticsPeriod,
+  geo: Geo = {},
+  range?: { from: string; to: string },
+  fleetId?: string,
+) =>
+  useQuery({
+    queryKey: ["reports", "riders", period, geo, range ?? null, fleetId ?? ""],
+    queryFn: () =>
+      api("get", "/reports/riders", {
+        query: { ...spanQuery(period, range), ...geo, ...(fleetId && { fleetId }) },
       }),
+    placeholderData: keepPreviousData,
+  })
+
+export const useRiderDeliveries = (
+  boyId: string | undefined,
+  period: AnalyticsPeriod,
+  range?: { from: string; to: string },
+) =>
+  useQuery({
+    queryKey: ["reports", "rider-deliveries", boyId, period, range ?? null],
+    queryFn: () =>
+      api("get", "/reports/riders/{id}/deliveries", {
+        params: { id: boyId! },
+        query: spanQuery(period, range),
+      }),
+    enabled: Boolean(boyId),
     placeholderData: keepPreviousData,
   })
 
