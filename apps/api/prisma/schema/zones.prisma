@@ -22,7 +22,7 @@ model Zone {
   orders           Order[]
   feeRules         FeeRule[]
 
-  @@unique([district, city, location])
+  @@unique([districtId, city, location])
   @@index([districtId])
   @@map("zones")
 }

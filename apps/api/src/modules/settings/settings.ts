@@ -222,23 +222,34 @@ async function updateDistrict(req: Request<{ id: string }>, res: Response) {
   }
 }
 
+/** The active district a zone belongs to, by id or by name; a name shared by two states is ambiguous. */
+async function findZoneDistrict(
+  tx: Prisma.TransactionClient,
+  input: { districtId?: string; district?: string },
+) {
+  const matches = input.districtId
+    ? await tx.district.findMany({ where: { id: input.districtId, active: true } })
+    : await tx.district.findMany({
+        where: { name: { equals: input.district, mode: "insensitive" }, active: true },
+        take: 2,
+      })
+  if (matches.length !== 1)
+    throw badRequest(
+      matches.length
+        ? "More than one state has that district. Choose it by id."
+        : "Choose an existing active district.",
+      { districtId: ["Required"] },
+    )
+  return matches[0]!
+}
+
 async function createZone(req: Request, res: Response) {
   assertSuperAdmin(req)
   const input = parse(CreateZoneRequest, req.body)
   try {
     const zone = await prisma.$transaction(
       async (tx) => {
-        const district = input.districtId
-          ? await tx.district.findFirst({ where: { id: input.districtId, active: true } })
-          : await tx.district.findFirst({
-              where: {
-                name: { equals: input.district, mode: "insensitive" },
-                state: "Tamil Nadu",
-                active: true,
-              },
-            })
-        if (!district)
-          throw badRequest("Choose an existing active district.", { districtId: ["Required"] })
+        const district = await findZoneDistrict(tx, input)
         const created = await tx.zone.create({
           data: {
             district: district.name,
@@ -272,17 +283,7 @@ async function updateZone(req: Request<{ id: string }>, res: Response) {
       async (tx) => {
         const previous = await tx.zone.findUnique({ where: { id: req.params.id } })
         if (!previous) throw notFound("Service area")
-        const district = input.districtId
-          ? await tx.district.findFirst({ where: { id: input.districtId, active: true } })
-          : await tx.district.findFirst({
-              where: {
-                name: { equals: input.district, mode: "insensitive" },
-                state: "Tamil Nadu",
-                active: true,
-              },
-            })
-        if (!district)
-          throw badRequest("Choose an existing active district.", { districtId: ["Required"] })
+        const district = await findZoneDistrict(tx, input)
         if (previous.active && !input.active) {
           const activeOrders = await tx.order.count({
             where: {

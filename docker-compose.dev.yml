@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: gokart
       POSTGRES_PASSWORD: gokart
       POSTGRES_DB: gokart
-    ports: ["5433:5432"] # 5433 on the host: a Windows PostgreSQL may already use 5432
+    ports: ["5434:5432"] # 5434 on the host: a Windows PostgreSQL may already use 5432
     volumes: [postgres:/var/lib/postgresql/data]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U gokart"]
@@ -17,7 +17,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports: ["6379:6379"]
+    ports: ["6380:6379"]
     volumes: [redis:/data]
 
   # Document storage (S3 API). MinIO stopped publishing public images on Docker Hub and
@@ -30,7 +30,7 @@ services:
       MINIO_ROOT_USER: gokart
       MINIO_ROOT_PASSWORD: gokart-minio
       MINIO_DEFAULT_BUCKETS: gokart-dev
-    ports: ["9000:9000", "9001:9001"]
+    ports: ["9100:9000", "9001:9001"]
     volumes: [minio:/bitnami/minio/data]
     healthcheck:
       test: ["CMD", "curl", "-fs", "http://localhost:9000/minio/health/live"]
