@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest"
-import { allocateRiderCost, overallShare, rollUp, type ZoneFigures } from "./dashboard.geo"
+import {
+  allocateRiderCost,
+  overallShare,
+  rollUp,
+  withEmptyAreas,
+  type ZoneFigures,
+} from "./dashboard.geo"
 
 const zone = (over: Partial<ZoneFigures>): ZoneFigures => ({
   zoneId: "z1",
@@ -121,5 +127,38 @@ describe("rollUp", () => {
     const row = rollUp([zones[2]!], "zone", 1)[0]!
     expect(row.onTimeRate).toBeNull()
     expect(row.cancellationRate).toBe(0)
+  })
+})
+
+describe("withEmptyAreas", () => {
+  const known = [
+    { districtId: "d1", districtName: "Chennai", state: "Tamil Nadu" },
+    { districtId: "d2", districtName: "Madurai", state: "Tamil Nadu" },
+    { districtId: "d9", districtName: "Ernakulam", state: "Kerala" },
+  ]
+  const rows = rollUp([zone({ orders: 3 })], "state", 1)
+
+  it("lists every state, with zero rows where nothing exists yet", () => {
+    const all = withEmptyAreas(rows, "state", known)
+    expect(all.map((r) => r.key).sort()).toEqual(["Kerala", "Tamil Nadu"])
+    expect(all.find((r) => r.key === "Kerala")).toMatchObject({
+      zones: 0,
+      orders: 0,
+      onTimeRate: null,
+    })
+  })
+
+  it("lists every district of a state", () => {
+    const districts = rollUp([zone({ orders: 3 })], "district", 1)
+    const all = withEmptyAreas(
+      districts,
+      "district",
+      known.filter((k) => k.state === "Tamil Nadu"),
+    )
+    expect(all.map((r) => r.key).sort()).toEqual(["d1", "d2"])
+  })
+
+  it("leaves a zone list alone", () => {
+    expect(withEmptyAreas([], "zone", known)).toEqual([])
   })
 })

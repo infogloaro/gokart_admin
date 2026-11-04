@@ -82,17 +82,13 @@ export function GeoInsights({
   const q = useGeoInsights(business, range, state, districtId)
   const def = MEASURES[measure]
 
-  const rows = [...(q.data?.rows ?? [])]
-    .filter(
-      (r) => r.orders > 0 || r.openOrders > 0 || r.ridersAvailable > 0 || r.riderCostPaise > 0,
-    )
-    .sort((a, b) => {
-      const x = def.value(a)
-      const y = def.value(b)
-      if (x === null || y === null) return x === null ? (y === null ? 0 : 1) : -1
-      const best = def.higherIsBetter ? y - x : x - y
-      return worstFirst ? -best : best
-    })
+  const rows = [...(q.data?.rows ?? [])].sort((a, b) => {
+    const x = def.value(a)
+    const y = def.value(b)
+    if (x === null || y === null) return x === null ? (y === null ? 0 : 1) : -1
+    const best = def.higherIsBetter ? y - x : x - y
+    return worstFirst ? -best : best
+  })
   const shown = showAll ? rows : rows.slice(0, 10)
   const max = Math.max(1, ...rows.map((r) => Math.abs(def.value(r) ?? 0)))
   const level = q.data?.level ?? "state"
@@ -181,7 +177,9 @@ export function GeoInsights({
                         <Button onClick={() => open(row)}>{row.label}</Button>
                       )}
                       <small>
-                        {row.zones} zone{row.zones === 1 ? "" : "s"}
+                        {row.zones
+                          ? `${row.zones} zone${row.zones === 1 ? "" : "s"}`
+                          : "No zones yet"}
                       </small>
                     </td>
                     <td style={{ minWidth: 180 }}>
@@ -217,7 +215,7 @@ export function GeoInsights({
           )}
         </div>
       ) : (
-        <p className="sys-state">No orders, riders or pay in this period for this area.</p>
+        <p className="sys-state">Nothing to show for this area.</p>
       )}
     </Panel>
   )

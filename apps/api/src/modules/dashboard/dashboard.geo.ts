@@ -93,3 +93,42 @@ export function rollUp(zones: ZoneFigures[], level: GeoLevel, fallbackShare: num
     }
   })
 }
+
+const emptyRow = (key: string, label: string, state: string | null): GeoRow => ({
+  key,
+  label,
+  state,
+  zones: 0,
+  orders: 0,
+  delivered: 0,
+  cancelled: 0,
+  grossPaise: 0,
+  platformPaise: 0,
+  riderCostPaise: 0,
+  marginPaise: 0,
+  onTimeRate: null,
+  cancellationRate: null,
+  openOrders: 0,
+  ridersAvailable: 0,
+  riderShortage: 0,
+})
+
+export type KnownArea = { districtId: string; districtName: string; state: string }
+
+/**
+ * Adds a zero row for every state or district that has no zone yet, so the whole of India is
+ * listed and an empty area reads as "nothing here yet" instead of being missing.
+ */
+export function withEmptyAreas(rows: GeoRow[], level: GeoLevel, known: KnownArea[]): GeoRow[] {
+  if (level === "zone") return rows
+  const have = new Set(rows.map((r) => r.key))
+  const extra = new Map<string, GeoRow>()
+  for (const area of known) {
+    const [key, label, state] =
+      level === "state"
+        ? [area.state, area.state, null]
+        : [area.districtId, area.districtName, area.state]
+    if (!have.has(key) && !extra.has(key)) extra.set(key, emptyRow(key, label, state))
+  }
+  return [...rows, ...extra.values()]
+}

@@ -14,7 +14,7 @@ import {
   type SearchResults,
 } from "@zoauro/shared"
 import * as repo from "./dashboard.repository"
-import { overallShare, rollUp, type ZoneFigures } from "./dashboard.geo"
+import { overallShare, rollUp, withEmptyAreas, type ZoneFigures } from "./dashboard.geo"
 import type { Period, Scope } from "./dashboard.repository"
 
 const DAY = 86_400_000
@@ -253,7 +253,11 @@ export async function geo(
   districtId?: string,
 ): Promise<GeoInsights> {
   const p = periods(range)
-  const figures = await zoneFigures(s, p.current, true)
+  const [figures, districts] = await Promise.all([
+    zoneFigures(s, p.current, true),
+    // A member limited to some zones sees only those; the rest of India is for Super Admins.
+    s.zoneIds ? Promise.resolve([]) : repo.districtDirectory(),
+  ])
   const inState = state ? figures.filter((z) => z.state === state) : figures
   const inDistrict = districtId ? inState.filter((z) => z.districtId === districtId) : inState
   const level: GeoLevel = districtId ? "zone" : state ? "district" : "state"
@@ -264,7 +268,13 @@ export async function geo(
     state: state ?? null,
     districtName: districtId ? (inDistrict[0]?.districtName ?? null) : null,
     // The fallback share is measured over every zone in scope, not only the ones being shown.
-    rows: rollUp(inDistrict, level, overallShare(figures, viewCoversAll(s))),
+    rows: withEmptyAreas(
+      rollUp(inDistrict, level, overallShare(figures, viewCoversAll(s))),
+      level,
+      districts
+        .filter((d) => !state || d.state === state)
+        .map((d) => ({ districtId: d.id, districtName: d.name, state: d.state })),
+    ),
   }
 }
 

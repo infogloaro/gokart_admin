@@ -457,3 +457,11 @@ export function zoneDirectory(s: Scope) {
     },
   })
 }
+
+/** Every active district, so areas without a zone still appear in the drill-down. */
+export function districtDirectory() {
+  return prisma.district.findMany({
+    where: { active: true },
+    select: { id: true, name: true, state: true },
+  })
+}
