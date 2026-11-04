@@ -122,10 +122,10 @@ export function LiveRiders() {
             <label>
               <span>District</span>
               <select value={district} onChange={(e) => pickDistrict(e.target.value)}>
-                <option value="all">All districts ({riders.length})</option>
-                {districts.map(([name, count]) => (
+                <option value="all">All districts</option>
+                {districts.map(([name]) => (
                   <option key={name} value={name}>
-                    {name} ({count})
+                    {name}
                   </option>
                 ))}
               </select>
