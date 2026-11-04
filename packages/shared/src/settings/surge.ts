@@ -24,7 +24,9 @@ const surgeFields = {
   kind: SurgeKind,
   /** null applies to both businesses. */
   business: Business.nullable(),
-  /** null applies to every zone. */
+  /** Scope, widest to narrowest. null means "all"; a narrower choice implies the wider ones. */
+  state: z.string().nullable(),
+  districtId: z.string().nullable(),
   zoneId: z.string().nullable(),
   /** 100 = no change, 150 = 1.5x the delivery fee. */
   multiplierPercent: z.number().int().min(101).max(500),
@@ -77,6 +79,7 @@ export type CreateSurgeRuleRequest = z.infer<typeof CreateSurgeRuleRequest>
 export const SurgeRule = z.object({
   id: z.string(),
   ...surgeFields,
+  districtName: z.string().nullable(),
   zoneName: z.string().nullable(),
   active: z.boolean(),
   createdAt: z.iso.datetime(),
@@ -88,6 +91,9 @@ export const SetSurgeActiveRequest = z.object({ active: z.boolean() })
 
 export const SurgePreviewRequest = z.object({
   business: Business,
+  /** Where the delivery happens; a zone implies its district and state. */
+  state: z.string().nullable(),
+  districtId: z.string().nullable(),
   zoneId: z.string().nullable(),
   distanceKm: z.number().min(0).max(200),
   cartPaise: z.number().int().nonnegative(),
@@ -108,6 +114,8 @@ export type SurgeCandidate = Pick<
   SurgeRuleInput,
   | "name"
   | "business"
+  | "state"
+  | "districtId"
   | "zoneId"
   | "multiplierPercent"
   | "maxExtraPaise"
@@ -130,10 +138,18 @@ const istParts = (at: Date) => {
 /** True when `rule` is switched on and its business, zone, hours, weekdays and dates all match. */
 export function surgeApplies(
   rule: SurgeCandidate,
-  ctx: { business: "food" | "mart"; zoneId: string | null; at: Date },
+  ctx: {
+    business: "food" | "mart"
+    state: string | null
+    districtId: string | null
+    zoneId: string | null
+    at: Date
+  },
 ): boolean {
   if (!rule.active) return false
   if (rule.business && rule.business !== ctx.business) return false
+  if (rule.state && rule.state !== ctx.state) return false
+  if (rule.districtId && rule.districtId !== ctx.districtId) return false
   if (rule.zoneId && rule.zoneId !== ctx.zoneId) return false
   const { minute, day, date } = istParts(ctx.at)
   if (rule.days.length && !rule.days.includes(day)) return false
@@ -172,6 +188,8 @@ export function quoteDeliveryFee(input: {
   cartPaise: number
   surgeRules: SurgeCandidate[]
   business: "food" | "mart"
+  state: string | null
+  districtId: string | null
   zoneId: string | null
   at: Date
 }): DeliveryFeeQuote {

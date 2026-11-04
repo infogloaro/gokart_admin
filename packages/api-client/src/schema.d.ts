@@ -345,6 +345,8 @@ export interface paths {
                             kind: "peak" | "night" | "rain" | "festival" | "custom";
                             /** @enum {string|null} */
                             business: "food" | "mart" | null;
+                            state: string | null;
+                            districtId: string | null;
                             zoneId: string | null;
                             multiplierPercent: number;
                             maxExtraPaise: number | null;
@@ -353,6 +355,7 @@ export interface paths {
                             days: number[];
                             startsOn: string | null;
                             endsOn: string | null;
+                            districtName: string | null;
                             zoneName: string | null;
                             active: boolean;
                             /** Format: date-time */
@@ -400,6 +403,8 @@ export interface paths {
                         kind: "peak" | "night" | "rain" | "festival" | "custom";
                         /** @enum {string|null} */
                         business: "food" | "mart" | null;
+                        state: string | null;
+                        districtId: string | null;
                         zoneId: string | null;
                         multiplierPercent: number;
                         maxExtraPaise: number | null;
@@ -426,6 +431,8 @@ export interface paths {
                             kind: "peak" | "night" | "rain" | "festival" | "custom";
                             /** @enum {string|null} */
                             business: "food" | "mart" | null;
+                            state: string | null;
+                            districtId: string | null;
                             zoneId: string | null;
                             multiplierPercent: number;
                             maxExtraPaise: number | null;
@@ -434,6 +441,7 @@ export interface paths {
                             days: number[];
                             startsOn: string | null;
                             endsOn: string | null;
+                            districtName: string | null;
                             zoneName: string | null;
                             active: boolean;
                             /** Format: date-time */
@@ -510,6 +518,8 @@ export interface paths {
                     "application/json": {
                         /** @enum {string} */
                         business: "food" | "mart";
+                        state: string | null;
+                        districtId: string | null;
                         zoneId: string | null;
                         distanceKm: number;
                         cartPaise: number;
@@ -521,6 +531,8 @@ export interface paths {
                             kind: "peak" | "night" | "rain" | "festival" | "custom";
                             /** @enum {string|null} */
                             business: "food" | "mart" | null;
+                            state: string | null;
+                            districtId: string | null;
                             zoneId: string | null;
                             multiplierPercent: number;
                             maxExtraPaise: number | null;
@@ -653,6 +665,8 @@ export interface paths {
                         kind: "peak" | "night" | "rain" | "festival" | "custom";
                         /** @enum {string|null} */
                         business: "food" | "mart" | null;
+                        state: string | null;
+                        districtId: string | null;
                         zoneId: string | null;
                         multiplierPercent: number;
                         maxExtraPaise: number | null;
@@ -679,6 +693,8 @@ export interface paths {
                             kind: "peak" | "night" | "rain" | "festival" | "custom";
                             /** @enum {string|null} */
                             business: "food" | "mart" | null;
+                            state: string | null;
+                            districtId: string | null;
                             zoneId: string | null;
                             multiplierPercent: number;
                             maxExtraPaise: number | null;
@@ -687,6 +703,7 @@ export interface paths {
                             days: number[];
                             startsOn: string | null;
                             endsOn: string | null;
+                            districtName: string | null;
                             zoneName: string | null;
                             active: boolean;
                             /** Format: date-time */
@@ -833,6 +850,8 @@ export interface paths {
                             kind: "peak" | "night" | "rain" | "festival" | "custom";
                             /** @enum {string|null} */
                             business: "food" | "mart" | null;
+                            state: string | null;
+                            districtId: string | null;
                             zoneId: string | null;
                             multiplierPercent: number;
                             maxExtraPaise: number | null;
@@ -841,6 +860,7 @@ export interface paths {
                             days: number[];
                             startsOn: string | null;
                             endsOn: string | null;
+                            districtName: string | null;
                             zoneName: string | null;
                             active: boolean;
                             /** Format: date-time */

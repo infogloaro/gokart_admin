@@ -7462,6 +7462,18 @@
                           null
                         ]
                       },
+                      "state": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "districtId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
                       "zoneId": {
                         "type": [
                           "string",
@@ -7519,6 +7531,12 @@
                         ],
                         "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
                       },
+                      "districtName": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
                       "zoneName": {
                         "type": [
                           "string",
@@ -7542,6 +7560,8 @@
                       "name",
                       "kind",
                       "business",
+                      "state",
+                      "districtId",
                       "zoneId",
                       "multiplierPercent",
                       "maxExtraPaise",
@@ -7550,6 +7570,7 @@
                       "days",
                       "startsOn",
                       "endsOn",
+                      "districtName",
                       "zoneName",
                       "active",
                       "createdAt",
@@ -7620,6 +7641,18 @@
                       null
                     ]
                   },
+                  "state": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "districtId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
                   "zoneId": {
                     "type": [
                       "string",
@@ -7685,6 +7718,8 @@
                   "name",
                   "kind",
                   "business",
+                  "state",
+                  "districtId",
                   "zoneId",
                   "multiplierPercent",
                   "maxExtraPaise",
@@ -7734,6 +7769,18 @@
                         "food",
                         "mart",
                         null
+                      ]
+                    },
+                    "state": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "districtId": {
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "zoneId": {
@@ -7793,6 +7840,12 @@
                       ],
                       "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
                     },
+                    "districtName": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
                     "zoneName": {
                       "type": [
                         "string",
@@ -7816,6 +7869,8 @@
                     "name",
                     "kind",
                     "business",
+                    "state",
+                    "districtId",
                     "zoneId",
                     "multiplierPercent",
                     "maxExtraPaise",
@@ -7824,6 +7879,7 @@
                     "days",
                     "startsOn",
                     "endsOn",
+                    "districtName",
                     "zoneName",
                     "active",
                     "createdAt",
@@ -7896,6 +7952,18 @@
                       "mart"
                     ]
                   },
+                  "state": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "districtId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
                   "zoneId": {
                     "type": [
                       "string",
@@ -7945,6 +8013,18 @@
                           "food",
                           "mart",
                           null
+                        ]
+                      },
+                      "state": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "districtId": {
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       },
                       "zoneId": {
@@ -8009,6 +8089,8 @@
                       "name",
                       "kind",
                       "business",
+                      "state",
+                      "districtId",
                       "zoneId",
                       "multiplierPercent",
                       "maxExtraPaise",
@@ -8022,6 +8104,8 @@
                 },
                 "required": [
                   "business",
+                  "state",
+                  "districtId",
                   "zoneId",
                   "distanceKm",
                   "cartPaise",
@@ -8286,6 +8370,18 @@
                       null
                     ]
                   },
+                  "state": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "districtId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
                   "zoneId": {
                     "type": [
                       "string",
@@ -8351,6 +8447,8 @@
                   "name",
                   "kind",
                   "business",
+                  "state",
+                  "districtId",
                   "zoneId",
                   "multiplierPercent",
                   "maxExtraPaise",
@@ -8400,6 +8498,18 @@
                         "food",
                         "mart",
                         null
+                      ]
+                    },
+                    "state": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "districtId": {
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "zoneId": {
@@ -8459,6 +8569,12 @@
                       ],
                       "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
                     },
+                    "districtName": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
                     "zoneName": {
                       "type": [
                         "string",
@@ -8482,6 +8598,8 @@
                     "name",
                     "kind",
                     "business",
+                    "state",
+                    "districtId",
                     "zoneId",
                     "multiplierPercent",
                     "maxExtraPaise",
@@ -8490,6 +8608,7 @@
                     "days",
                     "startsOn",
                     "endsOn",
+                    "districtName",
                     "zoneName",
                     "active",
                     "createdAt",
@@ -8664,6 +8783,18 @@
                         null
                       ]
                     },
+                    "state": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "districtId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
                     "zoneId": {
                       "type": [
                         "string",
@@ -8721,6 +8852,12 @@
                       ],
                       "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
                     },
+                    "districtName": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
                     "zoneName": {
                       "type": [
                         "string",
@@ -8744,6 +8881,8 @@
                     "name",
                     "kind",
                     "business",
+                    "state",
+                    "districtId",
                     "zoneId",
                     "multiplierPercent",
                     "maxExtraPaise",
@@ -8752,6 +8891,7 @@
                     "days",
                     "startsOn",
                     "endsOn",
+                    "districtName",
                     "zoneName",
                     "active",
                     "createdAt",
@@ -22286,7 +22426,9 @@
     },
     "/delivery/offers": {
       "get": {
-        "tags": ["Rider operations"],
+        "tags": [
+          "Rider operations"
+        ],
         "summary": "Orders offered to riders and not yet answered, in the member's zones",
         "responses": {
           "200": {
@@ -22365,7 +22507,9 @@
     },
     "/delivery/proofs": {
       "get": {
-        "tags": ["Rider operations"],
+        "tags": [
+          "Rider operations"
+        ],
         "summary": "Recent delivered orders with a proof photo, in the member's zones",
         "responses": {
           "200": {
@@ -22396,7 +22540,10 @@
                         "type": "string"
                       },
                       "proofAt": {
-                        "type": ["string", "null"],
+                        "type": [
+                          "string",
+                          "null"
+                        ],
                         "format": "date-time"
                       },
                       "codVerified": {
@@ -22443,7 +22590,9 @@
     },
     "/delivery/orders/{id}/resend-code": {
       "post": {
-        "tags": ["Rider operations"],
+        "tags": [
+          "Rider operations"
+        ],
         "summary": "Text the customer a new delivery code",
         "parameters": [
           {
@@ -22467,7 +22616,9 @@
                       "type": "boolean"
                     }
                   },
-                  "required": ["ok"]
+                  "required": [
+                    "ok"
+                  ]
                 }
               }
             }
@@ -22507,13 +22658,19 @@
     },
     "/delivery/area-requests": {
       "get": {
-        "tags": ["Rider operations"],
+        "tags": [
+          "Rider operations"
+        ],
         "summary": "Service-area requests from riders, in the member's zones",
         "parameters": [
           {
             "schema": {
               "type": "string",
-              "enum": ["requested", "approved", "rejected"]
+              "enum": [
+                "requested",
+                "approved",
+                "rejected"
+              ]
             },
             "required": false,
             "name": "status",
@@ -22547,7 +22704,11 @@
                       },
                       "status": {
                         "type": "string",
-                        "enum": ["requested", "approved", "rejected"]
+                        "enum": [
+                          "requested",
+                          "approved",
+                          "rejected"
+                        ]
                       },
                       "requestedAt": {
                         "type": "string",
@@ -22593,7 +22754,9 @@
     },
     "/delivery/area-requests/{id}/approve": {
       "post": {
-        "tags": ["Rider operations"],
+        "tags": [
+          "Rider operations"
+        ],
         "summary": "Approve a rider's request to take orders from another zone",
         "parameters": [
           {
@@ -22617,7 +22780,9 @@
                       "type": "boolean"
                     }
                   },
-                  "required": ["ok"]
+                  "required": [
+                    "ok"
+                  ]
                 }
               }
             }
@@ -22657,7 +22822,9 @@
     },
     "/delivery/area-requests/{id}/reject": {
       "post": {
-        "tags": ["Rider operations"],
+        "tags": [
+          "Rider operations"
+        ],
         "summary": "Reject a rider's request to take orders from another zone",
         "parameters": [
           {
@@ -22681,7 +22848,9 @@
                       "type": "boolean"
                     }
                   },
-                  "required": ["ok"]
+                  "required": [
+                    "ok"
+                  ]
                 }
               }
             }
