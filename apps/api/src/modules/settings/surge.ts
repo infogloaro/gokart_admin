@@ -23,8 +23,16 @@ function assertSuperAdmin(req: Request) {
 const dateOnly = (date: Date | null) => (date ? date.toISOString().slice(0, 10) : null)
 const toDate = (value: string | null) => (value ? new Date(`${value}T00:00:00.000Z`) : null)
 
+const rowInclude = {
+  zone: { select: { city: true, location: true } },
+  district: { select: { name: true } },
+} as const
+
 type Row = Prisma.SurgeRuleGetPayload<{
-  include: { zone: { select: { city: true; location: true } } }
+  include: {
+    zone: { select: { city: true; location: true } }
+    district: { select: { name: true } }
+  }
 }>
 
 function surgeDto(row: Row) {
@@ -33,6 +41,9 @@ function surgeDto(row: Row) {
     name: row.name,
     kind: row.kind,
     business: row.business,
+    state: row.state,
+    districtId: row.districtId,
+    districtName: row.district?.name ?? null,
     zoneId: row.zoneId,
     zoneName: row.zone ? `${row.zone.location}, ${row.zone.city}` : null,
     multiplierPercent: row.multiplierPercent,
@@ -48,10 +59,37 @@ function surgeDto(row: Row) {
   })
 }
 
-async function assertZone(zoneId: string | null) {
-  if (!zoneId) return
-  const zone = await prisma.zone.findUnique({ where: { id: zoneId }, select: { active: true } })
-  if (!zone?.active) throw notFound("Active service area")
+/**
+ * Fills in the wider scope from the narrower one (a zone knows its district and state) and rejects
+ * a combination that contradicts itself, such as a zone outside the chosen district.
+ */
+async function resolveScope(scope: {
+  state: string | null
+  districtId: string | null
+  zoneId: string | null
+}) {
+  let { state, districtId } = scope
+  if (scope.zoneId) {
+    const zone = await prisma.zone.findUnique({
+      where: { id: scope.zoneId },
+      select: { active: true, districtId: true, districtRecord: { select: { state: true } } },
+    })
+    if (!zone?.active) throw notFound("Active service area")
+    if (districtId && districtId !== zone.districtId)
+      throw badRequest("That zone is not in the chosen district.", { zoneId: ["Wrong district"] })
+    districtId = zone.districtId
+    state = zone.districtRecord.state
+  } else if (districtId) {
+    const district = await prisma.district.findUnique({
+      where: { id: districtId },
+      select: { active: true, state: true },
+    })
+    if (!district?.active) throw notFound("Active district")
+    if (state && state !== district.state)
+      throw badRequest("That district is not in the chosen state.", { districtId: ["Wrong state"] })
+    state = district.state
+  }
+  return { state, districtId, zoneId: scope.zoneId }
 }
 
 const writeData = (input: CreateSurgeRuleRequest) => ({
@@ -63,7 +101,7 @@ const writeData = (input: CreateSurgeRuleRequest) => ({
 async function list(req: Request, res: Response) {
   assertSuperAdmin(req)
   const rows = await prisma.surgeRule.findMany({
-    include: { zone: { select: { city: true, location: true } } },
+    include: rowInclude,
     orderBy: [{ active: "desc" }, { createdAt: "desc" }],
   })
   res.json(rows.map(surgeDto))
@@ -71,12 +109,12 @@ async function list(req: Request, res: Response) {
 
 async function create(req: Request, res: Response) {
   assertSuperAdmin(req)
-  const input = parse(CreateSurgeRuleRequest, req.body)
-  await assertZone(input.zoneId)
+  const input = { ...parse(CreateSurgeRuleRequest, req.body) }
+  Object.assign(input, await resolveScope(input))
   const row = await prisma.$transaction(async (tx) => {
     const created = await tx.surgeRule.create({
       data: { ...writeData(input), createdById: currentMember(req).id },
-      include: { zone: { select: { city: true, location: true } } },
+      include: rowInclude,
     })
     await audit(
       tx,
@@ -92,15 +130,15 @@ async function create(req: Request, res: Response) {
 
 async function update(req: Request<{ id: string }>, res: Response) {
   assertSuperAdmin(req)
-  const input = parse(CreateSurgeRuleRequest, req.body)
-  await assertZone(input.zoneId)
+  const input = { ...parse(CreateSurgeRuleRequest, req.body) }
+  Object.assign(input, await resolveScope(input))
   const row = await prisma.$transaction(async (tx) => {
     const previous = await tx.surgeRule.findUnique({ where: { id: req.params.id } })
     if (!previous) throw notFound("Surge rule")
     const updated = await tx.surgeRule.update({
       where: { id: previous.id },
       data: writeData(input),
-      include: { zone: { select: { city: true, location: true } } },
+      include: rowInclude,
     })
     await audit(
       tx,
@@ -130,7 +168,7 @@ async function setActive(req: Request<{ id: string }>, res: Response) {
     const updated = await tx.surgeRule.update({
       where: { id: previous.id },
       data: { active },
-      include: { zone: { select: { city: true, location: true } } },
+      include: rowInclude,
     })
     await audit(
       tx,
@@ -166,8 +204,8 @@ async function remove(req: Request<{ id: string }>, res: Response) {
 /** Prices one delivery at `at`, with and without the rule being edited. */
 async function preview(req: Request, res: Response) {
   assertSuperAdmin(req)
-  const input = parse(SurgePreviewRequest, req.body)
-  await assertZone(input.zoneId)
+  const parsed = parse(SurgePreviewRequest, req.body)
+  const input = { ...parsed, ...(await resolveScope(parsed)) }
   const at = new Date(input.at)
   const feeWhere = { business: input.business, effectiveFrom: { lte: at } }
   const include = { zone: { select: { city: true, location: true } } }
@@ -191,6 +229,8 @@ async function preview(req: Request, res: Response) {
   const rules: SurgeCandidate[] = stored.map((row) => ({
     name: row.name,
     business: row.business,
+    state: row.state,
+    districtId: row.districtId,
     zoneId: row.zoneId,
     multiplierPercent: row.multiplierPercent,
     maxExtraPaise: row.maxExtraPaise,
@@ -208,6 +248,8 @@ async function preview(req: Request, res: Response) {
       cartPaise: input.cartPaise,
       surgeRules,
       business: input.business,
+      state: input.state,
+      districtId: input.districtId,
       zoneId: input.zoneId,
       at,
     })

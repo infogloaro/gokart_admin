@@ -15,6 +15,8 @@ const NOON = at("2026-11-04T06:30:00Z") // 12:00 IST
 const rule = (over: Partial<SurgeCandidate> = {}): SurgeCandidate => ({
   name: "Dinner rush",
   business: null,
+  state: null,
+  districtId: null,
   zoneId: null,
   multiplierPercent: 150,
   maxExtraPaise: null,
@@ -26,7 +28,12 @@ const rule = (over: Partial<SurgeCandidate> = {}): SurgeCandidate => ({
   active: true,
   ...over,
 })
-const ctx = { business: "food" as const, zoneId: "z1" }
+const ctx = {
+  business: "food" as const,
+  state: "Tamil Nadu",
+  districtId: "d1",
+  zoneId: "z1",
+}
 const fee = { baseFeePaise: 3800, perKmPaise: 600, freeAbovePaise: 49900 }
 
 describe("surgeApplies", () => {
@@ -61,6 +68,20 @@ describe("surgeApplies", () => {
     expect(surgeApplies(rule({ zoneId: "other" }), { ...ctx, at: EVENING })).toBe(false)
     expect(surgeApplies(rule({ zoneId: "z1" }), { ...ctx, at: EVENING })).toBe(true)
     expect(surgeApplies(rule({ active: false }), { ...ctx, at: EVENING })).toBe(false)
+  })
+})
+
+describe("surgeApplies geography", () => {
+  it("scopes a rule to a state, a district or a zone", () => {
+    const here = { ...ctx, at: EVENING }
+    expect(surgeApplies(rule({ state: "Tamil Nadu" }), here)).toBe(true)
+    expect(surgeApplies(rule({ state: "Kerala" }), here)).toBe(false)
+    expect(surgeApplies(rule({ state: "Tamil Nadu", districtId: "d1" }), here)).toBe(true)
+    expect(surgeApplies(rule({ state: "Tamil Nadu", districtId: "d2" }), here)).toBe(false)
+    expect(surgeApplies(rule({ districtId: "d1", zoneId: "z9" }), here)).toBe(false)
+    expect(surgeApplies(rule({ state: "Tamil Nadu", districtId: "d1", zoneId: "z1" }), here)).toBe(
+      true,
+    )
   })
 })
 
@@ -116,6 +137,8 @@ describe("CreateSurgeRuleRequest", () => {
     name: "Rain",
     kind: "rain",
     business: null,
+    state: null,
+    districtId: null,
     zoneId: null,
     multiplierPercent: 140,
     maxExtraPaise: null,

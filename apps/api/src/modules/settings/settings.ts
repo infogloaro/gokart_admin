@@ -249,13 +249,14 @@ async function deleteDistrict(req: Request<{ id: string }>, res: Response) {
   await prisma.$transaction(async (tx) => {
     const district = await tx.district.findUnique({ where: { id: req.params.id } })
     if (!district) throw notFound("District")
-    const [zones, fleets] = await Promise.all([
+    const [zones, fleets, surges] = await Promise.all([
       tx.zone.count({ where: { districtId: district.id } }),
       tx.deliveryFleet.count({ where: { districtId: district.id } }),
+      tx.surgeRule.count({ where: { districtId: district.id } }),
     ])
-    if (zones || fleets)
+    if (zones || fleets || surges)
       throw conflict(
-        "This district still has zones or delivery companies. Remove them first, or deactivate the district instead.",
+        "This district still has zones, delivery companies or surge rules. Remove them first, or deactivate the district instead.",
       )
     await tx.district.delete({ where: { id: district.id } })
     await audit(

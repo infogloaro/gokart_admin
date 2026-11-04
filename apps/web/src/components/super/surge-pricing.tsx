@@ -17,6 +17,7 @@ import { useState, type FormEvent } from "react"
 import { Badge, Button, Input, Modal, Panel, Select } from "./ui"
 import {
   useDeleteSurgeRule,
+  useManagedDistricts,
   useSaveSurgeRule,
   useSetSurgeActive,
   useSurgePreview,
@@ -29,6 +30,8 @@ type Draft = {
   name: string
   kind: SurgeKind
   business: "" | "food" | "mart"
+  state: string
+  districtId: string
   zoneId: string
   multiplier: string
   maxExtra: string
@@ -53,6 +56,8 @@ const blank = (kind: SurgeKind = "peak"): Draft => ({
   name: "",
   kind,
   business: "",
+  state: "",
+  districtId: "",
   zoneId: "",
   multiplier: "1.25",
   maxExtra: "",
@@ -85,6 +90,8 @@ const draftOf = (rule: SurgeRule): Draft => ({
   name: rule.name,
   kind: rule.kind,
   business: rule.business ?? "",
+  state: rule.state ?? "",
+  districtId: rule.districtId ?? "",
   zoneId: rule.zoneId ?? "",
   multiplier: String(rule.multiplierPercent / 100),
   maxExtra: rule.maxExtraPaise === null ? "" : String(rule.maxExtraPaise / 100),
@@ -102,6 +109,8 @@ function bodyOf(draft: Draft) {
     name: draft.name,
     kind: draft.kind,
     business: draft.business || null,
+    state: draft.state || null,
+    districtId: draft.districtId || null,
     zoneId: draft.zoneId || null,
     multiplierPercent: Math.round(Number(draft.multiplier) * 100),
     maxExtraPaise: maxExtra,
@@ -111,6 +120,13 @@ function bodyOf(draft: Draft) {
     startsOn: draft.startsOn || null,
     endsOn: draft.endsOn || null,
   }
+}
+
+function scopeText(rule: SurgeRule) {
+  if (rule.zoneName) return `${rule.zoneName} · ${rule.districtName}, ${rule.state}`
+  if (rule.districtName) return `All zones in ${rule.districtName}, ${rule.state}`
+  if (rule.state) return `All of ${rule.state}`
+  return "All India"
 }
 
 function whenText(rule: SurgeRule) {
@@ -125,6 +141,7 @@ function whenText(rule: SurgeRule) {
 
 export function SurgePricing({ zones }: { zones: ManagedZone[] }) {
   const rules = useSurgeRules()
+  const districts = useManagedDistricts().data ?? []
   const save = useSaveSurgeRule()
   const setActive = useSetSurgeActive()
   const remove = useDeleteSurgeRule()
@@ -139,6 +156,7 @@ export function SurgePricing({ zones }: { zones: ManagedZone[] }) {
   const [previewBusiness, setPreviewBusiness] = useState<"food" | "mart">("food")
   const [result, setResult] = useState<SurgePreview | null>(null)
 
+  const states = [...new Set(districts.filter((d) => d.active).map((d) => d.state))].sort()
   const open = (rule?: SurgeRule) => {
     setEditing(rule ?? null)
     setDraft(rule ? draftOf(rule) : blank())
@@ -184,6 +202,8 @@ export function SurgePricing({ zones }: { zones: ManagedZone[] }) {
       setResult(
         await preview.mutateAsync({
           business: draft.business || previewBusiness,
+          state: draft.state || null,
+          districtId: draft.districtId || null,
           zoneId: draft.zoneId || null,
           distanceKm: km,
           cartPaise: Math.round(cartRupees * 100),
@@ -259,7 +279,7 @@ export function SurgePricing({ zones }: { zones: ManagedZone[] }) {
                     </td>
                     <td>
                       {rule.business ? businessName[rule.business] : "Both businesses"}
-                      <small>{rule.zoneName ?? "All zones"}</small>
+                      <small>{scopeText(rule)}</small>
                     </td>
                     <td>{whenText(rule)}</td>
                     <td>
@@ -306,7 +326,13 @@ export function SurgePricing({ zones }: { zones: ManagedZone[] }) {
                 value={draft.kind}
                 onChange={(value) => {
                   const kind = value as SurgeKind
-                  setDraft({ ...blank(kind), business: draft.business, zoneId: draft.zoneId })
+                  setDraft({
+                    ...blank(kind),
+                    business: draft.business,
+                    state: draft.state,
+                    districtId: draft.districtId,
+                    zoneId: draft.zoneId,
+                  })
                 }}
               >
                 {SURGE_KINDS.map((kind) => (
@@ -333,13 +359,41 @@ export function SurgePricing({ zones }: { zones: ManagedZone[] }) {
                 <option value="mart">{businessName["mart"]}</option>
               </Select>
               <Select
+                label="State / UT"
+                value={draft.state}
+                onChange={(value) => patch({ state: value, districtId: "", zoneId: "" })}
+              >
+                <option value="">All India</option>
+                {states.map((state) => (
+                  <option key={state} value={state}>
+                    {state}
+                  </option>
+                ))}
+              </Select>
+              <Select
+                label="District"
+                value={draft.districtId}
+                onChange={(value) => patch({ districtId: value, zoneId: "" })}
+              >
+                <option value="">{draft.state ? "All districts" : "Choose a state first"}</option>
+                {districts
+                  .filter((district) => district.active && district.state === draft.state)
+                  .map((district) => (
+                    <option key={district.id} value={district.id}>
+                      {district.name}
+                    </option>
+                  ))}
+              </Select>
+              <Select
                 label="Zone"
                 value={draft.zoneId}
                 onChange={(value) => patch({ zoneId: value })}
               >
-                <option value="">All zones</option>
+                <option value="">
+                  {draft.districtId ? "All zones" : "Choose a district first"}
+                </option>
                 {zones
-                  .filter((zone) => zone.active)
+                  .filter((zone) => zone.active && zone.districtId === draft.districtId)
                   .map((zone) => (
                     <option key={zone.id} value={zone.id}>
                       {zone.location}, {zone.city}
