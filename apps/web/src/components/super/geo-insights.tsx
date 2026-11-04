@@ -106,6 +106,7 @@ export function GeoInsights({
           <Button
             key={key}
             primary={key === measure}
+            aria-pressed={key === measure}
             onClick={() => {
               setMeasure(key)
               setWorstFirst(key === "riders")
@@ -114,9 +115,22 @@ export function GeoInsights({
             {MEASURES[key].label}
           </Button>
         ))}
-        <Button onClick={() => setWorstFirst(!worstFirst)}>
-          {worstFirst ? "Worst first" : "Best first"}
-        </Button>
+        <span role="group" aria-label="Sort order" style={{ display: "inline-flex", gap: 4 }}>
+          <Button
+            primary={!worstFirst}
+            aria-pressed={!worstFirst}
+            onClick={() => setWorstFirst(false)}
+          >
+            Best first
+          </Button>
+          <Button
+            primary={worstFirst}
+            aria-pressed={worstFirst}
+            onClick={() => setWorstFirst(true)}
+          >
+            Worst first
+          </Button>
+        </span>
       </div>
       <nav className="sys-toolbar" aria-label="Geography level">
         <Button
