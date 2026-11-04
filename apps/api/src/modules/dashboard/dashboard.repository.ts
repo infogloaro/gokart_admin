@@ -341,3 +341,119 @@ export async function activity(s: Scope, p: Period, hourly: boolean) {
     WHERE ${orderScope(s, p)}
     GROUP BY 1`
 }
+
+const OPEN_FOR_RIDERS = [
+  "placed",
+  "accepted",
+  "preparing",
+  "packed",
+  "ready",
+  "assigned",
+  "picked_up",
+  "out_for_delivery",
+] as const
+
+/** Order money, outcomes and on-time delivery per zone for orders placed in the period. */
+export async function zoneStats(s: Scope, p: Period) {
+  const rows = await prisma.$queryRaw<
+    {
+      zone: string
+      orders: number
+      gross: bigint
+      platform: bigint
+      delivered: number
+      cancelled: number
+      timed: number
+      on_time: number
+    }[]
+  >`
+    SELECT o."zoneId" AS zone,
+      COUNT(*)::int AS orders,
+      COALESCE(SUM(o."totalPaise") FILTER (WHERE ${COUNTED}), 0)::bigint AS gross,
+      COALESCE(SUM(${COMMISSION} + o."deliveryFeePaise") FILTER (WHERE ${COUNTED}), 0)::bigint AS platform,
+      COUNT(*) FILTER (WHERE o."status" = 'delivered')::int AS delivered,
+      COUNT(*) FILTER (WHERE o."status" = 'cancelled')::int AS cancelled,
+      COUNT(d."at")::int AS timed,
+      COUNT(d."at") FILTER (WHERE d."at" - o."placedAt" <= make_interval(mins =>
+        CASE o."business" WHEN 'food' THEN ${ORDER_SLA_MINUTES.food}::int
+          ELSE ${ORDER_SLA_MINUTES.mart}::int END))::int AS on_time
+    FROM "orders" o
+    JOIN "vendors" v ON v."id" = o."vendorId"
+    LEFT JOIN LATERAL (
+      SELECT MIN(e."at") AS "at" FROM "order_events" e
+      WHERE e."orderId" = o."id" AND e."to" = 'delivered'
+    ) d ON TRUE
+    WHERE ${orderScope(s, p)}
+    GROUP BY 1`
+  return rows.map((r) => ({
+    zoneId: r.zone,
+    orders: r.orders,
+    grossPaise: n(r.gross),
+    platformPaise: n(r.platform),
+    delivered: r.delivered,
+    cancelled: r.cancelled,
+    timed: r.timed,
+    onTime: r.on_time,
+  }))
+}
+
+const istDate = (d: Date) => new Date(d.getTime() + 330 * 60_000).toISOString().slice(0, 10)
+
+/** Partner pay accrued per zone over the period's IST days. */
+export async function riderCostByZone(s: Scope, p: Period) {
+  const rows = await prisma.$queryRaw<{ zone: string; pay: bigint }[]>`
+    SELECT pt."zoneId" AS zone,
+      SUM(a."salaryPaise" + a."fixedPaise" + a."incentivePaise" + a."commissionPaise")::bigint AS pay
+    FROM "daily_accruals" a JOIN "partners" pt ON pt."id" = a."accountId"
+    WHERE a."accountType" = 'partner'
+      AND a."day" >= ${istDate(p.from)}::date AND a."day" <= ${istDate(p.to)}::date
+      ${s.zoneIds ? Prisma.sql`AND pt."zoneId" = ANY(${s.zoneIds}::text[])` : Prisma.empty}
+    GROUP BY 1`
+  return new Map(rows.map((r) => [r.zone, n(r.pay)]))
+}
+
+/** Right now: orders still to deliver, and riders free to take them, per zone. */
+export async function zoneSupply(s: Scope) {
+  const [open, boys, partners] = await Promise.all([
+    prisma.order.groupBy({
+      by: ["zoneId"],
+      where: {
+        business: { in: s.businesses },
+        status: { in: [...OPEN_FOR_RIDERS] },
+        ...zoneWhere(s),
+      },
+      _count: { _all: true },
+    }),
+    prisma.deliveryBoy.groupBy({
+      by: ["zoneId"],
+      where: { status: "active", availability: "available", ...zoneWhere(s) },
+      _count: { _all: true },
+    }),
+    prisma.partner.groupBy({
+      by: ["zoneId"],
+      where: { status: "active", availability: "available", ...zoneWhere(s) },
+      _count: { _all: true },
+    }),
+  ])
+  const supply = new Map<string, number>()
+  for (const g of [...boys, ...partners])
+    supply.set(g.zoneId, (supply.get(g.zoneId) ?? 0) + g._count._all)
+  return {
+    open: new Map(open.map((g) => [g.zoneId, g._count._all])),
+    riders: supply,
+  }
+}
+
+/** Every zone with its district and state, limited to the member's zones. */
+export function zoneDirectory(s: Scope) {
+  return prisma.zone.findMany({
+    where: s.zoneIds ? { id: { in: s.zoneIds } } : {},
+    select: {
+      id: true,
+      city: true,
+      location: true,
+      districtId: true,
+      districtRecord: { select: { name: true, state: true } },
+    },
+  })
+}

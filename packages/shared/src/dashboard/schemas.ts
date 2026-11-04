@@ -190,6 +190,10 @@ export const RevenueTotals = z.object({
   vendorSharePaise: Paise,
   refundsPaise: Paise,
   refundCount: z.number().int(),
+  /** Partner pay (salary, fixed, incentive, commission) for the zones served, split between businesses by deliveries. */
+  riderCostPaise: Paise,
+  /** Platform revenue less rider cost. */
+  marginPaise: z.number().int(),
 })
 export type RevenueTotals = z.infer<typeof RevenueTotals>
 
@@ -244,3 +248,51 @@ export const SearchResults = z.object({
   ),
 })
 export type SearchResults = z.infer<typeof SearchResults>
+
+export const GEO_LEVELS = ["state", "district", "zone"] as const
+export const GeoLevel = z.enum(GEO_LEVELS)
+export type GeoLevel = z.infer<typeof GeoLevel>
+
+/** State → district → zone drill-down: the level is the narrowest filter given plus one. */
+export const GeoQuery = DashboardQuery.extend({
+  state: z.string().trim().min(1).max(120).optional(),
+  districtId: z.string().min(1).max(64).optional(),
+})
+export type GeoQuery = z.infer<typeof GeoQuery>
+
+export const GeoRow = z.object({
+  /** What a click drills into: a state name, a district id or a zone id. */
+  key: z.string(),
+  label: z.string(),
+  /** The state a district or zone belongs to, for the breadcrumb. */
+  state: z.string().nullable(),
+  zones: z.number().int(),
+  orders: z.number().int(),
+  delivered: z.number().int(),
+  cancelled: z.number().int(),
+  grossPaise: Paise,
+  platformPaise: Paise,
+  riderCostPaise: Paise,
+  marginPaise: z.number().int(),
+  /** Percent of delivered orders inside the time limit; null when nothing was delivered. */
+  onTimeRate: z.number().nullable(),
+  /** Percent of the period's orders that were cancelled; null when there were none. */
+  cancellationRate: z.number().nullable(),
+  /** Orders waiting to be delivered right now. */
+  openOrders: z.number().int(),
+  ridersAvailable: z.number().int(),
+  /** Open orders beyond the riders free in the same zone, summed over the zones here. */
+  riderShortage: z.number().int(),
+})
+export type GeoRow = z.infer<typeof GeoRow>
+
+export const GeoInsights = z.object({
+  level: GeoLevel,
+  range: DashboardRange,
+  generatedAt: z.iso.datetime(),
+  /** Names for the breadcrumb of the level being shown. */
+  state: z.string().nullable(),
+  districtName: z.string().nullable(),
+  rows: z.array(GeoRow),
+})
+export type GeoInsights = z.infer<typeof GeoInsights>

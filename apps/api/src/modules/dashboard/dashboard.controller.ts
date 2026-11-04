@@ -1,4 +1,4 @@
-import { DashboardQuery, RevenueQuery, SearchQuery } from "@zoauro/shared"
+import { DashboardQuery, GeoQuery, RevenueQuery, SearchQuery } from "@zoauro/shared"
 import type { Request, Response } from "express"
 import { parse } from "../../lib/errors"
 import { currentMember, scope } from "../../middleware/auth"
@@ -12,6 +12,11 @@ export async function overview(req: Request, res: Response) {
 export async function health(req: Request, res: Response) {
   const q = parse(DashboardQuery, req.query)
   res.json(await service.health(scope(req, q.business), q.range))
+}
+
+export async function geo(req: Request, res: Response) {
+  const q = parse(GeoQuery, req.query)
+  res.json(await service.geo(scope(req, q.business), q.range, q.state, q.districtId))
 }
 
 export async function revenue(req: Request, res: Response) {

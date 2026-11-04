@@ -7,11 +7,14 @@ import {
   type DashboardHealth,
   type DashboardOverview,
   type DashboardRange,
+  type GeoInsights,
+  type GeoLevel,
   type RevenueReport,
   type RevenueTotals,
   type SearchResults,
 } from "@zoauro/shared"
 import * as repo from "./dashboard.repository"
+import { overallShare, rollUp, type ZoneFigures } from "./dashboard.geo"
 import type { Period, Scope } from "./dashboard.repository"
 
 const DAY = 86_400_000
@@ -197,7 +200,75 @@ export async function health(s: Scope, range: DashboardRange): Promise<Dashboard
   }
 }
 
-function revenueTotals(t: Totals | undefined): RevenueTotals {
+const ALL_BUSINESSES = ["food", "mart"] as const
+
+/** Per-zone money, outcomes, rider cost and rider supply for the businesses and period in view. */
+async function zoneFigures(s: Scope, p: Period, withSupply: boolean): Promise<ZoneFigures[]> {
+  const everyone = { ...s, businesses: [...ALL_BUSINESSES] }
+  const [directory, stats, allStats, cost, supply] = await Promise.all([
+    repo.zoneDirectory(s),
+    repo.zoneStats(s, p),
+    repo.zoneStats(everyone, p),
+    repo.riderCostByZone(s, p),
+    withSupply ? repo.zoneSupply(s) : null,
+  ])
+  const byZone = new Map(stats.map((r) => [r.zoneId, r]))
+  const deliveredAll = new Map(allStats.map((r) => [r.zoneId, r.delivered]))
+  return directory.map((z) => {
+    const r = byZone.get(z.id)
+    return {
+      zoneId: z.id,
+      label: `${z.location}, ${z.city}`,
+      districtId: z.districtId,
+      districtName: z.districtRecord.name,
+      state: z.districtRecord.state,
+      orders: r?.orders ?? 0,
+      delivered: r?.delivered ?? 0,
+      cancelled: r?.cancelled ?? 0,
+      grossPaise: r?.grossPaise ?? 0,
+      platformPaise: r?.platformPaise ?? 0,
+      zoneCostPaise: cost.get(z.id) ?? 0,
+      deliveredInView: r?.delivered ?? 0,
+      deliveredAll: deliveredAll.get(z.id) ?? 0,
+      timed: r?.timed ?? 0,
+      onTime: r?.onTime ?? 0,
+      openOrders: supply?.open.get(z.id) ?? 0,
+      ridersAvailable: supply?.riders.get(z.id) ?? 0,
+    }
+  })
+}
+
+const viewCoversAll = (s: Scope) => ALL_BUSINESSES.every((b) => s.businesses.includes(b))
+
+async function riderCost(s: Scope, p: Period) {
+  const figures = await zoneFigures(s, p, false)
+  const rows = rollUp(figures, "state", overallShare(figures, viewCoversAll(s)))
+  return rows.reduce((t, r) => t + r.riderCostPaise, 0)
+}
+
+export async function geo(
+  s: Scope,
+  range: DashboardRange,
+  state?: string,
+  districtId?: string,
+): Promise<GeoInsights> {
+  const p = periods(range)
+  const figures = await zoneFigures(s, p.current, true)
+  const inState = state ? figures.filter((z) => z.state === state) : figures
+  const inDistrict = districtId ? inState.filter((z) => z.districtId === districtId) : inState
+  const level: GeoLevel = districtId ? "zone" : state ? "district" : "state"
+  return {
+    level,
+    range,
+    generatedAt: new Date().toISOString(),
+    state: state ?? null,
+    districtName: districtId ? (inDistrict[0]?.districtName ?? null) : null,
+    // The fallback share is measured over every zone in scope, not only the ones being shown.
+    rows: rollUp(inDistrict, level, overallShare(figures, viewCoversAll(s))),
+  }
+}
+
+function revenueTotals(t: Totals | undefined, riderCostPaise: number): RevenueTotals {
   const commission = t?.commissionPaise ?? 0
   const fees = t?.deliveryFeesPaise ?? 0
   return {
@@ -209,6 +280,8 @@ function revenueTotals(t: Totals | undefined): RevenueTotals {
     vendorSharePaise: (t?.itemsPaise ?? 0) - commission,
     refundsPaise: t?.refundsPaise ?? 0,
     refundCount: t?.refundCount ?? 0,
+    riderCostPaise,
+    marginPaise: commission + fees - riderCostPaise,
   }
 }
 
@@ -219,20 +292,22 @@ export async function revenue(
 ): Promise<RevenueReport> {
   const one = { ...s, businesses: [business] }
   const p = periods(range)
-  const [now, before, daily, vendors, snap] = await Promise.all([
+  const [now, before, daily, vendors, snap, costNow, costBefore] = await Promise.all([
     repo.totals(one, p.current),
     repo.totals(one, p.previous),
     repo.daily(one, p.current),
     repo.byVendor(one, p.current),
     repo.snapshot(one),
+    riderCost(one, p.current),
+    riderCost(one, p.previous),
   ])
   return {
     business,
     range,
     from: p.current.from.toISOString(),
     generatedAt: new Date().toISOString(),
-    totals: revenueTotals(now[0]),
-    previous: revenueTotals(before[0]),
+    totals: revenueTotals(now[0], costNow),
+    previous: revenueTotals(before[0], costBefore),
     daily: p.dates.map((date) => {
       const d = daily.find((r) => r.day === date)
       return { date, grossPaise: d?.grossPaise ?? 0, platformPaise: d?.platformPaise ?? 0 }

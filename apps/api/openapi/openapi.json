@@ -3311,6 +3311,130 @@
           "businesses"
         ]
       },
+      "GeoInsights": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "string",
+            "enum": [
+              "state",
+              "district",
+              "zone"
+            ]
+          },
+          "range": {
+            "type": "string",
+            "pattern": "^(today|7d|30d|90d|365d|y\\d{4}|c\\d{4}-\\d{2}-\\d{2}_\\d{4}-\\d{2}-\\d{2})$"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "state": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "districtName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "state": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "zones": {
+                  "type": "integer"
+                },
+                "orders": {
+                  "type": "integer"
+                },
+                "delivered": {
+                  "type": "integer"
+                },
+                "cancelled": {
+                  "type": "integer"
+                },
+                "grossPaise": {
+                  "type": "integer"
+                },
+                "platformPaise": {
+                  "type": "integer"
+                },
+                "riderCostPaise": {
+                  "type": "integer"
+                },
+                "marginPaise": {
+                  "type": "integer"
+                },
+                "onTimeRate": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "cancellationRate": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "openOrders": {
+                  "type": "integer"
+                },
+                "ridersAvailable": {
+                  "type": "integer"
+                },
+                "riderShortage": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "key",
+                "label",
+                "state",
+                "zones",
+                "orders",
+                "delivered",
+                "cancelled",
+                "grossPaise",
+                "platformPaise",
+                "riderCostPaise",
+                "marginPaise",
+                "onTimeRate",
+                "cancellationRate",
+                "openOrders",
+                "ridersAvailable",
+                "riderShortage"
+              ]
+            }
+          }
+        },
+        "required": [
+          "level",
+          "range",
+          "generatedAt",
+          "state",
+          "districtName",
+          "rows"
+        ]
+      },
       "RevenueReport": {
         "type": "object",
         "properties": {
@@ -3359,6 +3483,12 @@
               },
               "refundCount": {
                 "type": "integer"
+              },
+              "riderCostPaise": {
+                "type": "integer"
+              },
+              "marginPaise": {
+                "type": "integer"
               }
             },
             "required": [
@@ -3369,7 +3499,9 @@
               "platformPaise",
               "vendorSharePaise",
               "refundsPaise",
-              "refundCount"
+              "refundCount",
+              "riderCostPaise",
+              "marginPaise"
             ]
           },
           "previous": {
@@ -3398,6 +3530,12 @@
               },
               "refundCount": {
                 "type": "integer"
+              },
+              "riderCostPaise": {
+                "type": "integer"
+              },
+              "marginPaise": {
+                "type": "integer"
               }
             },
             "required": [
@@ -3408,7 +3546,9 @@
               "platformPaise",
               "vendorSharePaise",
               "refundsPaise",
-              "refundCount"
+              "refundCount",
+              "riderCostPaise",
+              "marginPaise"
             ]
           },
           "daily": {
@@ -15788,6 +15928,100 @@
         }
       }
     },
+    "/dashboard/geography": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "State, district or zone drill-down: revenue, margin, on-time delivery, cancellations and rider supply",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "food",
+                "mart"
+              ]
+            },
+            "required": false,
+            "name": "business",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^(today|7d|30d|90d|365d|y\\d{4}|c\\d{4}-\\d{2}-\\d{2}_\\d{4}-\\d{2}-\\d{2})$",
+              "default": "7d"
+            },
+            "required": false,
+            "name": "range",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "required": false,
+            "name": "state",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": false,
+            "name": "districtId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Geography insights",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeoInsights"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/dashboard/revenue": {
       "get": {
         "tags": [
@@ -22286,7 +22520,9 @@
     },
     "/delivery/offers": {
       "get": {
-        "tags": ["Rider operations"],
+        "tags": [
+          "Rider operations"
+        ],
         "summary": "Orders offered to riders and not yet answered, in the member's zones",
         "responses": {
           "200": {
@@ -22365,7 +22601,9 @@
     },
     "/delivery/proofs": {
       "get": {
-        "tags": ["Rider operations"],
+        "tags": [
+          "Rider operations"
+        ],
         "summary": "Recent delivered orders with a proof photo, in the member's zones",
         "responses": {
           "200": {
@@ -22396,7 +22634,10 @@
                         "type": "string"
                       },
                       "proofAt": {
-                        "type": ["string", "null"],
+                        "type": [
+                          "string",
+                          "null"
+                        ],
                         "format": "date-time"
                       },
                       "codVerified": {
@@ -22443,7 +22684,9 @@
     },
     "/delivery/orders/{id}/resend-code": {
       "post": {
-        "tags": ["Rider operations"],
+        "tags": [
+          "Rider operations"
+        ],
         "summary": "Text the customer a new delivery code",
         "parameters": [
           {
@@ -22467,7 +22710,9 @@
                       "type": "boolean"
                     }
                   },
-                  "required": ["ok"]
+                  "required": [
+                    "ok"
+                  ]
                 }
               }
             }
@@ -22507,13 +22752,19 @@
     },
     "/delivery/area-requests": {
       "get": {
-        "tags": ["Rider operations"],
+        "tags": [
+          "Rider operations"
+        ],
         "summary": "Service-area requests from riders, in the member's zones",
         "parameters": [
           {
             "schema": {
               "type": "string",
-              "enum": ["requested", "approved", "rejected"]
+              "enum": [
+                "requested",
+                "approved",
+                "rejected"
+              ]
             },
             "required": false,
             "name": "status",
@@ -22547,7 +22798,11 @@
                       },
                       "status": {
                         "type": "string",
-                        "enum": ["requested", "approved", "rejected"]
+                        "enum": [
+                          "requested",
+                          "approved",
+                          "rejected"
+                        ]
                       },
                       "requestedAt": {
                         "type": "string",
@@ -22593,7 +22848,9 @@
     },
     "/delivery/area-requests/{id}/approve": {
       "post": {
-        "tags": ["Rider operations"],
+        "tags": [
+          "Rider operations"
+        ],
         "summary": "Approve a rider's request to take orders from another zone",
         "parameters": [
           {
@@ -22617,7 +22874,9 @@
                       "type": "boolean"
                     }
                   },
-                  "required": ["ok"]
+                  "required": [
+                    "ok"
+                  ]
                 }
               }
             }
@@ -22657,7 +22916,9 @@
     },
     "/delivery/area-requests/{id}/reject": {
       "post": {
-        "tags": ["Rider operations"],
+        "tags": [
+          "Rider operations"
+        ],
         "summary": "Reject a rider's request to take orders from another zone",
         "parameters": [
           {
@@ -22681,7 +22942,9 @@
                       "type": "boolean"
                     }
                   },
-                  "required": ["ok"]
+                  "required": [
+                    "ok"
+                  ]
                 }
               }
             }
