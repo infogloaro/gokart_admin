@@ -21,6 +21,7 @@ model Zone {
   deliveryBoys     DeliveryBoy[]
   orders           Order[]
   feeRules         FeeRule[]
+  surgeRules       SurgeRule[]
 
   @@unique([districtId, city, location])
   @@index([districtId])
@@ -58,4 +59,37 @@ model FeeRule {
 
   @@index([business, zoneId, effectiveFrom])
   @@map("fee_rules")
+}
+
+enum SurgeKind {
+  peak
+  night
+  rain
+  festival
+  custom
+}
+
+/// A multiplier on the delivery fee while its hours, weekdays and dates match. Only the strongest
+/// matching rule is charged, so surges never stack. Times are minutes since midnight in IST.
+model SurgeRule {
+  id                String    @id @default(cuid())
+  name              String
+  kind              SurgeKind
+  business          Business?
+  zoneId            String?
+  multiplierPercent Int
+  maxExtraPaise     Int?
+  startMinute       Int?
+  endMinute         Int?
+  days              Int[]
+  startsOn          DateTime? @db.Date
+  endsOn            DateTime? @db.Date
+  active            Boolean   @default(true)
+  createdById       String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  zone              Zone?     @relation(fields: [zoneId], references: [id], onDelete: Restrict)
+
+  @@index([active, business, zoneId])
+  @@map("surge_rules")
 }

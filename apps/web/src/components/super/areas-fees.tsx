@@ -14,6 +14,7 @@ import {
 import { useMemo, useState, type FormEvent } from "react"
 import { Button, Input, Modal, Panel, Select, Badge } from "./ui"
 import { Count, HeadActions } from "./dashboard"
+import { SurgePricing } from "./surge-pricing"
 import { useRefreshToast } from "@/components/refresh-toast"
 import { useGeography } from "@/lib/finance"
 import {
@@ -756,6 +757,8 @@ export function AreasFees() {
           </div>
         )}
       </Panel>
+
+      <SurgePricing zones={zones.data ?? []} />
 
       {zoneEditor && (
         <Modal

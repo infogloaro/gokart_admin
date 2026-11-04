@@ -7417,6 +7417,1393 @@
         }
       }
     },
+    "/settings/surge": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "List surge pricing rules",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 80
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "peak",
+                          "night",
+                          "rain",
+                          "festival",
+                          "custom"
+                        ]
+                      },
+                      "business": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "enum": [
+                          "food",
+                          "mart",
+                          null
+                        ]
+                      },
+                      "zoneId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "multiplierPercent": {
+                        "type": "integer",
+                        "minimum": 101,
+                        "maximum": 500
+                      },
+                      "maxExtraPaise": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "exclusiveMinimum": 0
+                      },
+                      "startMinute": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 0,
+                        "maximum": 1439
+                      },
+                      "endMinute": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 0,
+                        "maximum": 1439
+                      },
+                      "days": {
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 6
+                        },
+                        "maxItems": 7
+                      },
+                      "startsOn": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "endsOn": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "zoneName": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "active": {
+                        "type": "boolean"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "kind",
+                      "business",
+                      "zoneId",
+                      "multiplierPercent",
+                      "maxExtraPaise",
+                      "startMinute",
+                      "endMinute",
+                      "days",
+                      "startsOn",
+                      "endsOn",
+                      "zoneName",
+                      "active",
+                      "createdAt",
+                      "updatedAt"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Create a surge pricing rule",
+        "requestBody": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 80
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "peak",
+                      "night",
+                      "rain",
+                      "festival",
+                      "custom"
+                    ]
+                  },
+                  "business": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "enum": [
+                      "food",
+                      "mart",
+                      null
+                    ]
+                  },
+                  "zoneId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "multiplierPercent": {
+                    "type": "integer",
+                    "minimum": 101,
+                    "maximum": 500
+                  },
+                  "maxExtraPaise": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "exclusiveMinimum": 0
+                  },
+                  "startMinute": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 1439
+                  },
+                  "endMinute": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 1439
+                  },
+                  "days": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 6
+                    },
+                    "maxItems": 7
+                  },
+                  "startsOn": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "endsOn": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "active": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "name",
+                  "kind",
+                  "business",
+                  "zoneId",
+                  "multiplierPercent",
+                  "maxExtraPaise",
+                  "startMinute",
+                  "endMinute",
+                  "days",
+                  "startsOn",
+                  "endsOn",
+                  "active"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 2,
+                      "maxLength": 80
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "peak",
+                        "night",
+                        "rain",
+                        "festival",
+                        "custom"
+                      ]
+                    },
+                    "business": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "enum": [
+                        "food",
+                        "mart",
+                        null
+                      ]
+                    },
+                    "zoneId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "multiplierPercent": {
+                      "type": "integer",
+                      "minimum": 101,
+                      "maximum": 500
+                    },
+                    "maxExtraPaise": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "exclusiveMinimum": 0
+                    },
+                    "startMinute": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 0,
+                      "maximum": 1439
+                    },
+                    "endMinute": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 0,
+                      "maximum": 1439
+                    },
+                    "days": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 6
+                      },
+                      "maxItems": 7
+                    },
+                    "startsOn": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "endsOn": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "zoneName": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "active": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "kind",
+                    "business",
+                    "zoneId",
+                    "multiplierPercent",
+                    "maxExtraPaise",
+                    "startMinute",
+                    "endMinute",
+                    "days",
+                    "startsOn",
+                    "endsOn",
+                    "zoneName",
+                    "active",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/settings/surge/preview": {
+      "post": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Price a delivery with and without a draft surge rule",
+        "requestBody": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "business": {
+                    "type": "string",
+                    "enum": [
+                      "food",
+                      "mart"
+                    ]
+                  },
+                  "zoneId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "distanceKm": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 200
+                  },
+                  "cartPaise": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "draft": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 80
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "peak",
+                          "night",
+                          "rain",
+                          "festival",
+                          "custom"
+                        ]
+                      },
+                      "business": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "enum": [
+                          "food",
+                          "mart",
+                          null
+                        ]
+                      },
+                      "zoneId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "multiplierPercent": {
+                        "type": "integer",
+                        "minimum": 101,
+                        "maximum": 500
+                      },
+                      "maxExtraPaise": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "exclusiveMinimum": 0
+                      },
+                      "startMinute": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 0,
+                        "maximum": 1439
+                      },
+                      "endMinute": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 0,
+                        "maximum": 1439
+                      },
+                      "days": {
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 6
+                        },
+                        "maxItems": 7
+                      },
+                      "startsOn": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "endsOn": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "kind",
+                      "business",
+                      "zoneId",
+                      "multiplierPercent",
+                      "maxExtraPaise",
+                      "startMinute",
+                      "endMinute",
+                      "days",
+                      "startsOn",
+                      "endsOn"
+                    ]
+                  }
+                },
+                "required": [
+                  "business",
+                  "zoneId",
+                  "distanceKm",
+                  "cartPaise",
+                  "at",
+                  "draft"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "feeRule": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "baseFeePaise": {
+                          "type": "integer"
+                        },
+                        "perKmPaise": {
+                          "type": "integer"
+                        },
+                        "freeAbovePaise": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "effectiveFrom": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "zoneName": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "baseFeePaise",
+                        "perKmPaise",
+                        "freeAbovePaise",
+                        "effectiveFrom",
+                        "zoneName"
+                      ]
+                    },
+                    "without": {
+                      "type": "object",
+                      "properties": {
+                        "subtotalPaise": {
+                          "type": "integer"
+                        },
+                        "totalPaise": {
+                          "type": "integer"
+                        },
+                        "freeDelivery": {
+                          "type": "boolean"
+                        },
+                        "matched": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "surgeName": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "extraPaise": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "subtotalPaise",
+                        "totalPaise",
+                        "freeDelivery",
+                        "matched",
+                        "surgeName",
+                        "extraPaise"
+                      ]
+                    },
+                    "with": {
+                      "type": "object",
+                      "properties": {
+                        "baseFeePaise": {
+                          "type": "integer"
+                        },
+                        "distanceFeePaise": {
+                          "type": "integer"
+                        },
+                        "subtotalPaise": {
+                          "type": "integer"
+                        },
+                        "freeDelivery": {
+                          "type": "boolean"
+                        },
+                        "matched": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "surgeName": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "multiplierPercent": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "extraPaise": {
+                          "type": "integer"
+                        },
+                        "capped": {
+                          "type": "boolean"
+                        },
+                        "totalPaise": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "baseFeePaise",
+                        "distanceFeePaise",
+                        "subtotalPaise",
+                        "freeDelivery",
+                        "matched",
+                        "surgeName",
+                        "multiplierPercent",
+                        "extraPaise",
+                        "capped",
+                        "totalPaise"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "feeRule",
+                    "without",
+                    "with"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Changed by someone else; reload and retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/settings/surge/{id}": {
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Replace a surge pricing rule",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 80
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "peak",
+                      "night",
+                      "rain",
+                      "festival",
+                      "custom"
+                    ]
+                  },
+                  "business": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "enum": [
+                      "food",
+                      "mart",
+                      null
+                    ]
+                  },
+                  "zoneId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "multiplierPercent": {
+                    "type": "integer",
+                    "minimum": 101,
+                    "maximum": 500
+                  },
+                  "maxExtraPaise": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "exclusiveMinimum": 0
+                  },
+                  "startMinute": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 1439
+                  },
+                  "endMinute": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 1439
+                  },
+                  "days": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 6
+                    },
+                    "maxItems": 7
+                  },
+                  "startsOn": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "endsOn": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "active": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "name",
+                  "kind",
+                  "business",
+                  "zoneId",
+                  "multiplierPercent",
+                  "maxExtraPaise",
+                  "startMinute",
+                  "endMinute",
+                  "days",
+                  "startsOn",
+                  "endsOn",
+                  "active"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 2,
+                      "maxLength": 80
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "peak",
+                        "night",
+                        "rain",
+                        "festival",
+                        "custom"
+                      ]
+                    },
+                    "business": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "enum": [
+                        "food",
+                        "mart",
+                        null
+                      ]
+                    },
+                    "zoneId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "multiplierPercent": {
+                      "type": "integer",
+                      "minimum": 101,
+                      "maximum": 500
+                    },
+                    "maxExtraPaise": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "exclusiveMinimum": 0
+                    },
+                    "startMinute": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 0,
+                      "maximum": 1439
+                    },
+                    "endMinute": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 0,
+                      "maximum": 1439
+                    },
+                    "days": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 6
+                      },
+                      "maxItems": 7
+                    },
+                    "startsOn": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "endsOn": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "zoneName": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "active": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "kind",
+                    "business",
+                    "zoneId",
+                    "multiplierPercent",
+                    "maxExtraPaise",
+                    "startMinute",
+                    "endMinute",
+                    "days",
+                    "startsOn",
+                    "endsOn",
+                    "zoneName",
+                    "active",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Delete a surge pricing rule",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/settings/surge/{id}/active": {
+      "patch": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Switch a surge pricing rule on or off",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "active": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "active"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 2,
+                      "maxLength": 80
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "peak",
+                        "night",
+                        "rain",
+                        "festival",
+                        "custom"
+                      ]
+                    },
+                    "business": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "enum": [
+                        "food",
+                        "mart",
+                        null
+                      ]
+                    },
+                    "zoneId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "multiplierPercent": {
+                      "type": "integer",
+                      "minimum": 101,
+                      "maximum": 500
+                    },
+                    "maxExtraPaise": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "exclusiveMinimum": 0
+                    },
+                    "startMinute": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 0,
+                      "maximum": 1439
+                    },
+                    "endMinute": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 0,
+                      "maximum": 1439
+                    },
+                    "days": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 6
+                      },
+                      "maxItems": 7
+                    },
+                    "startsOn": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "endsOn": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "zoneName": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "active": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "kind",
+                    "business",
+                    "zoneId",
+                    "multiplierPercent",
+                    "maxExtraPaise",
+                    "startMinute",
+                    "endMinute",
+                    "days",
+                    "startsOn",
+                    "endsOn",
+                    "zoneName",
+                    "active",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/settings/districts": {
       "get": {
         "tags": [
