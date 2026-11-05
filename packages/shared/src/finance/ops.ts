@@ -409,6 +409,14 @@ export const RiderComparisonRow = z.object({
 })
 export type RiderComparisonRow = z.infer<typeof RiderComparisonRow>
 
+export const DistrictComparisonRow = z.object({
+  district: z.string(),
+  riders: z.number().int(),
+  partners: z.number().int(),
+  ...ComparisonCounts,
+})
+export type DistrictComparisonRow = z.infer<typeof DistrictComparisonRow>
+
 export const RIDER_STEPS = [
   "placed",
   "accepted",

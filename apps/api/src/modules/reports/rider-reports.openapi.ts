@@ -1,5 +1,6 @@
 import {
   PartnerComparisonQuery,
+  DistrictComparisonRow,
   PartnerComparisonRow,
   RiderComparisonQuery,
   RiderComparisonRow,
@@ -11,6 +12,15 @@ import { errors, json, registry } from "../../openapi/registry"
 
 const tags = ["Reports"]
 
+registry.registerPath({
+  method: "get",
+  path: "/reports/districts",
+  tags,
+  summary:
+    "District comparison for the period: riders, deliveries, speed, offers, complaints and cash",
+  request: { query: PartnerComparisonQuery },
+  responses: { 200: json(z.array(DistrictComparisonRow)), ...errors(400, 401, 403) },
+})
 registry.registerPath({
   method: "get",
   path: "/reports/partners",

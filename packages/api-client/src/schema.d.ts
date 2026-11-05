@@ -11835,6 +11835,85 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reports/districts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** District comparison for the period: riders, deliveries, speed, offers, complaints and cash */
+        get: {
+            parameters: {
+                query?: {
+                    period?: "daily" | "weekly" | "monthly" | "yearly" | "custom";
+                    from?: string;
+                    to?: string;
+                    state?: string;
+                    district?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            district: string;
+                            riders: number;
+                            partners: number;
+                            deliveries: number;
+                            avgMinutes: number | null;
+                            offersSent: number;
+                            offersAccepted: number;
+                            complaints: number;
+                            codCollectedPaise: number;
+                        }[];
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/reports/partners": {
         parameters: {
             query?: never;

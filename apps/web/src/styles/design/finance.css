@@ -131,3 +131,29 @@
 .super-ui .report-filters .geo-filter > *{min-width:11rem}
 .super-ui .report-filters .report-filter{min-width:12.5rem;flex:1 1 12.5rem;max-width:18rem}
 .super-ui .report-filters .range-custom{align-self:flex-end}
+
+/* Comparison charts: districts, delivery partners and riders, ranked by a chosen measure. */
+.super-ui .cmp-controls{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:.6rem;margin-bottom:1rem}
+.super-ui .cmp-controls .tabs{border:0;flex-wrap:wrap}
+.super-ui .cmp-chart{display:grid;gap:.9rem}
+.super-ui .cmp-summary{display:flex;flex-wrap:wrap;gap:.5rem 1.25rem;font-size:.8125rem;color:#475569}
+.super-ui .cmp-summary b{color:#0f172a}
+.super-ui .cmp-strip{display:flex;height:.75rem;border-radius:999px;overflow:hidden;background:#e2e8f0}
+.super-ui .cmp-strip span{display:block;height:100%;min-width:2px}
+.super-ui .cmp-bars{list-style:none;margin:0;padding:0;display:grid;gap:.45rem}
+.super-ui .cmp-bars li{display:grid;grid-template-columns:2rem minmax(7rem,14rem) 1fr minmax(5rem,auto);align-items:center;gap:.75rem;font-size:.8125rem}
+.super-ui .cmp-rank{color:#94a3b8;font-variant-numeric:tabular-nums;text-align:right}
+.super-ui .cmp-name{display:flex;flex-direction:column;min-width:0}
+.super-ui .cmp-name strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#0f172a;font-weight:600}
+.super-ui .cmp-name small{color:#64748b;font-size:.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.super-ui .cmp-bar-track{display:block;height:.7rem;background:#eef2f7;border-radius:999px;overflow:hidden}
+.super-ui .cmp-bar-fill{display:block;height:100%;border-radius:999px;transition:width .4s ease}
+.super-ui .cmp-value{display:flex;flex-direction:column;align-items:flex-end}
+.super-ui .cmp-value strong{color:#0f172a;font-variant-numeric:tabular-nums}
+.super-ui .cmp-value small{color:#64748b;font-size:.72rem}
+.super-ui .cmp-more{justify-self:start;background:none;border:0;color:#1d4ed8;cursor:pointer;font:inherit;font-size:.8125rem;padding:0}
+.super-ui .cmp-unranked{margin:0;font-size:.75rem;color:#64748b}
+@media (max-width: 720px){
+  .super-ui .cmp-bars li{grid-template-columns:1.5rem 1fr minmax(4.5rem,auto)}
+  .super-ui .cmp-bars li .cmp-bar-track{grid-column:1 / -1;grid-row:2}
+}

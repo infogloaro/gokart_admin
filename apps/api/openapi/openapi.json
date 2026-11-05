@@ -24881,6 +24881,156 @@
         }
       }
     },
+    "/reports/districts": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "District comparison for the period: riders, deliveries, speed, offers, complaints and cash",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "daily",
+                "weekly",
+                "monthly",
+                "yearly",
+                "custom"
+              ],
+              "default": "monthly"
+            },
+            "required": false,
+            "name": "period",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "required": false,
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "required": false,
+            "name": "to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": false,
+            "name": "state",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": false,
+            "name": "district",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "district": {
+                        "type": "string"
+                      },
+                      "riders": {
+                        "type": "integer"
+                      },
+                      "partners": {
+                        "type": "integer"
+                      },
+                      "deliveries": {
+                        "type": "integer"
+                      },
+                      "avgMinutes": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "offersSent": {
+                        "type": "integer"
+                      },
+                      "offersAccepted": {
+                        "type": "integer"
+                      },
+                      "complaints": {
+                        "type": "integer"
+                      },
+                      "codCollectedPaise": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "district",
+                      "riders",
+                      "partners",
+                      "deliveries",
+                      "avgMinutes",
+                      "offersSent",
+                      "offersAccepted",
+                      "complaints",
+                      "codCollectedPaise"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/reports/partners": {
       "get": {
         "tags": [

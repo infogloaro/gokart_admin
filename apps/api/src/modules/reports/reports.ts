@@ -17,7 +17,12 @@ import { prisma } from "../../lib/prisma"
 import { requireAuth, requirePermission, scope } from "../../middleware/auth"
 import { GeoQuery, geoZoneIds } from "../geography"
 import { zoneInsights } from "./insights"
-import { partnerComparison, riderComparison, riderDeliveries } from "./rider-reports"
+import {
+  districtComparison,
+  partnerComparison,
+  riderComparison,
+  riderDeliveries,
+} from "./rider-reports"
 
 /** Who the report covers. Delivery partner and rider narrow the orders to those they delivered. */
 type Scope = {
@@ -242,6 +247,12 @@ export const reportRoutes = Router()
         q.from && q.to ? { from: q.from, to: q.to } : undefined,
       ),
     )
+  })
+  .get("/districts", async (req: Request, res: Response) => {
+    const q = parse(PartnerComparisonQuery, req.query)
+    const s = scope(req)
+    const zoneIds = await geoZoneIds(parse(GeoQuery, req.query), s.zoneIds)
+    res.json(await districtComparison({ ...s, zoneIds }, spanOf(q)))
   })
   .get("/partners", async (req: Request, res: Response) => {
     const q = parse(PartnerComparisonQuery, req.query)

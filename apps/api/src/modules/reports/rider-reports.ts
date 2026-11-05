@@ -3,6 +3,7 @@
 import {
   RIDER_STEPS,
   type Business,
+  type DistrictComparisonRow,
   type PartnerComparisonRow,
   type RiderComparisonRow,
   type RiderDeliveryRow,
@@ -201,6 +202,39 @@ export async function riderComparison(s: Scope, w: Span): Promise<RiderCompariso
     }))
     .sort((a, b) => b.deliveries - a.deliveries || a.code.localeCompare(b.code))
     .slice(0, 100)
+}
+
+/** Districts: the riders' results added up by the district of their zone. */
+export async function districtComparison(s: Scope, w: Span): Promise<DistrictComparisonRow[]> {
+  const data = await loadWindow(s, w)
+  const byDistrict = new Map<string, { riders: number; partners: Set<string>; totals: Totals }>()
+  for (const boy of data.boys) {
+    const district = boy.zone.district
+    const entry = byDistrict.get(district) ?? {
+      riders: 0,
+      partners: new Set<string>(),
+      totals: emptyTotals(),
+    }
+    const t = totalsFor(data, boy.id)
+    entry.riders += 1
+    entry.partners.add(boy.fleetId)
+    entry.totals.deliveries += t.deliveries
+    entry.totals.minutesSum += t.minutesSum
+    entry.totals.minutesCount += t.minutesCount
+    entry.totals.offersSent += t.offersSent
+    entry.totals.offersAccepted += t.offersAccepted
+    entry.totals.complaints += t.complaints
+    entry.totals.codCollectedPaise += t.codCollectedPaise
+    byDistrict.set(district, entry)
+  }
+  return [...byDistrict.entries()]
+    .map(([district, e]) => ({
+      district,
+      riders: e.riders,
+      partners: e.partners.size,
+      ...publicCounts(e.totals),
+    }))
+    .sort((a, b) => b.deliveries - a.deliveries || a.district.localeCompare(b.district))
 }
 
 export async function partnerComparison(s: Scope, w: Span): Promise<PartnerComparisonRow[]> {

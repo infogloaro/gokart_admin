@@ -257,6 +257,18 @@ export const useAnalytics = (
 const spanQuery = (period: AnalyticsPeriod, range?: { from: string; to: string }) =>
   period === "custom" && range ? { period, ...range } : { period }
 
+export const useDistrictComparison = (
+  period: AnalyticsPeriod,
+  geo: Geo = {},
+  range?: { from: string; to: string },
+) =>
+  useQuery({
+    queryKey: ["reports", "districts", period, geo, range ?? null],
+    queryFn: () =>
+      api("get", "/reports/districts", { query: { ...spanQuery(period, range), ...geo } }),
+    placeholderData: keepPreviousData,
+  })
+
 export const usePartnerComparison = (
   period: AnalyticsPeriod,
   geo: Geo = {},

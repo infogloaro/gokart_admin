@@ -19,12 +19,14 @@ import { useDeliveryBoys, useDeliveryFleets } from "@/lib/delivery"
 import {
   inr,
   useAnalytics,
+  useDistrictComparison,
   usePartnerComparison,
   useRiderComparison,
   useRiderDeliveries,
   type Geo,
 } from "@/lib/finance"
 import { download } from "@/lib/motion"
+import { ComparisonChart, type ChartRow } from "./comparison-chart"
 import { GeoFilter } from "./geo-filter"
 import { TrendChart } from "./overview"
 import { useBusinessFilter } from "./shell"
@@ -71,6 +73,84 @@ function Bar({ value, max }: { value: number; max: number }) {
   )
 }
 
+type Dimension = "Districts" | "Delivery partners" | "Riders"
+type Measure = "Deliveries" | "Avg time" | "Complaints" | "Cash collected" | "Offer acceptance"
+const DIMENSIONS: Dimension[] = ["Districts", "Delivery partners", "Riders"]
+const MEASURES: Measure[] = [
+  "Deliveries",
+  "Avg time",
+  "Complaints",
+  "Cash collected",
+  "Offer acceptance",
+]
+
+type Counted = {
+  deliveries: number
+  avgMinutes: number | null
+  complaints: number
+  codCollectedPaise: number
+  offersAccepted: number
+  offersSent: number
+}
+
+/** The measure as a chart value (for ranking) and as text (for the label). */
+function measureOf(r: Counted, m: Measure): { value: number | null; display: string } {
+  switch (m) {
+    case "Deliveries":
+      return { value: r.deliveries, display: r.deliveries.toLocaleString("en-IN") }
+    case "Avg time":
+      return { value: r.avgMinutes, display: minutes(r.avgMinutes) }
+    case "Complaints":
+      return { value: r.complaints, display: String(r.complaints) }
+    case "Cash collected":
+      return { value: r.codCollectedPaise, display: formatINR(r.codCollectedPaise) }
+    case "Offer acceptance":
+      return {
+        value: r.offersSent ? Math.round((r.offersAccepted * 1000) / r.offersSent) / 10 : null,
+        display: percent(r.offersAccepted, r.offersSent),
+      }
+  }
+}
+
+/** Rows for the chart: one per district, delivery partner or rider, measured by the chosen figure. */
+function chartRows(
+  dimension: Dimension,
+  measure: Measure,
+  data: {
+    districts: (Counted & { district: string; riders: number; partners: number })[]
+    partners: (Counted & { fleetId: string; fleetName: string; riders: number })[]
+    riders: (Counted & { boyId: string; name: string; code: string; fleetName: string })[]
+  },
+): ChartRow[] {
+  const rows =
+    dimension === "Districts"
+      ? data.districts.map((d) => ({
+          key: d.district,
+          label: d.district,
+          sub: `${d.riders} riders · ${d.partners} partners`,
+          counted: d,
+        }))
+      : dimension === "Delivery partners"
+        ? data.partners.map((p) => ({
+            key: p.fleetId,
+            label: p.fleetName,
+            sub: `${p.riders} riders`,
+            counted: p,
+          }))
+        : data.riders.map((r) => ({
+            key: r.boyId,
+            label: r.name,
+            sub: `${r.code} · ${r.fleetName}`,
+            counted: r,
+          }))
+  return rows.map((row) => ({
+    key: row.key,
+    label: row.label,
+    sub: row.sub,
+    ...measureOf(row.counted, measure),
+  }))
+}
+
 export function ReportsAnalytics() {
   const router = useRouter()
   const business = useBusinessFilter()
@@ -96,6 +176,9 @@ export function ReportsAnalytics() {
     ...(boyId && { boyId }),
   })
   const partners = usePartnerComparison(apiPeriod, geo, range)
+  const districts = useDistrictComparison(apiPeriod, geo, range)
+  const [dimension, setDimension] = useState<Dimension>("Districts")
+  const [measure, setMeasure] = useState<Measure>("Deliveries")
   const ridersTable = useRiderComparison(apiPeriod, geo, range, fleetId || undefined)
   const deliveries = useRiderDeliveries(boyId || undefined, apiPeriod, range)
 
@@ -459,6 +542,26 @@ export function ReportsAnalytics() {
             </table>
           </div>
         )}
+      </Panel>
+
+      <Panel
+        title="Comparison charts"
+        subtitle={`${label} · ${dimension.toLowerCase()} ranked by ${measure.toLowerCase()}`}
+      >
+        <div className="cmp-controls">
+          <Tabs items={DIMENSIONS} value={dimension} onChange={setDimension} />
+          <Tabs items={MEASURES} value={measure} onChange={setMeasure} />
+        </div>
+        <ComparisonChart
+          unit={measure.toLowerCase()}
+          lowerIsBetter={measure === "Avg time"}
+          emptyText="No deliveries in this period for this comparison."
+          rows={chartRows(dimension, measure, {
+            districts: districts.data ?? [],
+            partners: partnerRows,
+            riders: riderRows,
+          })}
+        />
       </Panel>
 
       {boyId && (
