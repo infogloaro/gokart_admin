@@ -157,3 +157,6 @@
   .super-ui .cmp-bars li{grid-template-columns:1.5rem 1fr minmax(4.5rem,auto)}
   .super-ui .cmp-bars li .cmp-bar-track{grid-column:1 / -1;grid-row:2}
 }
+
+/* Comparison charts sit inside the panel with a comfortable inset. */
+.super-ui .cmp-chart{padding:0 1.25rem 1rem}

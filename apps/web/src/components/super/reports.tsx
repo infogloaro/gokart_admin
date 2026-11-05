@@ -428,6 +428,26 @@ export function ReportsAnalytics() {
           </div>
         ))}
       </div>
+      <Panel
+        title="Comparison charts"
+        subtitle={`${label} · ${dimension.toLowerCase()} ranked by ${measure.toLowerCase()}`}
+      >
+        <div className="cmp-controls">
+          <Tabs items={DIMENSIONS} value={dimension} onChange={setDimension} />
+          <Tabs items={MEASURES} value={measure} onChange={setMeasure} />
+        </div>
+        <ComparisonChart
+          unit={measure.toLowerCase()}
+          lowerIsBetter={measure === "Avg time"}
+          emptyText="No deliveries in this period for this comparison."
+          rows={chartRows(dimension, measure, {
+            districts: districts.data ?? [],
+            partners: partnerRows,
+            riders: riderRows,
+          })}
+        />
+      </Panel>
+
       <div className="grid-two">
         <Panel title="Business comparison" subtitle={`${label} platform revenue`}>
           <TrendChart dates={a?.series.map((s) => s.from) ?? []} series={series} />
@@ -562,26 +582,6 @@ export function ReportsAnalytics() {
             </table>
           </div>
         )}
-      </Panel>
-
-      <Panel
-        title="Comparison charts"
-        subtitle={`${label} · ${dimension.toLowerCase()} ranked by ${measure.toLowerCase()}`}
-      >
-        <div className="cmp-controls">
-          <Tabs items={DIMENSIONS} value={dimension} onChange={setDimension} />
-          <Tabs items={MEASURES} value={measure} onChange={setMeasure} />
-        </div>
-        <ComparisonChart
-          unit={measure.toLowerCase()}
-          lowerIsBetter={measure === "Avg time"}
-          emptyText="No deliveries in this period for this comparison."
-          rows={chartRows(dimension, measure, {
-            districts: districts.data ?? [],
-            partners: partnerRows,
-            riders: riderRows,
-          })}
-        />
       </Panel>
 
       {boyId && (
