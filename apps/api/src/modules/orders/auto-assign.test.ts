@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest"
 import { prisma } from "../../lib/prisma"
 import { redis } from "../../lib/redis"
-import { autoAssignReadyOrder } from "./orders.service"
+import { suggestRiders } from "../delivery/delivery.service"
+import { autoAssignReadyOrder, SYSTEM_MEMBER } from "./orders.service"
 import { acceptOffer } from "../rider-ops/offers"
 
 // A ready order with no rider gets the best free rider in its zone. Runs against the seeded
@@ -28,7 +29,7 @@ describe("automatic rider assignment", () => {
       take: 200,
     })
     expect(freeRiders.length, "the seed must include free riders").toBeGreaterThan(0)
-    const order = await prisma.order.findFirst({
+    const candidates = await prisma.order.findMany({
       where: {
         zoneId: { in: freeRiders.map((r) => r.zoneId) },
         deliveryBoyId: null,
@@ -36,8 +37,18 @@ describe("automatic rider assignment", () => {
         partnerId: null,
       },
       select: { id: true, status: true },
+      take: 100,
     })
-    expect(order, "the seed must include an order in a zone with a free rider").not.toBeNull()
+    // A free rider in the zone isn't enough: the rider's company must also serve the order's
+    // business and zone, so pick an order that actually has an eligible rider.
+    let order: (typeof candidates)[number] | null = null
+    for (const candidate of candidates) {
+      if ((await suggestRiders(candidate.id, SYSTEM_MEMBER)).length > 0) {
+        order = candidate
+        break
+      }
+    }
+    expect(order, "the seed must include an order with an eligible free rider").not.toBeNull()
 
     const originalStatus = order!.status
     await prisma.order.update({ where: { id: order!.id }, data: { status: "ready" } })
