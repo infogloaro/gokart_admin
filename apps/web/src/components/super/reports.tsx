@@ -152,6 +152,67 @@ function chartRows(
   }))
 }
 
+const PAGE_SIZE = 10
+
+/** Page numbers to show: the first, the last, and a window around the current page. */
+function pageItems(current: number, total: number): (number | "…")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
+  const items: (number | "…")[] = [1]
+  if (current > 3) items.push("…")
+  for (let page = Math.max(2, current - 1); page <= Math.min(total - 1, current + 1); page++)
+    items.push(page)
+  if (current < total - 2) items.push("…")
+  items.push(total)
+  return items
+}
+
+/** Previous, numbered pages and next, as in  < 1 2 3 > . */
+function Pager({
+  page,
+  pages,
+  onChange,
+}: {
+  page: number
+  pages: number
+  onChange: (page: number) => void
+}) {
+  return (
+    <nav className="report-pager" aria-label="Pages">
+      <button
+        type="button"
+        aria-label="Previous page"
+        disabled={page === 1}
+        onClick={() => onChange(page - 1)}
+      >
+        &lt;
+      </button>
+      {pageItems(page, pages).map((item, index) =>
+        item === "…" ? (
+          <span key={`gap-${index}`}>…</span>
+        ) : (
+          <button
+            type="button"
+            key={item}
+            aria-current={item === page ? "page" : undefined}
+            className={item === page ? "active" : ""}
+            onClick={() => onChange(item)}
+          >
+            {item}
+          </button>
+        ),
+      )}
+      <button
+        type="button"
+        aria-label="Next page"
+        disabled={page === pages}
+        onClick={() => onChange(page + 1)}
+      >
+        &gt;
+      </button>
+    </nav>
+  )
+}
+
 export function ReportsAnalytics() {
   const router = useRouter()
   const business = useBusinessFilter()
@@ -223,6 +284,18 @@ export function ReportsAnalytics() {
   const riderRows: RiderComparisonRow[] = ridersTable.data ?? []
   const partnerMax = Math.max(0, ...partnerRows.map((p) => p.deliveries))
   const riderMax = Math.max(0, ...riderRows.map((r) => r.deliveries))
+  // Comparison tables show 10 rows a page; the page is clamped if the rows shrink.
+  const [partnerPage, setPartnerPage] = useState(1)
+  const [riderPage, setRiderPage] = useState(1)
+  const partnerPages = Math.max(1, Math.ceil(partnerRows.length / PAGE_SIZE))
+  const partnerCurrent = Math.min(partnerPage, partnerPages)
+  const partnerPageRows = partnerRows.slice(
+    (partnerCurrent - 1) * PAGE_SIZE,
+    partnerCurrent * PAGE_SIZE,
+  )
+  const riderPages = Math.max(1, Math.ceil(riderRows.length / PAGE_SIZE))
+  const riderCurrent = Math.min(riderPage, riderPages)
+  const riderPageRows = riderRows.slice((riderCurrent - 1) * PAGE_SIZE, riderCurrent * PAGE_SIZE)
   const selectedRider = riderRows.find((r) => r.boyId === boyId)
 
   const exportReport = () => {
@@ -504,7 +577,7 @@ export function ReportsAnalytics() {
                 </tr>
               </thead>
               <tbody>
-                {partnerRows.map((p) => (
+                {partnerPageRows.map((p) => (
                   <tr
                     key={p.fleetId}
                     className="clickable"
@@ -527,6 +600,9 @@ export function ReportsAnalytics() {
               </tbody>
             </table>
           </div>
+        )}
+        {partnerPages > 1 && (
+          <Pager page={partnerCurrent} pages={partnerPages} onChange={setPartnerPage} />
         )}
       </Panel>
 
@@ -556,7 +632,7 @@ export function ReportsAnalytics() {
                 </tr>
               </thead>
               <tbody>
-                {riderRows.map((r) => (
+                {riderPageRows.map((r) => (
                   <tr
                     key={r.boyId}
                     className={r.boyId === boyId ? "clickable selected" : "clickable"}
@@ -582,6 +658,7 @@ export function ReportsAnalytics() {
             </table>
           </div>
         )}
+        {riderPages > 1 && <Pager page={riderCurrent} pages={riderPages} onChange={setRiderPage} />}
       </Panel>
 
       {boyId && (

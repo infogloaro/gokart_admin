@@ -160,3 +160,10 @@
 
 /* Comparison charts sit inside the panel with a comfortable inset. */
 .super-ui .cmp-chart{padding:0 1.25rem 1rem}
+
+/* Pager for the comparison tables: < 1 2 3 > */
+.super-ui .report-pager{display:flex;justify-content:flex-end;align-items:center;gap:.35rem;margin-top:.75rem}
+.super-ui .report-pager button{min-width:2rem;height:2rem;padding:0 .5rem;border:1px solid #dfe5ee;border-radius:.5rem;background:#fff;color:#0f172a;font:inherit;font-size:.8125rem;cursor:pointer}
+.super-ui .report-pager button:disabled{opacity:.4;cursor:default}
+.super-ui .report-pager button.active{background:#0b2a4a;border-color:#0b2a4a;color:#fff}
+.super-ui .report-pager span{color:#64748b;padding:0 .2rem}
