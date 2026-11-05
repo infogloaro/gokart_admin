@@ -24,6 +24,7 @@ import {
   useRiderComparison,
   useRiderDeliveries,
   type Geo,
+  useGeography,
 } from "@/lib/finance"
 import { download } from "@/lib/motion"
 import { ComparisonChart, type ChartRow } from "./comparison-chart"
@@ -175,6 +176,18 @@ export function ReportsAnalytics() {
     ...(fleetId && { fleetId }),
     ...(boyId && { boyId }),
   })
+  const geography = useGeography().data ?? []
+  // Only companies inside the chosen state / district are offered.
+  const stateDistricts = geo.state
+    ? (geography.find((s) => s.state === geo.state)?.districts ?? [])
+    : null
+  const fleetOptions = (fleets.data?.items ?? []).filter((f) =>
+    geo.district
+      ? f.district === geo.district
+      : stateDistricts
+        ? stateDistricts.includes(f.district)
+        : true,
+  )
   const partners = usePartnerComparison(apiPeriod, geo, range)
   const districts = useDistrictComparison(apiPeriod, geo, range)
   const [dimension, setDimension] = useState<Dimension>("Districts")
@@ -330,7 +343,14 @@ export function ReportsAnalytics() {
               />
             </span>
           )}
-          <GeoFilter value={geo} onChange={setGeo} />
+          <GeoFilter
+            value={geo}
+            onChange={(next) => {
+              setGeo(next)
+              setFleetId("")
+              setBoyId("")
+            }}
+          />
           <label className="report-filter">
             <span>Delivery partner</span>
             <select
@@ -341,7 +361,7 @@ export function ReportsAnalytics() {
               }}
             >
               <option value="">All partners</option>
-              {(fleets.data?.items ?? []).map((f) => (
+              {fleetOptions.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.name}
                 </option>
