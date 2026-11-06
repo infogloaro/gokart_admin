@@ -20,15 +20,27 @@ import {
 } from "@zoauro/shared"
 import {
   AlertTriangle,
+  Bike,
   Copy,
+  FileCheck2,
   History,
+  IdCard,
+  Info,
+  Landmark,
   Plus,
   RotateCw,
   Search,
   ShieldCheck,
+  User,
   UserPlus,
 } from "lucide-react"
 import { useMemo, useState } from "react"
+import {
+  RiderFileTile,
+  RiderReviewCards,
+  RiderSection,
+  RiderStepper,
+} from "@/components/delivery/rider-form-ui"
 import {
   useAddDeliveryBoy,
   useAssignFleetZone,
@@ -709,118 +721,131 @@ function AddRiderDialog({
       wide
     >
       <div className="modal-body">
-        <div className="tabs" role="tablist" aria-label="Delivery boy onboarding steps">
-          {steps.map((label, index) => (
-            <button
-              type="button"
-              role="tab"
-              aria-selected={step === index}
-              className={step === index ? "active" : ""}
-              key={label}
-              onClick={() => index < step && setStep(index)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <RiderStepper
+          steps={steps}
+          step={step}
+          onSelect={(index) => {
+            setError("")
+            setStep(index)
+          }}
+        />
         {step === 0 && (
-          <div className="form-grid">
-            <Input
-              label="Full name *"
-              value={form.name}
-              onChange={(e) => set("name", e.target.value)}
-            />
-            <Input
-              label="Mobile *"
-              value={form.phone}
-              onChange={(e) => set("phone", e.target.value)}
-            />
-            <Input
-              label="Email"
-              type="email"
-              value={form.email}
-              onChange={(e) => set("email", e.target.value)}
-            />
-            <Input
-              label="Date of birth"
-              type="date"
-              value={form.dateOfBirth}
-              onChange={(e) => set("dateOfBirth", e.target.value)}
-            />
-            <Select label="Gender" value={form.gender} onChange={(value) => set("gender", value)}>
-              <option value="">Not specified</option>
-              {GENDERS.map((gender) => (
-                <option key={gender}>{gender}</option>
-              ))}
-            </Select>
-            <Input
-              label="PIN code"
-              value={form.pinCode}
-              onChange={(e) => set("pinCode", e.target.value)}
-            />
-            <Input
-              label="Address *"
-              value={form.address}
-              onChange={(e) => set("address", e.target.value)}
-            />
-            <Select label="Zone *" value={form.zoneId} onChange={(value) => set("zoneId", value)}>
-              {fleet.zones.map((zone) => (
-                <option key={zone.id} value={zone.id}>
-                  {zone.name}
-                </option>
-              ))}
-            </Select>
-          </div>
+          <RiderSection
+            icon={User}
+            title="Personal details"
+            hint="How we reach the delivery boy and where they live."
+          >
+            <div className="form-grid">
+              <Input
+                label="Full name *"
+                value={form.name}
+                onChange={(e) => set("name", e.target.value)}
+              />
+              <Input
+                label="Mobile *"
+                inputMode="tel"
+                value={form.phone}
+                onChange={(e) => set("phone", e.target.value)}
+              />
+              <Input
+                label="Email"
+                type="email"
+                value={form.email}
+                onChange={(e) => set("email", e.target.value)}
+              />
+              <Input
+                label="Date of birth"
+                type="date"
+                value={form.dateOfBirth}
+                onChange={(e) => set("dateOfBirth", e.target.value)}
+              />
+              <Select label="Gender" value={form.gender} onChange={(value) => set("gender", value)}>
+                <option value="">Not specified</option>
+                {GENDERS.map((gender) => (
+                  <option key={gender}>{gender}</option>
+                ))}
+              </Select>
+              <Input
+                label="PIN code"
+                inputMode="numeric"
+                value={form.pinCode}
+                onChange={(e) => set("pinCode", e.target.value)}
+              />
+              <Input
+                label="Address *"
+                value={form.address}
+                onChange={(e) => set("address", e.target.value)}
+              />
+              <Select label="Zone *" value={form.zoneId} onChange={(value) => set("zoneId", value)}>
+                {fleet.zones.map((zone) => (
+                  <option key={zone.id} value={zone.id}>
+                    {zone.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </RiderSection>
         )}
         {step === 1 && (
-          <div className="form-grid">
-            <Input
-              label="Driving licence *"
-              value={form.drivingLicence}
-              onChange={(e) => set("drivingLicence", e.target.value)}
-            />
-            <Input
-              label="Licence expiry"
-              type="date"
-              value={form.licenceValidUntil}
-              onChange={(e) => set("licenceValidUntil", e.target.value)}
-            />
-          </div>
+          <RiderSection
+            icon={IdCard}
+            title="Identity and licence"
+            hint="The driving licence the delivery boy rides on."
+          >
+            <div className="form-grid">
+              <Input
+                label="Driving licence *"
+                value={form.drivingLicence}
+                onChange={(e) => set("drivingLicence", e.target.value)}
+              />
+              <Input
+                label="Licence expiry"
+                type="date"
+                value={form.licenceValidUntil}
+                onChange={(e) => set("licenceValidUntil", e.target.value)}
+              />
+            </div>
+          </RiderSection>
         )}
         {step === 2 && (
-          <div className="form-grid">
-            <Select
-              label="Vehicle type *"
-              value={form.vehicleType}
-              onChange={(value) => set("vehicleType", value)}
-            >
-              {VEHICLE_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {vehicleLabel[type]}
-                </option>
-              ))}
-            </Select>
-            <Input
-              label="Vehicle number *"
-              value={form.vehicleNumber}
-              onChange={(e) => set("vehicleNumber", e.target.value)}
-            />
-            <Input
-              label="Vehicle model"
-              value={form.vehicleModel}
-              onChange={(e) => set("vehicleModel", e.target.value)}
-            />
-            <Input
-              label="Registration valid until"
-              type="date"
-              value={form.registrationValidUntil}
-              onChange={(e) => set("registrationValidUntil", e.target.value)}
-            />
-          </div>
+          <RiderSection icon={Bike} title="Vehicle" hint="The vehicle used for deliveries.">
+            <div className="form-grid">
+              <Select
+                label="Vehicle type *"
+                value={form.vehicleType}
+                onChange={(value) => set("vehicleType", value)}
+              >
+                {VEHICLE_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {vehicleLabel[type]}
+                  </option>
+                ))}
+              </Select>
+              <Input
+                label="Vehicle number *"
+                value={form.vehicleNumber}
+                onChange={(e) => set("vehicleNumber", e.target.value)}
+              />
+              <Input
+                label="Vehicle model"
+                value={form.vehicleModel}
+                onChange={(e) => set("vehicleModel", e.target.value)}
+              />
+              <Input
+                label="Registration valid until"
+                type="date"
+                value={form.registrationValidUntil}
+                onChange={(e) => set("registrationValidUntil", e.target.value)}
+              />
+            </div>
+          </RiderSection>
         )}
         {step === 3 && (
-          <>
-            <p>Payout is optional. Enter an account number to save the payout details.</p>
+          <RiderSection
+            icon={Landmark}
+            title="Payout account"
+            hint="Optional. Enter an account number to save payout details; only the last four digits are kept."
+          >
             <div className="form-grid">
               <Input
                 label="Account holder"
@@ -835,44 +860,68 @@ function AddRiderDialog({
               <Input
                 label="Account number"
                 type="password"
+                inputMode="numeric"
                 value={form.accountNumber}
                 onChange={(e) => set("accountNumber", e.target.value)}
               />
               <Input label="IFSC" value={form.ifsc} onChange={(e) => set("ifsc", e.target.value)} />
             </div>
-          </>
+          </RiderSection>
         )}
         {step === 4 && (
           <>
-            <p>
-              <b>Personal</b>
-              <br />
-              {form.name} · {form.phone}
-              <br />
-              {form.address}
-              {zoneName && ` · ${zoneName}`}
-            </p>
-            <p>
-              <b>Identity</b>
-              <br />
-              Licence {form.drivingLicence || "not given"}
-              {form.licenceValidUntil && ` · valid until ${form.licenceValidUntil}`}
-            </p>
-            <p>
-              <b>Vehicle</b>
-              <br />
-              {vehicleLabel[form.vehicleType]} · {form.vehicleNumber}
-              {form.registrationValidUntil &&
-                ` · registration until ${form.registrationValidUntil}`}
-            </p>
-            <p>
-              <b>Payout</b>
-              <br />
-              {form.accountNumber
-                ? `${form.holderName} · ending ${form.accountNumber.slice(-4)}`
-                : "Not added"}
-            </p>
-            <p>
+            <RiderReviewCards
+              onEdit={(index) => {
+                setError("")
+                setStep(index)
+              }}
+              cards={[
+                {
+                  icon: User,
+                  title: "Personal",
+                  step: 0,
+                  rows: [
+                    ["Name", form.name],
+                    ["Mobile", form.phone],
+                    ["Address", form.address],
+                    ["Zone", zoneName],
+                  ],
+                },
+                {
+                  icon: IdCard,
+                  title: "Identity",
+                  step: 1,
+                  rows: [
+                    ["Licence", form.drivingLicence],
+                    ["Valid until", form.licenceValidUntil],
+                  ],
+                },
+                {
+                  icon: Bike,
+                  title: "Vehicle",
+                  step: 2,
+                  rows: [
+                    ["Type", vehicleLabel[form.vehicleType]],
+                    ["Number", form.vehicleNumber.toUpperCase()],
+                    ["Registration until", form.registrationValidUntil],
+                  ],
+                },
+                {
+                  icon: Landmark,
+                  title: "Payout",
+                  step: 3,
+                  rows: [
+                    ["Holder", form.holderName],
+                    [
+                      "Account",
+                      form.accountNumber ? `•••• ${form.accountNumber.slice(-4)}` : undefined,
+                    ],
+                  ],
+                },
+              ]}
+            />
+            <p className="rf-note">
+              <Info size={16} />
               The delivery boy is sent to the zone Admin for review. Documents are uploaded from the
               partner portal or the review screen.
             </p>
@@ -1232,23 +1281,13 @@ function FleetForm({
                 </Button>
               </div>
             ))}
-            <div className="tabs" role="tablist" aria-label="Delivery boy onboarding steps">
-              {riderSteps.map((label, index) => (
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={riderStep === index}
-                  className={riderStep === index ? "active" : ""}
-                  key={label}
-                  onClick={() => index < riderStep && setRiderStep(index)}
-                >
-                  {index + 1}. {label}
-                </button>
-              ))}
-            </div>
+            <RiderStepper steps={riderSteps} step={riderStep} onSelect={setRiderStep} />
             {riderStep === 0 && (
-              <>
-                <h3>Boy {riders.length + 1} · Personal information</h3>
+              <RiderSection
+                icon={User}
+                title={`Boy ${riders.length + 1} · Personal information`}
+                hint="How we reach the delivery boy and where they live."
+              >
                 <div className="form-grid">
                   <Input
                     label="Full name *"
@@ -1315,11 +1354,14 @@ function FleetForm({
                       ))}
                   </Select>
                 </div>
-              </>
+              </RiderSection>
             )}
             {riderStep === 1 && (
-              <>
-                <h3>Identity &amp; license</h3>
+              <RiderSection
+                icon={IdCard}
+                title="Identity and licence"
+                hint="Licence details and the identity documents."
+              >
                 <div className="form-grid">
                   <Input
                     label="Driving licence number *"
@@ -1335,15 +1377,14 @@ function FleetForm({
                     onChange={(e) => setRiderField("licenceValidUntil", e.target.value)}
                   />
                 </div>
-                {RIDER_DOCUMENTS.slice(0, 3).map(([kind, label]) => (
-                  <label className="field" key={kind}>
-                    <span>{label}</span>
-                    <input
-                      type="file"
-                      accept="application/pdf,image/jpeg,image/png"
-                      onChange={(event) => {
-                        const file = event.target.files?.[0]
-                        if (!file) return
+                <div className="rf-files">
+                  {RIDER_DOCUMENTS.slice(0, 3).map(([kind, label]) => (
+                    <RiderFileTile
+                      key={kind}
+                      label={label}
+                      file={rider.files[kind]}
+                      error={errors[kind]}
+                      onFile={(file) => {
                         const issue = fileProblem(file)
                         if (issue) setErrors((current) => ({ ...current, [kind]: issue }))
                         else {
@@ -1359,15 +1400,16 @@ function FleetForm({
                         }
                       }}
                     />
-                    {rider.files[kind] && <small>{rider.files[kind]?.name}</small>}
-                    {errors[kind] && <em>{errors[kind]}</em>}
-                  </label>
-                ))}
-              </>
+                  ))}
+                </div>
+              </RiderSection>
             )}
             {riderStep === 2 && (
-              <>
-                <h3>Vehicle information</h3>
+              <RiderSection
+                icon={Bike}
+                title="Vehicle information"
+                hint="The vehicle used for deliveries and its papers."
+              >
                 <div className="form-grid">
                   <Select
                     label="Vehicle type *"
@@ -1393,15 +1435,14 @@ function FleetForm({
                     onChange={(e) => setRiderField("vehicleModel", e.target.value)}
                   />
                 </div>
-                {RIDER_DOCUMENTS.slice(3).map(([kind, label]) => (
-                  <label className="field" key={kind}>
-                    <span>{label}</span>
-                    <input
-                      type="file"
-                      accept="application/pdf,image/jpeg,image/png"
-                      onChange={(event) => {
-                        const file = event.target.files?.[0]
-                        if (!file) return
+                <div className="rf-files">
+                  {RIDER_DOCUMENTS.slice(3).map(([kind, label]) => (
+                    <RiderFileTile
+                      key={kind}
+                      label={label}
+                      file={rider.files[kind]}
+                      error={errors[kind]}
+                      onFile={(file) => {
                         const issue = fileProblem(file)
                         if (issue) setErrors((current) => ({ ...current, [kind]: issue }))
                         else {
@@ -1417,16 +1458,16 @@ function FleetForm({
                         }
                       }}
                     />
-                    {rider.files[kind] && <small>{rider.files[kind]?.name}</small>}
-                    {errors[kind] && <em>{errors[kind]}</em>}
-                  </label>
-                ))}
-              </>
+                  ))}
+                </div>
+              </RiderSection>
             )}
             {riderStep === 3 && (
-              <>
-                <h3>Payout details · Delivery boy</h3>
-                <p>Only the last four account digits are stored in GoKart Admin.</p>
+              <RiderSection
+                icon={Landmark}
+                title="Payout account"
+                hint="Only the last four account digits are stored in GoKart Admin."
+              >
                 <div className="form-grid">
                   <Input
                     label="Account holder name *"
@@ -1461,48 +1502,72 @@ function FleetForm({
                     onChange={(e) => setRiderField("ifsc", e.target.value.toUpperCase())}
                   />
                 </div>
-              </>
+              </RiderSection>
             )}
             {riderStep === 4 && (
               <>
-                <h3>Review {rider.name || `delivery boy ${riders.length + 1}`}</h3>
-                <div className="form-grid">
-                  <p>
-                    <b>Contact</b>
-                    <br />
-                    {rider.name} · {rider.phone}
-                    <br />
-                    {rider.email || "No email"}
-                  </p>
-                  <p>
-                    <b>Area</b>
-                    <br />
-                    {rider.address}
-                    <br />
-                    {districtZones.find((zone) => zone.id === rider.zoneId)?.location}
-                  </p>
-                  <p>
-                    <b>Identity</b>
-                    <br />
-                    {rider.drivingLicence}
-                    <br />
-                    {rider.files.photo_id?.name || "Photo ID not attached"}
-                  </p>
-                  <p>
-                    <b>Vehicle</b>
-                    <br />
-                    {vehicleLabel[rider.vehicleType]} · {rider.vehicleNumber}
-                    <br />
-                    {rider.vehicleModel || "No model"}
-                  </p>
-                  <p>
-                    <b>Payout account</b>
-                    <br />
-                    {rider.holderName} · •••• {rider.accountNumber.slice(-4)}
-                    <br />
-                    {rider.ifsc}
-                  </p>
-                </div>
+                <RiderSection
+                  icon={FileCheck2}
+                  title={`Review ${rider.name || `delivery boy ${riders.length + 1}`}`}
+                  hint="Check everything, or press Edit on a card to change it."
+                >
+                  <RiderReviewCards
+                    onEdit={setRiderStep}
+                    cards={[
+                      {
+                        icon: User,
+                        title: "Contact",
+                        step: 0,
+                        rows: [
+                          ["Name", rider.name],
+                          ["Mobile", rider.phone],
+                          ["Email", rider.email],
+                        ],
+                      },
+                      {
+                        icon: Info,
+                        title: "Area",
+                        step: 0,
+                        rows: [
+                          ["Address", rider.address],
+                          [
+                            "Zone",
+                            districtZones.find((zone) => zone.id === rider.zoneId)?.location,
+                          ],
+                        ],
+                      },
+                      {
+                        icon: IdCard,
+                        title: "Identity",
+                        step: 1,
+                        rows: [
+                          ["Licence", rider.drivingLicence],
+                          ["Photo ID", rider.files.photo_id?.name],
+                        ],
+                      },
+                      {
+                        icon: Bike,
+                        title: "Vehicle",
+                        step: 2,
+                        rows: [
+                          ["Type", vehicleLabel[rider.vehicleType]],
+                          ["Number", rider.vehicleNumber],
+                          ["Model", rider.vehicleModel],
+                        ],
+                      },
+                      {
+                        icon: Landmark,
+                        title: "Payout account",
+                        step: 3,
+                        rows: [
+                          ["Holder", rider.holderName],
+                          ["Account", `•••• ${rider.accountNumber.slice(-4)}`],
+                          ["IFSC", rider.ifsc],
+                        ],
+                      },
+                    ]}
+                  />
+                </RiderSection>
               </>
             )}
           </>
