@@ -418,7 +418,8 @@ export const DeliveryFleetOrder = z.object({
   id: z.string(),
   code: z.string(),
   business: Business,
-  status: z.enum(["ready", "assigned"]),
+  // picked_up and out_for_delivery: an order taken over from a rider who could not continue.
+  status: z.enum(["ready", "assigned", "picked_up", "out_for_delivery"]),
   zoneId: z.string(),
   zoneName: z.string(),
   vendorName: z.string(),

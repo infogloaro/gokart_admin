@@ -43,6 +43,8 @@ export const Order = z.object({
   totalPaise: Paise,
   items: z.array(OrderItem),
   placedAt: z.iso.datetime(),
+  /** Set while the rider could not continue and a replacement is still being found. */
+  sos: z.object({ at: z.iso.datetime(), reason: z.string() }).nullable(),
   /** The latest reason recorded on the order, e.g. why a refund was requested. */
   issue: z.string().nullable(),
   /** Still being fulfilled after its business's time limit (ORDER_SLA_MINUTES). */
@@ -146,6 +148,15 @@ export const OrderListQuery = z
     message: "Start date must be on or before end date.",
     path: ["fromDate"],
   })
+
+/** Why a rider can't continue a delivery. Raised by the rider (SOS) or by the team. */
+export const ReleaseRiderRequest = z.object({
+  reason: z.string().trim().min(3, "Say what happened").max(300),
+  /** Where the rider is stuck, so the nearest replacement can be found. */
+  lat: z.number().min(-90).max(90).optional(),
+  lng: z.number().min(-180).max(180).optional(),
+})
+export type ReleaseRiderRequest = z.infer<typeof ReleaseRiderRequest>
 
 export const ChangeOrderStatusRequest = z.object({
   to: OrderStatus,

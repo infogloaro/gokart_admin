@@ -3,6 +3,7 @@ import {
   ChangeOrderStatusRequest,
   OrderFilterOptionsQuery,
   OrderListQuery,
+  ReleaseRiderRequest,
 } from "@zoauro/shared"
 import type { Request, Response } from "express"
 import { parse } from "../../lib/errors"
@@ -67,6 +68,12 @@ export async function assign(req: Request<{ id: string }>, res: Response) {
 export async function assignBoy(req: Request<{ id: string }>, res: Response) {
   const body = parse(z.object({ boyId: z.string().min(1), version: z.number().int() }), req.body)
   res.json(await service.assignBoy(req.params.id, scope(req), body, actorOf(req)))
+}
+
+/** The team takes the order off a rider who can't continue and finds a replacement. */
+export async function releaseRider(req: Request<{ id: string }>, res: Response) {
+  const body = parse(ReleaseRiderRequest, req.body)
+  res.json(await service.releaseRider(req.params.id, body, { scope: scope(req) }, actorOf(req)))
 }
 
 export async function autoAssignBoy(req: Request<{ id: string }>, res: Response) {

@@ -47,7 +47,11 @@ import { sendOtpSms } from "../../lib/sms"
 import type { Db } from "../../lib/prisma"
 import type { MemberContext } from "../../middleware/auth"
 import { deleteObject, getObject, putObject } from "../../lib/storage"
-import { assertOrderAssignmentEligible, nextDeliveryBoyStatus } from "./delivery.policy"
+import {
+  assertOrderAssignmentEligible,
+  nextDeliveryBoyStatus,
+  TRANSIT_STATUSES,
+} from "./delivery.policy"
 
 type CreateDeliveryFleetInput = z.infer<typeof CreateDeliveryFleetRequest>
 type UpdateDeliveryFleetInput = z.infer<typeof UpdateDeliveryFleetRequest>
@@ -1360,43 +1364,57 @@ export async function assignOrderToBoy(
         })
         if (!boyUpdate.count)
           throw conflict("The rider's availability changed. Reload and select another rider.")
+        // An order already on the road whose rider raised an SOS is taken over where it stands:
+        // it keeps its status and the customer keeps the same delivery code.
+        const takeover = Boolean(order.sosAt) && TRANSIT_STATUSES.includes(order.status)
         const orderUpdate = await tx.order.updateMany({
           where: {
             id: order.id,
             version: input.version,
-            status: { in: ["ready", "assigned"] },
+            status: takeover ? order.status : { in: ["ready", "assigned"] },
             partnerId: null,
             deliveryBoyId: null,
             OR: [{ deliveryFleetId: null }, { deliveryFleetId: fleetId }],
           },
           data: {
-            status: "assigned",
+            status: takeover ? order.status : "assigned",
             deliveryFleetId: fleetId,
             deliveryBoyId: boy.id,
             version: { increment: 1 },
+            ...(takeover ? { sosAt: null, sosReason: null, sosLat: null, sosLng: null } : {}),
           },
         })
         if (!orderUpdate.count)
           throw conflict("This order changed. Reload to see the latest assignment.")
         const assignment = await tx.deliveryAssignment.create({
-          data: { orderId, fleetId, boyId: input.boyId, status: "assigned" },
+          data: {
+            orderId,
+            fleetId,
+            boyId: input.boyId,
+            status: takeover ? "accepted" : "assigned",
+            reason: takeover ? "Took over after the previous rider could not continue" : null,
+          },
         })
-        await issueDeliveryCode(orderId, tx)
+        if (!takeover) await issueDeliveryCode(orderId, tx)
         await tx.orderEvent.create({
           data: {
             orderId,
             from: order.status,
-            to: "assigned",
+            to: takeover ? order.status : "assigned",
             actorType: "delivery_partner",
             actorId: fleetId,
-            reason: `Assigned to ${boy.name} (${boy.code})`,
+            reason: takeover
+              ? `${boy.name} (${boy.code}) took over the delivery`
+              : `Assigned to ${boy.name} (${boy.code})`,
           },
         })
         await tx.deliveryBoyNotification.create({
           data: {
             boyId: input.boyId,
-            title: "New delivery assigned",
-            body: `Order ${order.code} from ${order.vendor.name} is ready for delivery.`,
+            title: takeover ? "Take over a delivery" : "New delivery assigned",
+            body: takeover
+              ? `Order ${order.code} is with another rider who couldn't continue. Collect it from them and deliver it to the customer.`
+              : `Order ${order.code} from ${order.vendor.name} is ready for delivery.`,
           },
         })
         await audit(
@@ -1872,17 +1890,30 @@ export async function boyHistory(id: string, member: MemberContext) {
 export async function suggestRiders(orderId: string, member: MemberContext) {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    select: { id: true, zoneId: true, business: true, status: true, deliveryBoyId: true },
+    select: {
+      id: true,
+      zoneId: true,
+      business: true,
+      status: true,
+      deliveryBoyId: true,
+      sosLat: true,
+      sosLng: true,
+    },
   })
   if (!order || (member.role !== "super_admin" && !member.zoneIds.includes(order.zoneId)))
     throw notFound("Order")
   if (order.deliveryBoyId) return []
-  // Riders are ranked by distance to the order's zone centre (the pickup area). A rider with no
-  // recent position is still listed, after the riders we can place.
-  const zone = await prisma.zone.findUnique({
+  // Riders are ranked by distance to the order's zone centre (the pickup area), or, when the
+  // previous rider raised an SOS, to where they are stuck. A rider with no recent position is
+  // still listed, after the riders we can place.
+  const zoneRow = await prisma.zone.findUnique({
     where: { id: order.zoneId },
     select: { lat: true, lng: true },
   })
+  const zone =
+    order.sosLat !== null && order.sosLng !== null
+      ? { lat: order.sosLat, lng: order.sosLng }
+      : zoneRow
   const riders = await prisma.deliveryBoy.findMany({
     where: {
       OR: [

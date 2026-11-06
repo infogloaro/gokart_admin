@@ -4945,7 +4945,9 @@
               "type": "string",
               "enum": [
                 "ready",
-                "assigned"
+                "assigned",
+                "picked_up",
+                "out_for_delivery"
               ]
             },
             "zoneId": {
@@ -5222,6 +5224,25 @@
             "type": "string",
             "format": "date-time"
           },
+          "sos": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "at",
+              "reason"
+            ]
+          },
           "issue": {
             "type": [
               "string",
@@ -5261,6 +5282,7 @@
           "totalPaise",
           "items",
           "placedAt",
+          "sos",
           "issue",
           "delayed"
         ]
@@ -5427,6 +5449,25 @@
           "placedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "sos": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "at",
+              "reason"
+            ]
           },
           "issue": {
             "type": [
@@ -5601,6 +5642,7 @@
           "totalPaise",
           "items",
           "placedAt",
+          "sos",
           "issue",
           "delayed",
           "events",
@@ -20102,7 +20144,9 @@
                       "type": "string",
                       "enum": [
                         "ready",
-                        "assigned"
+                        "assigned",
+                        "picked_up",
+                        "out_for_delivery"
                       ]
                     },
                     "zoneId": {
@@ -20267,7 +20311,9 @@
                       "type": "string",
                       "enum": [
                         "ready",
-                        "assigned"
+                        "assigned",
+                        "picked_up",
+                        "out_for_delivery"
                       ]
                     },
                     "zoneId": {
@@ -26367,6 +26413,116 @@
                 "required": [
                   "boyId",
                   "version"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Changed by someone else; reload and retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/{id}/release-rider": {
+      "post": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Take the order off a rider who can't continue and find a replacement",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 300
+                  },
+                  "lat": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "lng": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  }
+                },
+                "required": [
+                  "reason"
                 ]
               }
             }

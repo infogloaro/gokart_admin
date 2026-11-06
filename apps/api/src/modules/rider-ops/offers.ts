@@ -4,6 +4,7 @@
 import { notFound, conflict } from "../../lib/errors"
 import { prisma } from "../../lib/prisma"
 import { assignOrderToBoy, fleetActor, suggestRiders } from "../delivery/delivery.service"
+import { TRANSIT_STATUSES } from "../delivery/delivery.policy"
 import { SYSTEM_MEMBER } from "../orders/orders.service"
 
 export const OFFER_SECONDS = 120
@@ -12,9 +13,12 @@ export const OFFER_SECONDS = 120
 export async function offerNextRider(orderId: string, now = Date.now()) {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    select: { status: true, deliveryBoyId: true, partnerId: true },
+    select: { status: true, deliveryBoyId: true, partnerId: true, sosAt: true },
   })
-  if (!order || order.status !== "ready" || order.deliveryBoyId || order.partnerId) return null
+  // A ready order is offered; so is an order already on the road whose rider raised an SOS.
+  const offerable =
+    order && (order.status === "ready" || (order.sosAt && TRANSIT_STATUSES.includes(order.status)))
+  if (!order || !offerable || order.deliveryBoyId || order.partnerId) return null
   const open = await prisma.deliveryOffer.findFirst({
     where: { orderId, status: "offered", expiresAt: { gt: new Date(now) } },
   })

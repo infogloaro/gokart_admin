@@ -7,8 +7,10 @@ import {
   RiderProfileChangeDecision,
   RiderProfileChangeQuery,
   RiderProfileChangeRequest,
+  ReleaseRiderRequest,
   RiderShiftQuery,
 } from "@zoauro/shared"
+import { releaseRider } from "../orders/orders.service"
 import { z } from "zod"
 import { acceptOffer, declineOffer, openOffers } from "../rider-ops/offers"
 import { audit, type Actor } from "../../lib/audit"
@@ -135,6 +137,23 @@ export const riderAppRoutes = Router()
       String(req.params.offerId),
       body.reason,
     )
+    res.json({ ok: true })
+  })
+  // Rider app: SOS. The rider can't continue (accident, breakdown); the order moves to another rider.
+  .post("/intake/rider/orders/:orderId/sos", requireRiderSession, async (req, res) => {
+    const body = parse(ReleaseRiderRequest, req.body)
+    const boyId = req.riderBoyId!
+    const rider = await prisma.deliveryBoy.findUniqueOrThrow({
+      where: { id: boyId },
+      select: { name: true, code: true },
+    })
+    const actor: Actor = {
+      id: boyId,
+      name: `${rider.name} (${rider.code})`,
+      role: "delivery_rider",
+      source: "rider_app",
+    }
+    await releaseRider(String(req.params.orderId), body, { riderId: boyId }, actor)
     res.json({ ok: true })
   })
   .get("/intake/rider/verification", requireRiderSession, async (req, res) => {

@@ -1,6 +1,7 @@
 import {
   AssignablePartner,
   AssignPartnerRequest,
+  ReleaseRiderRequest,
   Business,
   ChangeOrderStatusRequest,
   Order,
@@ -96,6 +97,15 @@ registry.registerPath({
   tags,
   summary: "Assign a delivery boy to an order",
   request: { params: id, body: json(assignBoySchema) },
+  responses: { 200: json(OrderRef, "Updated order"), ...errors(400, 401, 403, 404, 409) },
+})
+
+registry.registerPath({
+  method: "post",
+  path: "/orders/{id}/release-rider",
+  tags,
+  summary: "Take the order off a rider who can't continue and find a replacement",
+  request: { params: id, body: json(ReleaseRiderRequest) },
   responses: { 200: json(OrderRef, "Updated order"), ...errors(400, 401, 403, 404, 409) },
 })
 

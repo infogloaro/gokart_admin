@@ -8715,7 +8715,7 @@ export interface paths {
                             /** @enum {string} */
                             business: "food" | "mart";
                             /** @enum {string} */
-                            status: "ready" | "assigned";
+                            status: "ready" | "assigned" | "picked_up" | "out_for_delivery";
                             zoneId: string;
                             zoneName: string;
                             vendorName: string;
@@ -8822,7 +8822,7 @@ export interface paths {
                             /** @enum {string} */
                             business: "food" | "mart";
                             /** @enum {string} */
-                            status: "ready" | "assigned";
+                            status: "ready" | "assigned" | "picked_up" | "out_for_delivery";
                             zoneId: string;
                             zoneName: string;
                             vendorName: string;
@@ -12801,6 +12801,98 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/orders/{id}/release-rider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Take the order off a rider who can't continue and find a replacement */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description OK */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        reason: string;
+                        lat?: number;
+                        lng?: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description Updated order */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Order"];
+                    };
+                };
+                /** @description Invalid input */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not allowed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Changed by someone else; reload and retry */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/orders/{id}/auto-assign-boy": {
         parameters: {
             query?: never;
@@ -16388,7 +16480,7 @@ export interface components {
             /** @enum {string} */
             business: "food" | "mart";
             /** @enum {string} */
-            status: "ready" | "assigned";
+            status: "ready" | "assigned" | "picked_up" | "out_for_delivery";
             zoneId: string;
             zoneName: string;
             vendorName: string;
@@ -16454,6 +16546,11 @@ export interface components {
             }[];
             /** Format: date-time */
             placedAt: string;
+            sos: {
+                /** Format: date-time */
+                at: string;
+                reason: string;
+            } | null;
             issue: string | null;
             delayed: boolean;
         };
@@ -16495,6 +16592,11 @@ export interface components {
             }[];
             /** Format: date-time */
             placedAt: string;
+            sos: {
+                /** Format: date-time */
+                at: string;
+                reason: string;
+            } | null;
             issue: string | null;
             delayed: boolean;
             events: {

@@ -348,6 +348,7 @@ function OrdersScreen({
                         {orderStatusLabel(o.business, o.status)}
                       </AdminBadge>
                       {o.delayed && <AdminBadge tone="danger">Delayed</AdminBadge>}
+                      {o.sos && <AdminBadge tone="danger">SOS</AdminBadge>}
                     </td>
                     <td>
                       <strong>{formatINR(o.totalPaise)}</strong>

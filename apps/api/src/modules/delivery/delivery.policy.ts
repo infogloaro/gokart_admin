@@ -2,6 +2,9 @@ import type { DeliveryBoyReviewRequest, DeliveryBoyStatus } from "@zoauro/shared
 import { conflict, forbidden } from "../../lib/errors"
 import type { MemberContext } from "../../middleware/auth"
 
+/** Statuses where the goods are already with the rider, on the road. */
+export const TRANSIT_STATUSES: readonly string[] = ["picked_up", "out_for_delivery"]
+
 const REQUIRED_DOCUMENTS = ["photo_id", "driving_licence", "vehicle_registration"] as const
 
 type ReviewTarget = {
@@ -69,6 +72,8 @@ export function assertOrderAssignmentEligible(input: {
     partnerId: string | null
     deliveryFleetId: string | null
     deliveryBoyId: string | null
+    /** Set when the previous rider raised an SOS, so an order already on the road can be taken over. */
+    sosAt?: Date | null
   }
   primaryZone: boolean
   /** The rider has an approved service area for the order's zone. */
@@ -94,7 +99,8 @@ export function assertOrderAssignmentEligible(input: {
     order.deliveryBoyId
   )
     throw conflict("This order is already assigned outside this partner.")
-  if (order.status !== "ready" && order.status !== "assigned")
+  const takeover = Boolean(order.sosAt) && TRANSIT_STATUSES.includes(order.status)
+  if (order.status !== "ready" && order.status !== "assigned" && !takeover)
     throw conflict("Only ready or unassigned orders can be assigned.")
   if (input.openAssignment) throw conflict("This order already has an active delivery assignment.")
   if (input.workload >= boy.maxActiveOrders)

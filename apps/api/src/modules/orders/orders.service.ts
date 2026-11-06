@@ -11,7 +11,8 @@ import {
 import type { Actor } from "../../lib/audit"
 import { badRequest, conflict, forbidden, notFound } from "../../lib/errors"
 import type { MemberContext } from "../../middleware/auth"
-import { suggestRiders } from "../delivery/delivery.service"
+import { assignOrderToBoy, suggestRiders } from "../delivery/delivery.service"
+import { TRANSIT_STATUSES } from "../delivery/delivery.policy"
 import { refreshAvailability } from "../tracking/tracking.service"
 import { audit } from "../../lib/audit"
 import * as repo from "./orders.repository"
@@ -58,6 +59,7 @@ export function toDto(o: repo.OrderRow): Order {
       unitPricePaise: i.unitPricePaise,
     })),
     placedAt: o.placedAt.toISOString(),
+    sos: o.sosAt ? { at: o.sosAt.toISOString(), reason: o.sosReason ?? "" } : null,
     issue: [...o.events].reverse().find((e) => e.reason)?.reason ?? null,
     delayed:
       (FULFILMENT_STATUSES as readonly string[]).includes(o.status) &&
@@ -172,6 +174,17 @@ export async function assignBoy(
   actor: Actor,
 ) {
   const o = await loadInScope(id, scope)
+  // An order on the road whose rider raised an SOS goes to the chosen rider as a takeover.
+  if (o.sosAt && !o.deliveryBoyId && TRANSIT_STATUSES.includes(o.status)) {
+    const boy = await prisma.deliveryBoy.findUnique({
+      where: { id: input.boyId },
+      select: { fleetId: true },
+    })
+    if (!boy) throw notFound("Delivery boy")
+    await assignOrderToBoy(boy.fleetId, id, input, actor)
+    const taken = await repo.findById(id)
+    return toDto(taken!)
+  }
   if (o.status !== "ready" && o.status !== "assigned")
     throw badRequest(
       `Only orders that are ready or assigned can have a delivery boy assigned. This one is “${orderStatusLabel(o.business, o.status)}”.`,
@@ -325,6 +338,101 @@ export async function changeStatus(
   return toDto(updated)
 }
 
+/**
+ * The rider can't continue (accident, breakdown, unwell). Takes the order off them and finds a
+ * replacement straight away. The rider themselves (SOS) or the team can do this.
+ *
+ * - Not picked up yet: the order goes back to "ready" and is offered to the next rider.
+ * - Already on the road: it keeps its status and is flagged with an SOS and the place the rider is
+ *   stuck, so the nearest rider is offered it and can collect the goods and finish the delivery.
+ */
+export async function releaseRider(
+  id: string,
+  input: { reason: string; lat?: number | undefined; lng?: number | undefined },
+  who: { scope: Scope } | { riderId: string },
+  actor: Actor,
+) {
+  const order =
+    "scope" in who
+      ? await loadInScope(id, who.scope)
+      : await repo.findById(id).then((row) => {
+          if (!row || row.deliveryBoyId !== who.riderId) throw notFound("Order")
+          return row
+        })
+  const boyId = order.deliveryBoyId
+  if (!boyId || (order.status !== "assigned" && !TRANSIT_STATUSES.includes(order.status)))
+    throw badRequest("This order doesn't have a rider who can be replaced right now.")
+  const transit = TRANSIT_STATUSES.includes(order.status)
+  const boy = await prisma.deliveryBoy.findUniqueOrThrow({
+    where: { id: boyId },
+    select: { name: true, code: true, lastLat: true, lastLng: true },
+  })
+  const lat = input.lat ?? boy.lastLat
+  const lng = input.lng ?? boy.lastLng
+  const rider = `${boy.name} (${boy.code})`
+
+  await prisma.$transaction(async (tx) => {
+    const { count } = await tx.order.updateMany({
+      where: { id: order.id, deliveryBoyId: boyId, status: order.status },
+      data: {
+        status: transit ? order.status : "ready",
+        deliveryFleetId: null,
+        deliveryBoyId: null,
+        version: { increment: 1 },
+        sosAt: new Date(),
+        sosReason: input.reason,
+        sosLat: lat,
+        sosLng: lng,
+      },
+    })
+    if (!count) throw conflict("This order was updated by someone else. Reload to see the latest.")
+    await tx.deliveryAssignment.updateMany({
+      where: { orderId: order.id, boyId, endedAt: null },
+      data: {
+        status: "cancelled",
+        endedAt: new Date(),
+        reason: `Could not continue: ${input.reason}`,
+      },
+    })
+    // The rider is out of action until they come back online themselves.
+    await tx.deliveryBoy.updateMany({
+      where: { id: boyId, status: "active" },
+      data: { availability: "offline", version: { increment: 1 } },
+    })
+    await tx.deliveryOffer.updateMany({
+      where: { orderId: order.id, status: "offered" },
+      data: { status: "withdrawn" },
+    })
+    await tx.orderEvent.create({
+      data: {
+        orderId: order.id,
+        from: order.status,
+        to: transit ? order.status : "ready",
+        actorType: "riderId" in who ? "rider" : "member",
+        actorId: "riderId" in who ? who.riderId : actor.id,
+        reason: `${rider} could not continue: ${input.reason}`,
+      },
+    })
+    await audit(
+      tx,
+      actor,
+      "order.rider_sos",
+      { type: "order", id: order.id },
+      { code: order.code, boyId, reason: input.reason, onTheRoad: transit },
+    )
+    await tx.outboxEvent.create({
+      data: {
+        topic: "order.rider_sos",
+        payload: { orderId: order.id, code: order.code, boyId, onTheRoad: transit },
+      },
+    })
+  })
+  await refreshOffers(order.id)
+  return toDto((await repo.findById(order.id))!)
+}
+
+const refreshOffers = (orderId: string) => offerNextRider(orderId).catch(() => null)
+
 /** Assigns the least busy eligible rider for this order (see suggestRiders). */
 export async function autoAssignBoy(id: string, scope: Scope, member: MemberContext, actor: Actor) {
   const o = await loadInScope(id, scope)
@@ -357,7 +465,11 @@ export async function autoAssignReadyOrder(id: string) {
 export async function assignReadyOrders() {
   const orders = await prisma.order.findMany({
     where: {
-      status: "ready",
+      OR: [
+        { status: "ready" },
+        // The rider could not continue: the order on the road needs a replacement too.
+        { status: { in: ["picked_up", "out_for_delivery"] }, sosAt: { not: null } },
+      ],
       deliveryBoyId: null,
       placedAt: { gte: new Date(Date.now() - 6 * 60 * 60 * 1000) },
     },

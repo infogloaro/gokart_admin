@@ -51,6 +51,12 @@ model Order {
   /// Hashed 4-digit code the customer gives the rider at the door. Never stored in clear.
   deliveryOtpHash  String?
   otpVerifiedAt    DateTime?
+  /// Set while the rider could not continue (accident, breakdown) and a replacement is needed.
+  /// Cleared when another rider takes the order over.
+  sosAt            DateTime?
+  sosReason        String?
+  sosLat           Float?
+  sosLng           Float?
   /// Photo of the delivered order, stored in object storage.
   proofKey         String?
   proofContentType String?

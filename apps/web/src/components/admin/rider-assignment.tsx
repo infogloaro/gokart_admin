@@ -2,10 +2,10 @@
 
 import { ApiError } from "@zoauro/api-client"
 import type { Order } from "@zoauro/shared"
-import { Bike, KeyRound, Wand2 } from "lucide-react"
+import { Bike, KeyRound, Siren, Wand2 } from "lucide-react"
 import { useState } from "react"
 import { useResendCode } from "@/lib/rider-ops"
-import { useAssignRider, useRiderSuggestions } from "@/lib/orders"
+import { useAssignRider, useReleaseRider, useRiderSuggestions } from "@/lib/orders"
 import { AdminButton } from "./ui"
 
 /** Rider assignment for one order: suggestions, a chosen rider, or the automatic choice. */
@@ -15,7 +15,13 @@ export function RiderAssignment({ order }: { order: Order }) {
   const resend = useResendCode()
   const [error, setError] = useState("")
   const [sent, setSent] = useState(false)
-  const assignable = order.status === "ready" || order.status === "assigned"
+  const release = useReleaseRider()
+  const [asking, setAsking] = useState(false)
+  const [reason, setReason] = useState("")
+  const onTheRoad = order.status === "picked_up" || order.status === "out_for_delivery"
+  // An order on the road can be handed to another rider only after its rider raised an SOS.
+  const assignable =
+    order.status === "ready" || order.status === "assigned" || (onTheRoad && order.sos !== null)
 
   const run = async (boyId?: string) => {
     setError("")
@@ -56,6 +62,51 @@ export function RiderAssignment({ order }: { order: Order }) {
               Resend delivery code
             </AdminButton>
             {sent && <p role="status">A new code was texted to the customer.</p>}
+            {!asking ? (
+              <AdminButton kind="danger" icon={Siren} onClick={() => setAsking(true)}>
+                Rider can&apos;t continue
+              </AdminButton>
+            ) : (
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  setError("")
+                  release
+                    .mutateAsync({ order, reason })
+                    .then(() => (setAsking(false), setReason("")))
+                    .catch((cause) =>
+                      setError(
+                        cause instanceof ApiError
+                          ? cause.message
+                          : "The order couldn't be moved to another rider.",
+                      ),
+                    )
+                }}
+              >
+                <label>
+                  What happened?
+                  <input
+                    value={reason}
+                    onChange={(event) => setReason(event.target.value)}
+                    placeholder="Accident, flat tyre, vehicle breakdown…"
+                    maxLength={300}
+                    required
+                    minLength={3}
+                  />
+                </label>
+                <p>
+                  {onTheRoad
+                    ? "The nearest free rider will be asked to collect the order from them."
+                    : "The order goes back to ready and the next free rider is asked."}
+                </p>
+                <AdminButton kind="danger" type="submit" disabled={release.isPending}>
+                  Find another rider
+                </AdminButton>
+                <AdminButton kind="ghost" onClick={() => setAsking(false)}>
+                  Cancel
+                </AdminButton>
+              </form>
+            )}
           </>
         )}
         {error && (
@@ -72,6 +123,12 @@ export function RiderAssignment({ order }: { order: Order }) {
       <h4>
         <Bike size={16} /> Assign a rider
       </h4>
+      {order.sos && (
+        <p role="alert" className="form-error">
+          <Siren size={14} /> SOS: the previous rider couldn&apos;t continue — {order.sos.reason}.
+          {onTheRoad && " The order is with them; the new rider collects it from where they are."}
+        </p>
+      )}
       {!assignable && <p>Riders can be assigned once the order is ready.</p>}
       {assignable && (
         <>

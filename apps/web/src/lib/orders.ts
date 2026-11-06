@@ -112,6 +112,22 @@ export const useRiderSuggestions = (id: string | null) =>
     enabled: Boolean(id),
   })
 
+/** The rider can't continue (accident, breakdown): take the order off them and find a replacement. */
+export function useReleaseRider() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (v: { order: Order; reason: string }) =>
+      api("post", "/orders/{id}/release-rider", {
+        params: { id: v.order.id },
+        body: { reason: v.reason },
+      }),
+    onSettled: () => {
+      void client.invalidateQueries({ queryKey: ["orders"] })
+      void client.invalidateQueries({ queryKey: ["delivery"] })
+    },
+  })
+}
+
 /** Assigns a chosen rider, or the least busy one when no rider is given. */
 export function useAssignRider() {
   const client = useQueryClient()
